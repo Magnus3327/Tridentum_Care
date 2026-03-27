@@ -1,0 +1,28 @@
+TRIDENTUM CARE
+
+Applicazione per fornire un servizio di supporto per anziani:
+- taxi
+- emotivo, camminata
+- accompagnamento visite mediche, spesa.
+
+Utenti:
+- Volontari
+- Richiedenti
+- Aziende partner
+- Enti comunali (es. Biblioteca)
+
+Che fornisca una “ricompensa” sotto forma di punti da utilizzare in:
+- Servizi comunali (es. stampa)
+- Aziende
+
+Funzionalità: 
+- Utente richiede un servizio, specificando:
+    - Data e orario
+    - Luogo
+    - Tipologia
+    - Urgenza
+- Volontario accede alla lista delle richieste e accetta.
+- Al termine dell’attività, l’utente valuta il volontario
+- Il sistema accredita i punti in base alla valutazione del utente
+- il volontario compra un coupon con i punti.
+- l’ente offerente gestisce i coupon attivi.
