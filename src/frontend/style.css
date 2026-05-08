@@ -1,0 +1,31 @@
+:root {
+  /* Colors based on Logo */
+  --primary-color: #1B5E8A; /* Dark Blue/Teal */
+  --primary-hover: #134363;
+  --secondary-color: #E57D32; /* Vibrant Orange */
+  --secondary-hover: #C66826;
+  --accent-color: #508D5B; /* Forest Green */
+  --background-light: #FDFBF7; /* Off-white / Cream */
+  --text-dark: #2A2A2A;
+  --text-muted: #666666;
+  --surface-color: #FFFFFF;
+  --border-color: #E0E0E0;
+  
+  /* Danger/Success */
+  --danger-color: #DC3545;
+  --success-color: #28A745;
+  
+  /* Typography */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-base: 16px;
+  --font-large: 20px; /* For accessible areas */
+  --font-xl: 28px;
+  
+  /* Spacing & Radii */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
+}
