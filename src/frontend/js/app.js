@@ -101,3 +101,36 @@ function handleLogin(e, role) {
     if (role === 'partner') navigateTo('partner-dash');
     if (role === 'admin') navigateTo('admin-dash');
 }
+// Initialize
+document.addEventListener('DOMContentLoaded', async () => {
+    // Inject Font Awesome for icons (if used)
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
+    document.head.appendChild(link);
+    
+    // Inject Google Fonts
+    const fonts = document.createElement('link');
+    fonts.rel = 'stylesheet';
+    fonts.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
+    document.head.appendChild(fonts);
+
+    // Fetch and load all views into the container
+    const viewFiles = ['public.html', 'shared.html', 'requester.html', 'volunteer.html', 'partner.html', 'admin.html'];
+    const container = document.getElementById('app-container');
+    
+    try {
+        for (const file of viewFiles) {
+            const response = await fetch(`/views/${file}`);
+            if (response.ok) {
+                const html = await response.text();
+                container.innerHTML += html;
+            }
+        }
+    } catch (e) {
+        console.error("Errore nel caricamento delle viste:", e);
+    }
+
+    // Initial navigation
+    navigateTo('home');
+});
