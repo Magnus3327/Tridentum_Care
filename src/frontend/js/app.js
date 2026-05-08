@@ -19,3 +19,21 @@ const routes = {
     'partner-coupon': 'view-partner-coupon',
     'admin-dash': 'view-admin-dash'
 };
+
+function navigateTo(routeId) {
+    if (!routes[routeId]) return;
+    
+    // Hide all views
+    document.querySelectorAll('.view-section').forEach(view => {
+        view.classList.remove('active');
+    });
+    
+    // Show target view
+    const targetView = document.getElementById(routes[routeId]);
+    if (targetView) {
+        targetView.classList.add('active');
+        window.scrollTo(0, 0);
+    }
+    
+    updateNavbar(routeId);
+}
