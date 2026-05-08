@@ -1,1 +1,60 @@
-<!-- Vista Partner -->
+<!-- Dashboard Partner -->
+<section id="view-partner-dash" class="view-section">
+    <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
+        <h2>I Tuoi Coupon Attivi</h2>
+        <button class="btn btn-primary" onclick="navigateTo('partner-coupon')">Crea Nuovo Premio</button>
+    </div>
+    
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="background: var(--background-light); border-bottom: 2px solid var(--border-color);">
+                    <th style="padding: 1rem;">Premio</th>
+                    <th style="padding: 1rem;">Costo Punti</th>
+                    <th style="padding: 1rem;">Riscattati</th>
+                    <th style="padding: 1rem;">Azioni</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 1rem;"><strong>Caffè Gratuito</strong><br><small class="text-muted">Scade: 31/12/2026</small></td>
+                    <td style="padding: 1rem;">200</td>
+                    <td style="padding: 1rem;">45 volte</td>
+                    <td style="padding: 1rem;">
+                        <button class="btn btn-outline" style="padding: 0.5rem 1rem;" onclick="navigateTo('partner-coupon')">Modifica</button>
+                        <button class="btn btn-danger" style="padding: 0.5rem 1rem;" onclick="confirm('Eliminare questo coupon?')">Elimina</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Crea/Modifica Coupon -->
+<section id="view-partner-coupon" class="view-section">
+    <button class="btn btn-outline" onclick="navigateTo('partner-dash')" style="margin-bottom: 2rem;"><i class="fa-solid fa-arrow-left"></i> Torna alla Dashboard</button>
+    <div class="card" style="max-width: 600px; margin: 0 auto;">
+        <h2>Nuovo Premio (Coupon)</h2>
+        <form onsubmit="event.preventDefault(); alert('Premio pubblicato con successo!'); navigateTo('partner-dash');">
+            <div class="form-group">
+                <label class="form-label">Titolo Premio</label>
+                <input type="text" class="form-control" placeholder="Es. Sconto 5€" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Descrizione e Condizioni</label>
+                <textarea class="form-control" rows="3" placeholder="Es. Valido su spesa minima di 30€..."></textarea>
+            </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label class="form-label">Costo in Punti</label>
+                    <input type="number" class="form-control" value="100" min="50" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Data di Scadenza</label>
+                    <input type="date" class="form-control" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">Pubblica Premio</button>
+        </form>
+    </div>
+</section>
