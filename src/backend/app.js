@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const connectDB = require('../config/db');
-const seedDatabase = require('../config/seed');
+
 const volunteerRouter = require('./api/volunteer');
 
 const app = express();
@@ -14,8 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 connectDB()
   .then(async (db) => {
     app.locals.db = db;
-    // Esegui il seeding del database per popolare dati iniziali se vuoti
-    await seedDatabase();
+
   })
   .catch((err) => {
     console.error("Inizializzazione database fallita:", err);
