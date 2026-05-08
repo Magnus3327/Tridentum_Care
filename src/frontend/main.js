@@ -493,6 +493,10 @@ window.loadProfile = async function() {
             document.getElementById("skill-farmaci").checked = skills.includes("Farmaci");
             document.getElementById("skill-compagnia").checked = skills.includes("Compagnia");
             document.getElementById("skill-tecnologia").checked = skills.includes("Tecnologia");
+
+            if (document.getElementById("profile-age")) document.getElementById("profile-age").value = profile.age || "";
+            if (document.getElementById("profile-license")) document.getElementById("profile-license").value = profile.license || "";
+            if (document.getElementById("profile-gender")) document.getElementById("profile-gender").value = profile.gender || "";
         }
     } catch (e) {
         console.error("Errore nel caricamento del profilo:", e);
@@ -525,6 +529,17 @@ window.saveProfile = async function(event) {
     };
 
     if (role === 'volunteer') {
+        const ageInput = document.getElementById("profile-age");
+        const age = ageInput && ageInput.value !== "" ? parseInt(ageInput.value) : null;
+        const license = document.getElementById("profile-license") ? document.getElementById("profile-license").value : "";
+        const gender = document.getElementById("profile-gender") ? document.getElementById("profile-gender").value : "";
+
+        // OCL Invariant: Age must be >= 18 (maggorenne)
+        if (age !== null && age < 18) {
+            showToast("Vincolo OCL fallito: Un volontario deve essere maggiorenne (Età >= 18)!", "danger");
+            return;
+        }
+
         const skills = [];
         if (document.getElementById("skill-spesa").checked) skills.push("Spesa");
         if (document.getElementById("skill-farmaci").checked) skills.push("Farmaci");
@@ -532,6 +547,9 @@ window.saveProfile = async function(event) {
         if (document.getElementById("skill-tecnologia").checked) skills.push("Tecnologia");
         
         profileData.skills = skills;
+        profileData.age = age;
+        profileData.license = license;
+        profileData.gender = gender;
     }
 
     try {
@@ -548,7 +566,7 @@ window.saveProfile = async function(event) {
         if (response.ok) {
             showToast("Profilo aggiornato con successo!", "success");
             if (role === 'volunteer') {
-                loadVolunteerDashboard(); // refresh volunteer header
+                loadVolunteerDashboard(); // refresh volunteer header and sync points
             }
         } else {
             showToast(`Errore: ${result.error}`, "danger");
@@ -556,6 +574,51 @@ window.saveProfile = async function(event) {
     } catch (e) {
         console.error("Errore nel salvataggio del profilo:", e);
         showToast("Si è verificato un errore durante l'aggiornamento.", "danger");
+    }
+}
+
+// 3. Real Points-Deducting Coupon Purchasing Function 
+window.buyCoupon = async function(couponName, costoPunti) {
+    const email = appState.userEmail || "mario.rossi@email.it";
+    
+    // Check locally first to give instant elegant toast
+    if ((appState.points || 0) < costoPunti) {
+        showToast(`Punti insufficienti per riscattare "${couponName}" (Costo: ${costoPunti} pts, Tuo saldo: ${appState.points} pts)`, "danger");
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/volunteer/coupons/redeem`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ email, couponName, costoPunti })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showToast(`Coupon "${couponName}" acquistato con successo! Saldo ricalcolato.`, "success");
+            
+            // Deduct locally and sync dashboards
+            appState.points = data.newPoints;
+            
+            // Refresh points elements across views
+            const userPointsEl = document.getElementById("user-points");
+            if (userPointsEl) userPointsEl.innerText = `${data.newPoints} pts`;
+            
+            const storePointsEl = document.getElementById("store-points-balance");
+            if (storePointsEl) storePointsEl.innerHTML = `${data.newPoints} <span style="font-size: 1.5rem;">pts</span>`;
+            
+            const roleBadge = document.getElementById("profile-role-badge");
+            if (roleBadge) roleBadge.innerText = `Volontario (${data.newPoints} pts)`;
+        } else {
+            showToast(`Errore: ${data.error}`, "danger");
+        }
+    } catch (e) {
+        console.error("Errore nel riscatto del coupon:", e);
+        showToast("Si è verificato un errore durante il riscatto.", "danger");
     }
 }
 
@@ -579,7 +642,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     try {
         for (const file of viewFiles) {
-            const response = await fetch(`/views/${file}`);
+            // Append a timestamp to completely bypass browser caching during development!
+            const response = await fetch(`/views/${file}?t=${Date.now()}`);
             if (response.ok) {
                 const html = await response.text();
                 container.innerHTML += html;

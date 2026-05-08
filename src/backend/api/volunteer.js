@@ -125,10 +125,18 @@ router.get("/profile", async (req, res) => {
 // 2. PUT Profile
 router.put("/profile", async (req, res) => {
   try {
-    const { email, name, surname, address, phone, skills } = req.body;
+    const { email, name, surname, address, phone, skills, age, license, gender } = req.body;
     
     if (!email) {
       return res.status(400).json({ error: "Email richiesta per aggiornare il profilo" });
+    }
+
+    // OCL Constraint validation: age >= 18
+    if (age !== undefined && age !== null && age !== "") {
+      const parsedAge = parseInt(age);
+      if (!isNaN(parsedAge) && parsedAge < 18) {
+        return res.status(400).json({ error: "Vincolo OCL: Un volontario deve essere maggiorenne (Età >= 18)!" });
+      }
     }
 
     if (useDbFallback(req)) {
@@ -143,6 +151,9 @@ router.put("/profile", async (req, res) => {
         address,
         phone,
         skills: Array.isArray(skills) ? skills : [],
+        age: age ? parseInt(age) : null,
+        license: license || "",
+        gender: gender || "",
         updatedAt: new Date()
       };
       return res.json({ message: "Profilo aggiornato in memoria con successo" });
@@ -155,6 +166,9 @@ router.put("/profile", async (req, res) => {
       address,
       phone,
       skills: Array.isArray(skills) ? skills : [],
+      age: age ? parseInt(age) : null,
+      license: license || "",
+      gender: gender || "",
       updatedAt: new Date()
     };
 
@@ -339,6 +353,71 @@ router.post("/requests/:id/cancel", async (req, res) => {
     });
   } catch (error) {
     console.error("Errore POST /requests/:id/cancel:", error);
+    res.status(500).json({ error: "Errore interno del server" });
+  }
+});
+
+// 7. POST Redeem Coupon (Riscatto Coupon con addebito punti)
+router.post("/coupons/redeem", async (req, res) => {
+  try {
+    const { email, couponName, costoPunti } = req.body;
+
+    if (!email || !couponName || !costoPunti) {
+      return res.status(400).json({ error: "Parametri email, couponName e costoPunti obbligatori" });
+    }
+
+    const pointsToDeduct = parseInt(costoPunti);
+    if (isNaN(pointsToDeduct) || pointsToDeduct <= 0) {
+      return res.status(400).json({ error: "Punti non validi" });
+    }
+
+    if (useDbFallback(req)) {
+      const volunteerIdx = memoryDb.users.findIndex(u => u.email === email && u.role === "volunteer");
+      if (volunteerIdx === -1) {
+        return res.status(404).json({ error: "Volontario non trovato" });
+      }
+      
+      const volunteer = memoryDb.users[volunteerIdx];
+      
+      // OCL Constraint: check self.punti >= costoPunti
+      if ((volunteer.points || 0) < pointsToDeduct) {
+        return res.status(400).json({ error: "Punti insufficienti per riscattare questo coupon" });
+      }
+
+      // Deduct points
+      volunteer.points -= pointsToDeduct;
+      return res.json({
+        message: `Coupon "${couponName}" riscattato con successo!`,
+        newPoints: volunteer.points
+      });
+    }
+
+    const db = req.app.locals.db;
+    const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
+    if (!volunteer) {
+      return res.status(404).json({ error: "Volontario non trovato" });
+    }
+
+    // OCL Constraint: check points sufficiency
+    const currentPoints = parseInt(volunteer.points || 0);
+    if (currentPoints < pointsToDeduct) {
+      return res.status(400).json({ error: "Punti insufficienti per riscattare questo coupon!" });
+    }
+
+    const newPoints = currentPoints - pointsToDeduct;
+
+    // Save points deduction in DB
+    await db.collection("users").updateOne(
+      { _id: volunteer._id },
+      { $set: { points: newPoints } }
+    );
+
+    res.json({
+      message: `Coupon "${couponName}" riscattato con successo!`,
+      newPoints: newPoints
+    });
+  } catch (error) {
+    console.error("Errore POST /coupons/redeem:", error);
     res.status(500).json({ error: "Errore interno del server" });
   }
 });
