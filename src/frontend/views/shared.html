@@ -1,42 +1,81 @@
 <!-- Profile & Settings -->
 <section id="view-shared-profile" class="view-section">
-    <div class="card" style="max-width: 800px; margin: 0 auto;">
-        <h2>Profilo Personale</h2>
-        <form onsubmit="event.preventDefault(); alert('Profilo aggiornato!');">
+    <div class="card" style="max-width: 800px; margin: 0 auto; padding: 2.5rem;">
+        <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
+            <h2><i class="fa-solid fa-id-card text-primary"></i> Profilo Personale</h2>
+            <span class="badge badge-success" id="profile-role-badge">Utente</span>
+        </div>
+        
+        <form id="profile-form" onsubmit="saveProfile(event)">
             <div class="grid-2">
                 <div class="form-group">
                     <label class="form-label">Nome</label>
-                    <input type="text" class="form-control" value="Mario">
+                    <input type="text" id="profile-name" class="form-control" required placeholder="Inserisci il tuo nome">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Cognome</label>
-                    <input type="text" class="form-control" value="Rossi">
+                    <input type="text" id="profile-surname" class="form-control" required placeholder="Inserisci il tuo cognome">
                 </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Email</label>
-                <input type="email" class="form-control" value="mario.rossi@email.it" readonly>
+            
+            <div class="grid-2">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="profile-email" class="form-control" readonly style="background-color: #f1f3f5; cursor: not-allowed;">
+                    <small class="text-muted">L'email non può essere modificata.</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Telefono / Cellulare</label>
+                    <input type="tel" id="profile-phone" class="form-control" placeholder="es. 333 123 4567">
+                </div>
             </div>
+
             <div class="form-group">
-                <label class="form-label">Indirizzo Predefinito (Per velocizzare le richieste)</label>
-                <input type="text" class="form-control" value="Via Roma 1, Trento">
+                <label class="form-label">Indirizzo Predefinito (Per facilitare la localizzazione)</label>
+                <input type="text" id="profile-address" class="form-control" placeholder="es. Via Roma 1, Trento">
+            </div>
+
+            <!-- Campi esclusivi per il Volontario (mostrati via JS se role === 'volunteer') -->
+            <div id="profile-volunteer-fields" style="display: none; margin-top: 2rem; padding: 1.5rem; background: var(--background-light); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                <h4 style="color: var(--primary-color); margin-bottom: 1rem;"><i class="fa-solid fa-star text-secondary"></i> Competenze del Volontario</h4>
+                <p class="text-muted" style="font-size: 0.875rem; margin-bottom: 1.5rem;">Seleziona le tipologie di richieste in cui ti senti a tuo agio e che preferisci prendere in carico:</p>
+                
+                <div class="grid-2" style="gap: 1rem 2rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <input type="checkbox" id="skill-spesa" value="Spesa" style="width: 1.25rem; height: 1.25rem; cursor: pointer;">
+                        <label for="skill-spesa" style="font-weight: 500; cursor: pointer;">Spesa Alimentare</label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <input type="checkbox" id="skill-farmaci" value="Farmaci" style="width: 1.25rem; height: 1.25rem; cursor: pointer;">
+                        <label for="skill-farmaci" style="font-weight: 500; cursor: pointer;">Ritiro Farmaci</label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <input type="checkbox" id="skill-compagnia" value="Compagnia" style="width: 1.25rem; height: 1.25rem; cursor: pointer;">
+                        <label for="skill-compagnia" style="font-weight: 500; cursor: pointer;">Compagnia / Conversazione</label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <input type="checkbox" id="skill-tecnologia" value="Tecnologia" style="width: 1.25rem; height: 1.25rem; cursor: pointer;">
+                        <label for="skill-tecnologia" style="font-weight: 500; cursor: pointer;">Supporto Tecnologico</label>
+                    </div>
+                </div>
             </div>
             
-            <div class="flex gap-2" style="margin-top: 2rem;">
-                <button type="submit" class="btn btn-primary">Salva Modifiche</button>
-                <button type="button" class="btn btn-danger" onclick="openModal('delete-account-modal')">Elimina Account (GDPR)</button>
+            <div class="flex gap-2" style="margin-top: 2.5rem;">
+                <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem;"><i class="fa-solid fa-floppy-disk" style="margin-right: 0.5rem;"></i> Salva Modifiche</button>
+                <button type="button" class="btn btn-outline btn-danger" onclick="openModal('delete-account-modal')" style="border-color: var(--danger-color); color: var(--danger-color);">Elimina Account (GDPR)</button>
             </div>
         </form>
     </div>
     
     <!-- Delete Account Modal -->
     <div class="modal-overlay" id="delete-account-modal">
-        <div class="modal-content text-center">
-            <h2 class="text-danger">Attenzione!</h2>
-            <p>Sei sicuro di voler richiedere l'eliminazione definitiva del tuo account e di tutti i dati associati (GDPR)? Questa azione è irreversibile.</p>
+        <div class="modal-content text-center" style="max-width: 500px; padding: 2.5rem;">
+            <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+            <h2 class="text-danger" style="margin-top: 0.5rem;">Attenzione!</h2>
+            <p>Sei sicuro di voler richiedere l'eliminazione definitiva del tuo account e di tutti i dati associati (conforme alla normativa GDPR)? Questa azione è irreversibile.</p>
             <div class="flex gap-2 justify-center" style="margin-top: 2rem;">
                 <button class="btn btn-outline" onclick="closeModal('delete-account-modal')">Annulla</button>
-                <button class="btn btn-danger" onclick="alert('Richiesta inviata. Sarai disconnesso.'); navigateTo('home'); closeModal('delete-account-modal')">Conferma Eliminazione</button>
+                <button class="btn btn-danger" onclick="alert('Richiesta inviata. Il tuo account verrà eliminato entro le tempistiche GDPR. Sarai disconnesso.'); navigateTo('home'); closeModal('delete-account-modal')">Conferma Eliminazione</button>
             </div>
         </div>
     </div>
