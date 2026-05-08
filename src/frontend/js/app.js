@@ -83,3 +83,21 @@ function updateNavbar(routeId) {
     
     navLinks.innerHTML = linksHTML;
 }
+
+// Modal functions
+function openModal(modalId) {
+    document.getElementById(modalId).classList.add('active');
+}
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+}
+
+// Simulate Login
+function handleLogin(e, role) {
+    e.preventDefault();
+    appState.userRole = role;
+    if (role === 'requester') navigateTo('req-dashboard');
+    if (role === 'volunteer') navigateTo('vol-board');
+    if (role === 'partner') navigateTo('partner-dash');
+    if (role === 'admin') navigateTo('admin-dash');
+}
