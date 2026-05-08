@@ -585,6 +585,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 container.innerHTML += html;
             }
         }
+
+        // Teleport MODALS directly to the body to bypass layout and transform restrictions!
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            document.body.appendChild(modal);
+        });
+
     } catch (e) {
         console.error("Errore nel caricamento delle viste:", e);
     }
