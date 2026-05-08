@@ -1,1 +1,82 @@
-<!-- Vista Public -->
+<!-- Homepage / Landing Page -->
+<section id="view-public-home" class="view-section active">
+    <div class="card text-center" style="padding: 5rem 2rem; margin-bottom: 2rem;">
+        <h1 style="font-size: 3.5rem;">Benvenuto in TridentumCare</h1>
+        <p style="font-size: 1.25rem; max-width: 800px; margin: 0 auto 2rem; color: var(--text-muted);">
+            La piattaforma che connette anziani e persone vulnerabili di Trento con volontari pronti ad aiutare nelle commissioni quotidiane.
+        </p>
+        <div class="flex justify-center gap-2">
+            <button class="btn btn-primary btn-large" onclick="navigateTo('auth')">Diventa Volontario</button>
+            <button class="btn btn-secondary btn-large" onclick="navigateTo('auth')">Richiedi Aiuto</button>
+        </div>
+    </div>
+    
+    <div class="grid-3" style="margin-top: 4rem;">
+        <div class="card text-center">
+            <i class="fa-solid fa-hand-holding-heart text-secondary" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+            <h3>Richiedi Supporto</h3>
+            <p>Hai bisogno di spesa, farmaci o compagnia? Crea una richiesta in modo semplice e sicuro.</p>
+        </div>
+        <div class="card text-center">
+            <i class="fa-solid fa-people-carry-box text-primary" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+            <h3>Aiuta la Comunità</h3>
+            <p>Dona il tuo tempo per supportare chi ne ha bisogno. Accetta richieste e accumula punti.</p>
+        </div>
+        <div class="card text-center">
+            <i class="fa-solid fa-store text-accent" style="font-size: 3rem; margin-bottom: 1rem; color: var(--accent-color);"></i>
+            <h3>Premi per i Volontari</h3>
+            <p>Utilizza i punti accumulati per ottenere sconti e coupon nei negozi convenzionati.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Authentication Page (Login/Register/Partner) -->
+<section id="view-public-auth" class="view-section">
+    <div class="card" style="max-width: 500px; margin: 0 auto;">
+        <h2 class="text-center" style="margin-bottom: 2rem;">Accedi a TridentumCare</h2>
+        
+        <form id="login-form">
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" placeholder="inserisci la tua email" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-control" placeholder="••••••••" required>
+                <div class="text-right" style="margin-top: 0.5rem; text-align: right;">
+                    <a href="#" onclick="navigateTo('recovery')" style="font-size: 0.875rem; color: var(--primary-color);">Password dimenticata?</a>
+                </div>
+            </div>
+            
+            <h4 class="text-center" style="margin: 1.5rem 0;">Simula Accesso (Demo)</h4>
+            <div class="grid-2" style="gap: 1rem;">
+                <button type="button" class="btn btn-secondary btn-block" onclick="handleLogin(event, 'requester')">Log in Anziano</button>
+                <button type="button" class="btn btn-primary btn-block" onclick="handleLogin(event, 'volunteer')">Log in Volontario</button>
+                <button type="button" class="btn btn-outline btn-block" onclick="handleLogin(event, 'partner')">Log in Partner</button>
+                <button type="button" class="btn btn-outline btn-block" onclick="handleLogin(event, 'admin')">Log in Admin</button>
+            </div>
+            
+            <hr style="margin: 2rem 0; border: 0; border-top: 1px solid var(--border-color);">
+            
+            <button type="button" class="btn btn-outline btn-block" style="color: #DB4437; border-color: #DB4437;">
+                <i class="fa-brands fa-google" style="margin-right: 0.5rem;"></i> Accedi con Google
+            </button>
+        </form>
+    </div>
+</section>
+
+<!-- Password Recovery -->
+<section id="view-public-recovery" class="view-section">
+    <div class="card" style="max-width: 500px; margin: 0 auto;">
+        <h2>Recupero Password</h2>
+        <p class="text-muted">Inserisci la tua email per ricevere il link di ripristino della password.</p>
+        <form onsubmit="event.preventDefault(); alert('Link inviato!'); navigateTo('auth');">
+            <div class="form-group">
+                <label class="form-label">Email Registrata</label>
+                <input type="email" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Invia Link di Recupero</button>
+            <button type="button" class="btn btn-outline btn-block" style="margin-top: 1rem;" onclick="navigateTo('auth')">Torna al Login</button>
+        </form>
+    </div>
+</section>
