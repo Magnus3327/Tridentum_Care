@@ -37,3 +37,49 @@ function navigateTo(routeId) {
     
     updateNavbar(routeId);
 }
+
+function updateNavbar(routeId) {
+    const navLinks = document.getElementById('dynamic-nav-links');
+    if (!navLinks) return;
+    
+    let linksHTML = '';
+    
+    // Mostra link basati sulla route corrente per simulare i ruoli
+    if (routeId.startsWith('req-')) {
+        linksHTML = `
+            <a href="#" class="nav-link" onclick="navigateTo('req-dashboard')">Le mie richieste</a>
+            <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
+            <a href="#" class="nav-link text-danger" onclick="navigateTo('home')">Esci</a>
+        `;
+    } else if (routeId.startsWith('vol-')) {
+        linksHTML = `
+            <a href="#" class="nav-link" onclick="navigateTo('vol-board')">Bacheca</a>
+            <a href="#" class="nav-link" onclick="navigateTo('vol-store')">Store Premi (${appState.points} pts)</a>
+            <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
+            <a href="#" class="nav-link text-danger" onclick="navigateTo('home')">Esci</a>
+        `;
+    } else if (routeId.startsWith('partner-')) {
+        linksHTML = `
+            <a href="#" class="nav-link" onclick="navigateTo('partner-dash')">Dashboard</a>
+            <a href="#" class="nav-link" onclick="navigateTo('partner-coupon')">Crea Coupon</a>
+            <a href="#" class="nav-link text-danger" onclick="navigateTo('home')">Esci</a>
+        `;
+    } else if (routeId.startsWith('admin-')) {
+        linksHTML = `
+            <a href="#" class="nav-link" onclick="navigateTo('admin-dash')">Moderazione</a>
+            <a href="#" class="nav-link text-danger" onclick="navigateTo('home')">Esci</a>
+        `;
+    } else if (routeId === 'profile') {
+         linksHTML = `
+            <a href="#" class="nav-link" onclick="navigateTo('home')">Torna alla Home</a>
+            <a href="#" class="nav-link text-danger" onclick="navigateTo('home')">Esci</a>
+        `;
+    } else {
+        linksHTML = `
+            <a href="#" class="nav-link" onclick="navigateTo('home')">Home</a>
+            <a href="#" class="nav-link" onclick="navigateTo('auth')">Accedi / Registrati</a>
+        `;
+    }
+    
+    navLinks.innerHTML = linksHTML;
+}
