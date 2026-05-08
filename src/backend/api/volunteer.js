@@ -1,1 +1,346 @@
-// API Volunteer
+const express = require("express");
+const { ObjectId } = require("mongodb");
+const router = express.Router();
+
+// Stateful In-Memory Fallback Database if MongoDB Atlas connection fails
+const memoryDb = {
+  users: [
+    {
+      _id: "mario_rossi_id",
+      email: "mario.rossi@email.it",
+      name: "Mario",
+      surname: "Rossi",
+      role: "volunteer",
+      address: "Via Roma 1, Trento",
+      points: 1250,
+      phone: "333 123 4567",
+      skills: ["Spesa", "Farmaci", "Compagnia"],
+      createdAt: new Date()
+    }
+  ],
+  requests: [
+    {
+      _id: "req_1",
+      title: "Spesa settimanale di alimentari (Mock DB)",
+      category: "Spesa",
+      description: "Avrei bisogno di acquistare latte parzialmente scremato, un pacco di pasta Barilla n.5, pomodori freschi e pane comune. Abito al secondo piano senza ascensore, quindi serve un po' di forza fisica.",
+      address: "Via Belenzani 12, Trento",
+      dateTime: "Oggi, 17:00",
+      requesterName: "Angela Bianchi",
+      points: 150,
+      status: "active",
+      volunteerId: null,
+      createdAt: new Date()
+    },
+    {
+      _id: "req_2",
+      title: "Ritiro farmaci salvavita (Mock DB)",
+      category: "Farmaci",
+      description: "Ritiro ricetta medica presso la farmacia di Piazza Duomo. La ricetta è già pagata e ho caricato il codice fiscale. Bisogna solo ritirare la scatola di cardioaspirina.",
+      address: "Piazza Duomo 3, Trento",
+      dateTime: "Domani, 10:00",
+      requesterName: "Giuseppe N.",
+      points: 120,
+      status: "active",
+      volunteerId: null,
+      createdAt: new Date()
+    },
+    {
+      _id: "req_3",
+      title: "Compagnia e lettura quotidiano (Mock DB)",
+      category: "Compagnia",
+      description: "Cerco una persona gentile per fare quattro chiacchiere in giardino nel pomeriggio e leggere insieme le principali notizie del quotidiano locale L'Adige.",
+      address: "Via Grazioli 45, Trento",
+      dateTime: "Lunedì, 15:30",
+      requesterName: "Rosa M.",
+      points: 200,
+      status: "active",
+      volunteerId: null,
+      createdAt: new Date()
+    },
+    {
+      _id: "req_4",
+      title: "Aiuto configurazione smartphone (Mock DB)",
+      category: "Tecnologia",
+      description: "Non riesco a configurare l'applicazione della sanità provinciale (TreC+) sul mio nuovo telefono Android. Qualcuno con pazienza saprebbe installarla e spiegarmi come si accede?",
+      address: "Viale Verona 18, Trento",
+      dateTime: "Sabato, 11:00",
+      requesterName: "Luigi T.",
+      points: 100,
+      status: "active",
+      volunteerId: null,
+      createdAt: new Date()
+    }
+  ]
+};
+
+// Log helper to print when fallback is active
+const useDbFallback = (req) => {
+  const db = req.app.locals.db;
+  if (!db) {
+    console.warn("⚠️ Database non connesso! Utilizzo DB in memoria di fallback.");
+    return true;
+  }
+  return false;
+};
+
+// 1. GET Profile
+router.get("/profile", async (req, res) => {
+  try {
+    const email = req.query.email || "mario.rossi@email.it";
+    
+    if (useDbFallback(req)) {
+      let volunteer = memoryDb.users.find(u => u.email === email && u.role === "volunteer");
+      if (!volunteer) {
+        // Create default volunteer in memory if not exists
+        volunteer = {
+          _id: "mario_rossi_id",
+          email,
+          name: "Mario",
+          surname: "Rossi",
+          role: "volunteer",
+          address: "Via Roma 1, Trento",
+          points: 1250,
+          phone: "333 123 4567",
+          skills: ["Spesa", "Farmaci", "Compagnia"],
+          createdAt: new Date()
+        };
+        memoryDb.users.push(volunteer);
+      }
+      return res.json(volunteer);
+    }
+
+    const db = req.app.locals.db;
+    const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
+    if (!volunteer) {
+      return res.status(404).json({ error: "Profilo volontario non trovato" });
+    }
+    res.json(volunteer);
+  } catch (error) {
+    console.error("Errore GET /profile:", error);
+    res.status(500).json({ error: "Errore interno del server" });
+  }
+});
+
+// 2. PUT Profile
+router.put("/profile", async (req, res) => {
+  try {
+    const { email, name, surname, address, phone, skills } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: "Email richiesta per aggiornare il profilo" });
+    }
+
+    if (useDbFallback(req)) {
+      const idx = memoryDb.users.findIndex(u => u.email === email && u.role === "volunteer");
+      if (idx === -1) {
+        return res.status(404).json({ error: "Profilo non trovato o non autorizzato" });
+      }
+      memoryDb.users[idx] = {
+        ...memoryDb.users[idx],
+        name,
+        surname,
+        address,
+        phone,
+        skills: Array.isArray(skills) ? skills : [],
+        updatedAt: new Date()
+      };
+      return res.json({ message: "Profilo aggiornato in memoria con successo" });
+    }
+
+    const db = req.app.locals.db;
+    const updateData = {
+      name,
+      surname,
+      address,
+      phone,
+      skills: Array.isArray(skills) ? skills : [],
+      updatedAt: new Date()
+    };
+
+    const result = await db.collection("users").updateOne(
+      { email, role: "volunteer" },
+      { $set: updateData }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Profilo non trovato o non autorizzato" });
+    }
+
+    res.json({ message: "Profilo aggiornato con successo" });
+  } catch (error) {
+    console.error("Errore PUT /profile:", error);
+    res.status(500).json({ error: "Errore interno del server" });
+  }
+});
+
+// 3. GET Active Requests (Bacheca)
+router.get("/requests", async (req, res) => {
+  try {
+    const { category } = req.query;
+
+    if (useDbFallback(req)) {
+      let filtered = memoryDb.requests.filter(r => r.status === "active");
+      if (category && category !== "Tutti i servizi") {
+        filtered = filtered.filter(r => r.category === category);
+      }
+      return res.json(filtered);
+    }
+
+    const db = req.app.locals.db;
+    const query = { status: "active" };
+    if (category && category !== "Tutti i servizi") {
+      query.category = category;
+    }
+
+    const requests = await db.collection("requests").find(query).sort({ createdAt: -1 }).toArray();
+    res.json(requests);
+  } catch (error) {
+    console.error("Errore GET /requests:", error);
+    res.status(500).json({ error: "Errore interno del server" });
+  }
+});
+
+// 4. GET Assigned Tasks
+router.get("/my-tasks", async (req, res) => {
+  try {
+    const email = req.query.email || "mario.rossi@email.it";
+
+    if (useDbFallback(req)) {
+      const volunteer = memoryDb.users.find(u => u.email === email && u.role === "volunteer");
+      if (!volunteer) {
+        return res.status(404).json({ error: "Volontario non trovato" });
+      }
+      const tasks = memoryDb.requests.filter(r => r.volunteerId === volunteer._id && r.status === "assigned");
+      return res.json(tasks);
+    }
+
+    const db = req.app.locals.db;
+    const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
+    if (!volunteer) {
+      return res.status(404).json({ error: "Volontario non trovato" });
+    }
+
+    const tasks = await db.collection("requests").find({
+      volunteerId: volunteer._id.toString(),
+      status: "assigned"
+    }).sort({ createdAt: -1 }).toArray();
+
+    res.json(tasks);
+  } catch (error) {
+    console.error("Errore GET /my-tasks:", error);
+    res.status(500).json({ error: "Errore interno del server" });
+  }
+});
+
+// 5. POST Accept Request
+router.post("/requests/:id/accept", async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email del volontario richiesta" });
+    }
+
+    if (useDbFallback(req)) {
+      const volunteer = memoryDb.users.find(u => u.email === email && u.role === "volunteer");
+      if (!volunteer) {
+        return res.status(404).json({ error: "Volontario non trovato" });
+      }
+
+      const reqIdx = memoryDb.requests.findIndex(r => r._id === requestId && r.status === "active");
+      if (reqIdx === -1) {
+        return res.status(400).json({ error: "Richiesta non disponibile o già assegnata" });
+      }
+
+      memoryDb.requests[reqIdx].status = "assigned";
+      memoryDb.requests[reqIdx].volunteerId = volunteer._id;
+      return res.json({ message: "Richiesta presa in carico con successo!" });
+    }
+
+    const db = req.app.locals.db;
+    const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
+    if (!volunteer) {
+      return res.status(404).json({ error: "Volontario non trovato" });
+    }
+
+    const result = await db.collection("requests").updateOne(
+      { _id: new ObjectId(requestId), status: "active" },
+      { $set: { status: "assigned", volunteerId: volunteer._id.toString() } }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(400).json({ error: "Richiesta non disponibile o già assegnata" });
+    }
+
+    res.json({ message: "Richiesta presa in carico con successo!" });
+  } catch (error) {
+    console.error("Errore POST /requests/:id/accept:", error);
+    res.status(500).json({ error: "Errore interno del server" });
+  }
+});
+
+// 6. POST Cancel Request (Annulla presa in carico)
+router.post("/requests/:id/cancel", async (req, res) => {
+  try {
+    const requestId = req.params.id;
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email del volontario richiesta" });
+    }
+
+    if (useDbFallback(req)) {
+      const volunteerIdx = memoryDb.users.findIndex(u => u.email === email && u.role === "volunteer");
+      if (volunteerIdx === -1) {
+        return res.status(404).json({ error: "Volontario non trovato" });
+      }
+      const volunteer = memoryDb.users[volunteerIdx];
+
+      const reqIdx = memoryDb.requests.findIndex(r => r._id === requestId && r.volunteerId === volunteer._id && r.status === "assigned");
+      if (reqIdx === -1) {
+        return res.status(404).json({ error: "Incarico non trovato o non valido" });
+      }
+
+      // Revert to active and clear volunteerId
+      memoryDb.requests[reqIdx].status = "active";
+      memoryDb.requests[reqIdx].volunteerId = null;
+
+      return res.json({
+        message: "Presa in carico annullata con successo. La richiesta è di nuovo disponibile in bacheca."
+      });
+    }
+
+    const db = req.app.locals.db;
+    const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
+    if (!volunteer) {
+      return res.status(404).json({ error: "Volontario non trovato" });
+    }
+
+    const request = await db.collection("requests").findOne({
+      _id: new ObjectId(requestId),
+      volunteerId: volunteer._id.toString(),
+      status: "assigned"
+    });
+
+    if (!request) {
+      return res.status(404).json({ error: "Incarico non trovato o non valido" });
+    }
+
+    // Reset status and remove volunteerId
+    await db.collection("requests").updateOne(
+      { _id: new ObjectId(requestId) },
+      { $set: { status: "active", volunteerId: null } }
+    );
+
+    res.json({
+      message: "Presa in carico annullata con successo. La richiesta è di nuovo disponibile in bacheca."
+    });
+  } catch (error) {
+    console.error("Errore POST /requests/:id/cancel:", error);
+    res.status(500).json({ error: "Errore interno del server" });
+  }
+});
+
+module.exports = router;
