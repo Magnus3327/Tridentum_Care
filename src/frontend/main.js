@@ -98,6 +98,59 @@ window.closeModal = function(modalId) {
     document.getElementById(modalId).classList.remove('active');
 }
 
+// Global Toast System (silent, elegant, non-blocking notifications)
+window.showToast = function(message, type = 'success') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.position = 'fixed';
+        container.style.bottom = '2rem';
+        container.style.right = '2rem';
+        container.style.zIndex = '10000';
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.gap = '0.75rem';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.style.background = type === 'success' ? 'var(--primary-color, #1a5f7a)' : 'var(--danger-color, #dc3545)';
+    toast.style.color = 'white';
+    toast.style.padding = '0.85rem 1.5rem';
+    toast.style.borderRadius = 'var(--radius-md, 8px)';
+    toast.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
+    toast.style.fontSize = '0.875rem';
+    toast.style.fontWeight = '500';
+    toast.style.display = 'flex';
+    toast.style.alignItems = 'center';
+    toast.style.gap = '0.5rem';
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(15px)';
+    toast.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+    
+    const icon = type === 'success' ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation';
+    toast.innerHTML = `<i class="${icon}" style="font-size: 1rem;"></i> <span>${message}</span>`;
+
+    container.appendChild(toast);
+
+    // Fade in
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+    }, 50);
+
+    // Fade out and remove
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-15px)';
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 3500);
+}
+
 // Logout helper
 window.logout = function() {
     appState.userRole = null;
@@ -288,14 +341,14 @@ async function acceptRequest(requestId) {
         const data = await response.json();
         
         if (response.ok) {
-            alert("Richiesta Accettata con successo! L'attività è stata aggiunta ai tuoi incarichi attivi.");
+            showToast("Richiesta Accettata con successo! L'attività è stata aggiunta ai tuoi incarichi.", "success");
             loadVolunteerDashboard(); // reload data
         } else {
-            alert(`Errore: ${data.error}`);
+            showToast(`Errore: ${data.error}`, "danger");
         }
     } catch (e) {
         console.error("Errore nell'accettazione dell'incarico:", e);
-        alert("Si è verificato un errore durante l'operazione di presa in carico.");
+        showToast("Si è verificato un errore durante l'operazione di presa in carico.", "danger");
     }
 }
 
@@ -344,7 +397,7 @@ async function loadMyTasks() {
                         <strong>Richiedente:</strong> ${task.requesterName}<br>
                         <strong>Note:</strong> ${task.description}
                     </div>
-                    <button class="btn btn-outline btn-block" style="padding: 0.5rem 1rem; font-size: 0.875rem; border-color: var(--danger-color); color: var(--danger-color);" onclick="cancelTask('${task._id}')">
+                    <button type="button" class="btn btn-outline btn-block" style="padding: 0.5rem 1rem; font-size: 0.875rem; border-color: var(--danger-color); color: var(--danger-color);" onclick="event.preventDefault(); event.stopPropagation(); cancelTask('${task._id}')">
                         <i class="fa-solid fa-rectangle-xmark" style="margin-right: 0.5rem;"></i> Annulla Presa in Carico
                     </button>
                 </div>
@@ -358,14 +411,9 @@ async function loadMyTasks() {
     }
 }
 
-// 7. Cancel Task (Annulla presa in carico) via API
 window.cancelTask = async function(taskId) {
     const email = appState.userEmail || "mario.rossi@email.it";
     
-    if (!confirm("Sei sicuro di voler annullare la presa in carico di questo servizio? La richiesta tornerà disponibile in bacheca per gli altri volontari.")) {
-        return;
-    }
-
     try {
         const response = await fetch(`/api/volunteer/requests/${taskId}/cancel`, {
             method: "POST",
@@ -378,14 +426,14 @@ window.cancelTask = async function(taskId) {
         const data = await response.json();
 
         if (response.ok) {
-            alert("Presa in carico annullata. La richiesta è tornata disponibile in bacheca!");
+            showToast("Presa in carico annullata. La richiesta è tornata in bacheca!", "success");
             loadVolunteerDashboard(); // reload to sync lists
         } else {
-            alert(`Errore: ${data.error}`);
+            showToast(`Errore: ${data.error}`, "danger");
         }
     } catch (e) {
         console.error("Errore nell'annullamento dell'incarico:", e);
-        alert("Si è verificato un errore durante l'annullamento della presa in carico.");
+        showToast("Si è verificato un errore durante l'annullamento.", "danger");
     }
 }
 
@@ -498,16 +546,16 @@ window.saveProfile = async function(event) {
         const result = await response.json();
 
         if (response.ok) {
-            alert("Profilo aggiornato con successo nel database! I tuoi dati sono ora salvati.");
+            showToast("Profilo aggiornato con successo!", "success");
             if (role === 'volunteer') {
                 loadVolunteerDashboard(); // refresh volunteer header
             }
         } else {
-            alert(`Errore: ${result.error}`);
+            showToast(`Errore: ${result.error}`, "danger");
         }
     } catch (e) {
         console.error("Errore nel salvataggio del profilo:", e);
-        alert("Si è verificato un errore durante l'aggiornamento del profilo nel database.");
+        showToast("Si è verificato un errore durante l'aggiornamento.", "danger");
     }
 }
 
