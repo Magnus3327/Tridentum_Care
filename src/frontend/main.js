@@ -517,11 +517,13 @@ window.loadProfile = async function() {
                 } else {
                     let html = '';
                     coupons.forEach(c => {
+                        const dateStr = c.acquiredAt ? new Date(c.acquiredAt).toLocaleDateString('it-IT', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Data sconosciuta';
                         html += `
                             <div class="card flex justify-between items-center" style="padding: 1rem;">
                                 <div>
                                     <h4 style="margin-bottom: 0.25rem;">${c.name}</h4>
-                                    <small class="text-muted">Codice: ${c.code}</small>
+                                    <small class="text-muted" style="display: block; margin-bottom: 0.25rem;">Codice: <span style="font-family: monospace; font-weight: bold;">${c.code}</span></small>
+                                    <small class="text-muted"><i class="fa-regular fa-clock"></i> Acquistato il: ${dateStr}</small>
                                 </div>
                                 <button type="button" class="btn btn-outline btn-sm" onclick="showQRCode('${c.name}', '${c.code}')">Mostra QR</button>
                             </div>
