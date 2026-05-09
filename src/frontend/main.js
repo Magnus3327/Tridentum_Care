@@ -613,6 +613,11 @@ window.buyCoupon = async function(couponName, costoPunti) {
             
             const roleBadge = document.getElementById("profile-role-badge");
             if (roleBadge) roleBadge.innerText = `Volontario (${data.newPoints} pts)`;
+
+            const volunteerHeaderPoints = document.getElementById("volunteer-header-points");
+            if (volunteerHeaderPoints) volunteerHeaderPoints.innerHTML = `${data.newPoints} <span style="font-size: 1rem;">pts</span>`;
+
+            updateNavbar('vol-store');
         } else {
             showToast(`Errore: ${data.error}`, "danger");
         }
