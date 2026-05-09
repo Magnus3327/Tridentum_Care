@@ -10,7 +10,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Connessione Database asincrona
+// Connessione asincrona al Database
 connectDB()
   .then(async (db) => {
     app.locals.db = db;
@@ -23,10 +23,10 @@ connectDB()
 // Servi i file statici del frontend
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Registro i router API
+// Registrazione dei router API
 app.use('/api/volunteer', volunteerRouter);
 
-// Configurazione base per le API (stubs per ora)
+// Configurazione base per le API
 app.get('/api/status', (req, res) => {
     res.json({ status: 'ok', message: 'API funzionante' });
 });

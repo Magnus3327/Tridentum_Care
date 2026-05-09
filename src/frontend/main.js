@@ -1,11 +1,11 @@
-// Simple Single Page App Router and Global State
+// Router semplice per Single Page App e Stato Globale
 const appState = {
     userRole: null, // 'requester', 'volunteer', 'partner', 'admin', null
-    userEmail: null, // logged in email
+    userEmail: null, // email dell'utente loggato
     points: 1250,
 };
 
-// Navigation mapping
+// Mappatura della navigazione
 const routes = {
     'home': 'view-public-home',
     'auth': 'view-public-auth',
@@ -24,12 +24,12 @@ const routes = {
 function navigateTo(routeId) {
     if (!routes[routeId]) return;
     
-    // Hide all views
+    // Nasconde tutte le viste
     document.querySelectorAll('.view-section').forEach(view => {
         view.classList.remove('active');
     });
     
-    // Show target view
+    // Mostra la vista di destinazione
     const targetView = document.getElementById(routes[routeId]);
     if (targetView) {
         targetView.classList.add('active');
@@ -38,7 +38,7 @@ function navigateTo(routeId) {
     
     updateNavbar(routeId);
 
-    // Dynamic hook loading based on view routing
+    // Caricamento dinamico dei dati in base alla vista
     if (routeId === 'vol-board') {
         loadVolunteerDashboard();
     } else if (routeId === 'profile') {
@@ -54,7 +54,7 @@ function updateNavbar(routeId) {
     
     let linksHTML = '';
     
-    // Mostra link basati sulla route corrente per simulare i ruoli
+    // Mostra i link in base alla vista corrente per simulare i ruoli
     if (routeId.startsWith('req-') || (routeId === 'profile' && appState.userRole === 'requester')) {
         linksHTML = `
             <a href="#" class="nav-link" onclick="navigateTo('req-dashboard')">Le mie richieste</a>
@@ -89,8 +89,8 @@ function updateNavbar(routeId) {
     navLinks.innerHTML = linksHTML;
 }
 
-// Modal functions
-// Make them global so onclick attributes work correctly
+// Funzioni per i Modal
+// Rese globali per far funzionare gli attributi onclick
 window.openModal = function(modalId) {
     document.getElementById(modalId).classList.add('active');
 }
@@ -105,7 +105,7 @@ window.showQRCode = function(name, code) {
     openModal("qr-code-modal");
 }
 
-// Global Toast System (silent, elegant, non-blocking notifications)
+// Sistema di Notifiche Globali (Toast silenziose, eleganti e non bloccanti)
 window.showToast = function(message, type = 'success') {
     let container = document.getElementById('toast-container');
     if (!container) {
@@ -142,13 +142,13 @@ window.showToast = function(message, type = 'success') {
 
     container.appendChild(toast);
 
-    // Fade in
+    // Effetto di entrata
     setTimeout(() => {
         toast.style.opacity = '1';
         toast.style.transform = 'translateY(0)';
     }, 50);
 
-    // Fade out and remove
+    // Effetto di uscita e rimozione
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateY(-15px)';
@@ -158,14 +158,14 @@ window.showToast = function(message, type = 'success') {
     }, 3500);
 }
 
-// Logout helper
+// Helper per il logout
 window.logout = function() {
     appState.userRole = null;
     appState.userEmail = null;
     navigateTo('home');
 }
 
-// Simulate Login
+// Simula il Login
 window.handleLogin = function(e, role) {
     if (e) e.preventDefault();
     appState.userRole = role;
@@ -184,7 +184,7 @@ window.handleLogin = function(e, role) {
 }
 
 // ==========================================
-// VOLUNTEER ACTIONS & BOARD CODES
+// AZIONI VOLONTARIO E LOGICA BACHECA
 // ==========================================
 
 // 1. Get volunteer profile information & populate dashboard header
@@ -198,13 +198,13 @@ async function loadVolunteerDashboard() {
             appState.points = profile.points || 0;
             appState.skills = profile.skills || [];
             
-            // Set values on dashboard
+            // Imposta i valori nella dashboard
             const welcomeName = document.getElementById("volunteer-welcome-name");
             const headerPoints = document.getElementById("volunteer-header-points");
             if (welcomeName) welcomeName.innerText = profile.name || "Volontario";
             if (headerPoints) headerPoints.innerHTML = `${profile.points} <span style="font-size: 1rem;">pts</span>`;
             
-            // Update category filter based on skills
+            // Aggiorna il filtro categorie basato sulle competenze
             const filterSelect = document.getElementById("request-category-filter");
             if (filterSelect) {
                 let optionsHtml = '<option value="Tutti i servizi">Tutti i servizi</option>';
@@ -220,19 +220,19 @@ async function loadVolunteerDashboard() {
                 }
             }
 
-            // Sync with navbar points preview
+            // Sincronizza con l'anteprima dei punti nella navbar
             updateNavbar('vol-board');
         }
     } catch (e) {
         console.error("Errore nel caricamento del profilo volontario:", e);
     }
     
-    // Load lists
+    // Carica le liste
     loadActiveRequests();
     loadMyTasks();
 }
 
-// 2. Fetch active requests from database and render
+// 2. Recupera richieste attive e renderizza
 window.loadActiveRequests = async function() {
     const container = document.getElementById("volunteer-requests-container");
     if (!container) return;
@@ -259,7 +259,7 @@ window.loadActiveRequests = async function() {
             return;
         }
 
-        // Render request cards in a beautiful grid or list style
+        // Renderizza le card delle richieste in stile griglia o lista
         let html = '<div class="grid-2" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; width: 100%;">';
         
         requests.forEach(req => {
@@ -292,7 +292,7 @@ window.loadActiveRequests = async function() {
         html += '</div>';
         container.innerHTML = html;
         
-        // Cache requests globally on window to access detail views without refetching
+        // Salva le richieste in cache per accedervi senza doverle ricaricare
         window.activeRequestsCache = requests;
     } catch (e) {
         console.error("Errore nel caricamento delle richieste:", e);
@@ -304,7 +304,7 @@ window.loadActiveRequests = async function() {
     }
 }
 
-// 3. Helper to determine CSS class based on Category
+// 3. Helper per classe CSS in base alla Categoria
 function getCategoryBadgeClass(cat) {
     if (cat === "Trasporto") return "badge-primary";
     if (cat === "Accompagnamento") return "badge-success";
@@ -320,7 +320,7 @@ window.showRequestDetails = function(requestId) {
     const modal = document.getElementById("vol-req-detail-modal");
     if (!modal) return;
 
-    // Set textual details
+    // Imposta i dettagli testuali
     document.getElementById("modal-req-title").innerText = req.title;
     document.getElementById("modal-req-requester").innerHTML = `<i class="fa-solid fa-user"></i> <strong>Richiedente:</strong> ${req.requesterName}`;
     document.getElementById("modal-req-address").innerText = req.address;
@@ -328,14 +328,14 @@ window.showRequestDetails = function(requestId) {
     document.getElementById("modal-req-points").innerText = `+${req.points} pts`;
     document.getElementById("modal-req-description").innerText = req.description;
 
-    // Badges details
+    // Dettagli dei badge
     const badge = document.getElementById("modal-req-badge");
     badge.innerText = req.category;
     badge.className = `badge ${getCategoryBadgeClass(req.category)}`;
     badge.style.backgroundColor = "";
     badge.style.color = "";
 
-    // Accept button setup
+    // Configurazione pulsante accetta
     const acceptBtn = document.getElementById("modal-accept-btn");
     acceptBtn.onclick = async function() {
         await acceptRequest(req._id);
@@ -345,7 +345,7 @@ window.showRequestDetails = function(requestId) {
     openModal("vol-req-detail-modal");
 }
 
-// 5. Accept Request via API
+// 5. Accetta Richiesta via API
 async function acceptRequest(requestId) {
     const email = appState.userEmail || "mario.rossi@email.it";
     
@@ -362,7 +362,7 @@ async function acceptRequest(requestId) {
         
         if (response.ok) {
             showToast("Richiesta Accettata con successo! L'attività è stata aggiunta ai tuoi incarichi.", "success");
-            loadVolunteerDashboard(); // reload data
+            loadVolunteerDashboard(); // ricarica i dati
         } else {
             showToast(`Errore: ${data.error}`, "danger");
         }
@@ -372,7 +372,7 @@ async function acceptRequest(requestId) {
     }
 }
 
-// 6. Load assigned tasks for the current volunteer
+// 6. Carica incarichi assegnati per il volontario corrente
 async function loadMyTasks() {
     const container = document.getElementById("volunteer-my-tasks-container");
     if (!container) return;
@@ -447,7 +447,7 @@ window.cancelTask = async function(taskId) {
 
         if (response.ok) {
             showToast("Presa in carico annullata. La richiesta è tornata in bacheca!", "success");
-            loadVolunteerDashboard(); // reload to sync lists
+            loadVolunteerDashboard(); // ricarica per sincronizzare le liste
         } else {
             showToast(`Errore: ${data.error}`, "danger");
         }
@@ -457,7 +457,7 @@ window.cancelTask = async function(taskId) {
     }
 }
 
-// 8. Update points display on store page
+// 8. Aggiorna punti visualizzati nello store
 function updateStorePoints() {
     const pointsBal = document.getElementById("store-points-balance");
     if (pointsBal) {
@@ -466,15 +466,15 @@ function updateStorePoints() {
 }
 
 // ==========================================
-// PROFILE LOADING AND SAVING
+// CARICAMENTO E SALVATAGGIO PROFILO
 // ==========================================
 
-// 1. Fetch user profile from API and fill inputs
+// 1. Recupera profilo dall'API e riempie i campi
 window.loadProfile = async function() {
     const email = appState.userEmail || "mario.rossi@email.it";
     const role = appState.userRole || "volunteer";
     
-    // Set role badge on profile view
+    // Imposta il badge del ruolo nella vista profilo
     const roleBadge = document.getElementById("profile-role-badge");
     if (roleBadge) {
         if (role === 'volunteer') {
@@ -486,7 +486,7 @@ window.loadProfile = async function() {
         }
     }
 
-    // Toggle volunteer-specific skills form section
+    // Mostra/nasconde la sezione delle competenze specifiche del volontario
     const volunteerFields = document.getElementById("profile-volunteer-fields");
     const volunteerCoupons = document.getElementById("profile-volunteer-coupons");
     if (volunteerFields) {
@@ -497,20 +497,20 @@ window.loadProfile = async function() {
     }
 
     try {
-        // Fetch details from backend API
+        // Recupera i dettagli dall'API backend
         const response = await fetch(`/api/volunteer/profile?email=${encodeURIComponent(email)}`);
         if (!response.ok) throw new Error("Errore nel caricamento dati profilo");
 
         const profile = await response.json();
 
-        // Populate fields
+        // Compila i campi
         document.getElementById("profile-name").value = profile.name || "";
         document.getElementById("profile-surname").value = profile.surname || "";
         document.getElementById("profile-email").value = profile.email || email;
         document.getElementById("profile-phone").value = profile.phone || "";
         document.getElementById("profile-address").value = profile.address || "";
 
-        // Populate skills checkbox if volunteer
+        // Compila le checkbox delle competenze se è un volontario
         if (role === 'volunteer') {
             const skills = profile.skills || [];
             if (document.getElementById("skill-trasporto")) document.getElementById("skill-trasporto").checked = skills.includes("Trasporto");
@@ -547,7 +547,7 @@ window.loadProfile = async function() {
         }
     } catch (e) {
         console.error("Errore nel caricamento del profilo:", e);
-        // Fallback placeholder data if connection is slow
+        // Dati segnaposto di fallback se la connessione è lenta
         document.getElementById("profile-name").value = role === "volunteer" ? "Mario" : "Angela";
         document.getElementById("profile-surname").value = role === "volunteer" ? "Rossi" : "Bianchi";
         document.getElementById("profile-email").value = email;
@@ -556,7 +556,7 @@ window.loadProfile = async function() {
     }
 }
 
-// 2. Collect inputs and send PUT request to API
+// 2. Raccoglie input e invia PUT all'API
 window.saveProfile = async function(event) {
     if (event) event.preventDefault();
 
@@ -581,7 +581,7 @@ window.saveProfile = async function(event) {
         const license = document.getElementById("profile-license") ? document.getElementById("profile-license").value : "";
         const gender = document.getElementById("profile-gender") ? document.getElementById("profile-gender").value : "";
 
-        // OCL Invariant: Age must be >= 18 (maggorenne)
+        // L'età deve essere >= 18 (maggiorenne)
         if (age !== null && age < 18) {
             showToast("Vincolo OCL fallito: Un volontario deve essere maggiorenne (Età >= 18)!", "danger");
             return;
@@ -612,7 +612,7 @@ window.saveProfile = async function(event) {
         if (response.ok) {
             showToast("Profilo aggiornato con successo!", "success");
             if (role === 'volunteer') {
-                loadVolunteerDashboard(); // refresh volunteer header and sync points
+                loadVolunteerDashboard(); // aggiorna header volontario e sincronizza i punti
             }
         } else {
             showToast(`Errore: ${result.error}`, "danger");
@@ -623,11 +623,11 @@ window.saveProfile = async function(event) {
     }
 }
 
-// 3. Real Points-Deducting Coupon Purchasing Function 
+// 3. Funzione reale per acquisto coupon con punti 
 window.buyCoupon = async function(couponName, costoPunti) {
     const email = appState.userEmail || "mario.rossi@email.it";
     
-    // Check locally first to give instant elegant toast
+    // Controllo locale per mostrare una notifica immediata
     if ((appState.points || 0) < costoPunti) {
         showToast(`Punti insufficienti per riscattare "${couponName}" (Costo: ${costoPunti} pts, Tuo saldo: ${appState.points} pts)`, "danger");
         return;
@@ -647,10 +647,10 @@ window.buyCoupon = async function(couponName, costoPunti) {
         if (response.ok) {
             showToast(`Coupon "${couponName}" acquistato con successo! Saldo ricalcolato.`, "success");
             
-            // Deduct locally and sync dashboards
+            // Scala i punti localmente e sincronizza la dashboard
             appState.points = data.newPoints;
             
-            // Refresh points elements across views
+            // Aggiorna gli elementi dei punti nelle varie viste
             const userPointsEl = document.getElementById("user-points");
             if (userPointsEl) userPointsEl.innerText = `${data.newPoints} pts`;
             

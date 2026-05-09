@@ -2,7 +2,7 @@ const express = require("express");
 const { ObjectId } = require("mongodb");
 const router = express.Router();
 
-// 1. GET Profile
+// 1. GET Profilo
 router.get("/profile", async (req, res) => {
   try {
     const email = req.query.email || "mario.rossi@email.it";
@@ -21,7 +21,7 @@ router.get("/profile", async (req, res) => {
   }
 });
 
-// 2. PUT Profile
+// 2. PUT Profilo
 router.put("/profile", async (req, res) => {
   try {
     const { email, name, surname, address, phone, skills, age, license, gender } = req.body;
@@ -30,7 +30,7 @@ router.put("/profile", async (req, res) => {
       return res.status(400).json({ error: "Email richiesta per aggiornare il profilo" });
     }
 
-    // OCL Constraint validation: age >= 18
+    // Validazione vincolo OCL: Età >= 18
     if (age !== undefined && age !== null && age !== "") {
       const parsedAge = parseInt(age);
       if (!isNaN(parsedAge) && parsedAge < 18) {
@@ -68,7 +68,7 @@ router.put("/profile", async (req, res) => {
   }
 });
 
-// 3. GET Active Requests (Bacheca)
+// 3. GET Richieste attive (Bacheca)
 router.get("/requests", async (req, res) => {
   try {
     const { category, email } = req.query;
@@ -106,7 +106,7 @@ router.get("/requests", async (req, res) => {
   }
 });
 
-// 4. GET Assigned Tasks
+// 4. GET Incarichi Assegnati
 router.get("/my-tasks", async (req, res) => {
   try {
     const email = req.query.email || "mario.rossi@email.it";
@@ -131,7 +131,7 @@ router.get("/my-tasks", async (req, res) => {
   }
 });
 
-// 5. POST Accept Request
+// 5. POST Accetta Richiesta
 router.post("/requests/:id/accept", async (req, res) => {
   try {
     const requestId = req.params.id;
@@ -165,7 +165,7 @@ router.post("/requests/:id/accept", async (req, res) => {
   }
 });
 
-// 6. POST Cancel Request (Annulla presa in carico)
+// 6. POST Annulla Richiesta
 router.post("/requests/:id/cancel", async (req, res) => {
   try {
     const requestId = req.params.id;
@@ -193,7 +193,7 @@ router.post("/requests/:id/cancel", async (req, res) => {
       return res.status(404).json({ error: "Incarico non trovato o non valido" });
     }
 
-    // Reset status and remove volunteerId
+    // Resetta lo status e rimuovi il volunteerId
     await db.collection("requests").updateOne(
       { _id: new ObjectId(requestId) },
       { $set: { status: "active", volunteerId: null } }
@@ -208,7 +208,7 @@ router.post("/requests/:id/cancel", async (req, res) => {
   }
 });
 
-// 7. POST Redeem Coupon (Riscatto Coupon con addebito punti)
+// 7. POST Riscatta Coupon (Riscatto Coupon con addebito punti)
 router.post("/coupons/redeem", async (req, res) => {
   try {
     const { email, couponName, costoPunti } = req.body;
@@ -230,7 +230,7 @@ router.post("/coupons/redeem", async (req, res) => {
       return res.status(404).json({ error: "Volontario non trovato" });
     }
 
-    // OCL Constraint: check points sufficiency
+    // Vincolo OCL: controlla sufficienza punti
     const currentPoints = parseInt(volunteer.points || 0);
     if (currentPoints < pointsToDeduct) {
       return res.status(400).json({ error: "Punti insufficienti per riscattare questo coupon!" });
@@ -244,7 +244,7 @@ router.post("/coupons/redeem", async (req, res) => {
       acquiredAt: new Date()
     };
 
-    // Save points deduction and add coupon in DB
+    // Salva deduzione punti e aggiungi coupon nel DB
     await db.collection("users").updateOne(
       { _id: volunteer._id },
       { 

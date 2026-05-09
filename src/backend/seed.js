@@ -24,7 +24,7 @@ async function seed() {
     await requestsCol.deleteMany({});
     console.log("Collezioni 'users' e 'requests' ripulite.");
 
-    // Dati Mock Users
+    // Dati fittizi Utenti
     const users = [
       {
         email: "mario.rossi@email.it",
@@ -54,7 +54,7 @@ async function seed() {
     const usersResult = await usersCol.insertMany(users);
     console.log(`Inseriti ${usersResult.insertedCount} utenti mock.`);
 
-    // Dati Mock Requests
+    // Dati fittizi Richieste
     const requests = [
       {
         title: "Trasporto per visita medica",
