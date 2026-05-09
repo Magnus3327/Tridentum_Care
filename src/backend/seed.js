@@ -75,7 +75,7 @@ async function seed() {
         address: "Piazza Duomo 3, Trento",
         dateTime: "Domani, 10:00",
         requesterName: "Giuseppe N.",
-        points: 120,
+        points: 100,
         status: "active",
         volunteerId: null,
         createdAt: new Date()
@@ -87,7 +87,7 @@ async function seed() {
         address: "Via Grazioli 45, Trento",
         dateTime: "Lunedì, 15:30",
         requesterName: "Rosa M.",
-        points: 200,
+        points: 50,
         status: "active",
         volunteerId: null,
         createdAt: new Date()

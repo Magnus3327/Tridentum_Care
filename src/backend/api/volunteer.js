@@ -2,115 +2,14 @@ const express = require("express");
 const { ObjectId } = require("mongodb");
 const router = express.Router();
 
-// Stateful In-Memory Fallback Database if MongoDB Atlas connection fails
-const memoryDb = {
-  users: [
-    {
-      _id: "mario_rossi_id",
-      email: "mario.rossi@email.it",
-      name: "Mario",
-      surname: "Rossi",
-      role: "volunteer",
-      address: "Via Roma 1, Trento",
-      points: 1250,
-      phone: "333 123 4567",
-      skills: ["Trasporto", "Accompagnamento", "Compagnia"],
-      createdAt: new Date()
-    }
-  ],
-  requests: [
-    {
-      _id: "req_1",
-      title: "Trasporto per visita medica (Mock DB)",
-      category: "Trasporto",
-      description: "Avrei bisogno di un passaggio per recarmi all'ospedale Santa Chiara per una visita di controllo. Non posso guidare.",
-      address: "Via Belenzani 12, Trento",
-      dateTime: "Oggi, 17:00",
-      requesterName: "Angela Bianchi",
-      points: 150,
-      status: "active",
-      volunteerId: null,
-      createdAt: new Date()
-    },
-    {
-      _id: "req_2",
-      title: "Accompagnamento al parco (Mock DB)",
-      category: "Accompagnamento",
-      description: "Cerco qualcuno che possa accompagnarmi a fare una passeggiata al parco vicino casa. Ho bisogno di un braccio a cui appoggiarmi.",
-      address: "Piazza Duomo 3, Trento",
-      dateTime: "Domani, 10:00",
-      requesterName: "Giuseppe N.",
-      points: 120,
-      status: "active",
-      volunteerId: null,
-      createdAt: new Date()
-    },
-    {
-      _id: "req_3",
-      title: "Compagnia e lettura quotidiano (Mock DB)",
-      category: "Compagnia",
-      description: "Cerco una persona gentile per fare quattro chiacchiere in giardino nel pomeriggio e leggere insieme le principali notizie del quotidiano locale L'Adige.",
-      address: "Via Grazioli 45, Trento",
-      dateTime: "Lunedì, 15:30",
-      requesterName: "Rosa M.",
-      points: 200,
-      status: "active",
-      volunteerId: null,
-      createdAt: new Date()
-    },
-    {
-      _id: "req_4",
-      title: "Aiuto configurazione smartphone (Mock DB)",
-      category: "Tecnologia",
-      description: "Non riesco a configurare l'applicazione della sanità provinciale (TreC+) sul mio nuovo telefono Android. Qualcuno con pazienza saprebbe installarla e spiegarmi come si accede?",
-      address: "Viale Verona 18, Trento",
-      dateTime: "Sabato, 11:00",
-      requesterName: "Luigi T.",
-      points: 100,
-      status: "active",
-      volunteerId: null,
-      createdAt: new Date()
-    }
-  ]
-};
-
-// Log helper to print when fallback is active
-const useDbFallback = (req) => {
-  const db = req.app.locals.db;
-  if (!db) {
-    console.warn("⚠️ Database non connesso! Utilizzo DB in memoria di fallback.");
-    return true;
-  }
-  return false;
-};
-
 // 1. GET Profile
 router.get("/profile", async (req, res) => {
   try {
     const email = req.query.email || "mario.rossi@email.it";
     
-    if (useDbFallback(req)) {
-      let volunteer = memoryDb.users.find(u => u.email === email && u.role === "volunteer");
-      if (!volunteer) {
-        // Create default volunteer in memory if not exists
-        volunteer = {
-          _id: "mario_rossi_id",
-          email,
-          name: "Mario",
-          surname: "Rossi",
-          role: "volunteer",
-          address: "Via Roma 1, Trento",
-          points: 1250,
-          phone: "333 123 4567",
-          skills: ["Trasporto", "Accompagnamento", "Compagnia"],
-          createdAt: new Date()
-        };
-        memoryDb.users.push(volunteer);
-      }
-      return res.json(volunteer);
-    }
-
     const db = req.app.locals.db;
+    if (!db) return res.status(500).json({ error: "Database non connesso" });
+
     const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
     if (!volunteer) {
       return res.status(404).json({ error: "Profilo volontario non trovato" });
@@ -139,27 +38,9 @@ router.put("/profile", async (req, res) => {
       }
     }
 
-    if (useDbFallback(req)) {
-      const idx = memoryDb.users.findIndex(u => u.email === email && u.role === "volunteer");
-      if (idx === -1) {
-        return res.status(404).json({ error: "Profilo non trovato o non autorizzato" });
-      }
-      memoryDb.users[idx] = {
-        ...memoryDb.users[idx],
-        name,
-        surname,
-        address,
-        phone,
-        skills: Array.isArray(skills) ? skills : [],
-        age: age ? parseInt(age) : null,
-        license: license || "",
-        gender: gender || "",
-        updatedAt: new Date()
-      };
-      return res.json({ message: "Profilo aggiornato in memoria con successo" });
-    }
-
     const db = req.app.locals.db;
+    if (!db) return res.status(500).json({ error: "Database non connesso" });
+
     const updateData = {
       name,
       surname,
@@ -193,15 +74,9 @@ router.get("/requests", async (req, res) => {
   try {
     const { category } = req.query;
 
-    if (useDbFallback(req)) {
-      let filtered = memoryDb.requests.filter(r => r.status === "active");
-      if (category && category !== "Tutti i servizi") {
-        filtered = filtered.filter(r => r.category === category);
-      }
-      return res.json(filtered);
-    }
-
     const db = req.app.locals.db;
+    if (!db) return res.status(500).json({ error: "Database non connesso" });
+
     const query = { status: "active" };
     if (category && category !== "Tutti i servizi") {
       query.category = category;
@@ -220,16 +95,9 @@ router.get("/my-tasks", async (req, res) => {
   try {
     const email = req.query.email || "mario.rossi@email.it";
 
-    if (useDbFallback(req)) {
-      const volunteer = memoryDb.users.find(u => u.email === email && u.role === "volunteer");
-      if (!volunteer) {
-        return res.status(404).json({ error: "Volontario non trovato" });
-      }
-      const tasks = memoryDb.requests.filter(r => r.volunteerId === volunteer._id && r.status === "assigned");
-      return res.json(tasks);
-    }
-
     const db = req.app.locals.db;
+    if (!db) return res.status(500).json({ error: "Database non connesso" });
+
     const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
     if (!volunteer) {
       return res.status(404).json({ error: "Volontario non trovato" });
@@ -257,23 +125,9 @@ router.post("/requests/:id/accept", async (req, res) => {
       return res.status(400).json({ error: "Email del volontario richiesta" });
     }
 
-    if (useDbFallback(req)) {
-      const volunteer = memoryDb.users.find(u => u.email === email && u.role === "volunteer");
-      if (!volunteer) {
-        return res.status(404).json({ error: "Volontario non trovato" });
-      }
-
-      const reqIdx = memoryDb.requests.findIndex(r => r._id === requestId && r.status === "active");
-      if (reqIdx === -1) {
-        return res.status(400).json({ error: "Richiesta non disponibile o già assegnata" });
-      }
-
-      memoryDb.requests[reqIdx].status = "assigned";
-      memoryDb.requests[reqIdx].volunteerId = volunteer._id;
-      return res.json({ message: "Richiesta presa in carico con successo!" });
-    }
-
     const db = req.app.locals.db;
+    if (!db) return res.status(500).json({ error: "Database non connesso" });
+
     const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
     if (!volunteer) {
       return res.status(404).json({ error: "Volontario non trovato" });
@@ -305,28 +159,9 @@ router.post("/requests/:id/cancel", async (req, res) => {
       return res.status(400).json({ error: "Email del volontario richiesta" });
     }
 
-    if (useDbFallback(req)) {
-      const volunteerIdx = memoryDb.users.findIndex(u => u.email === email && u.role === "volunteer");
-      if (volunteerIdx === -1) {
-        return res.status(404).json({ error: "Volontario non trovato" });
-      }
-      const volunteer = memoryDb.users[volunteerIdx];
-
-      const reqIdx = memoryDb.requests.findIndex(r => r._id === requestId && r.volunteerId === volunteer._id && r.status === "assigned");
-      if (reqIdx === -1) {
-        return res.status(404).json({ error: "Incarico non trovato o non valido" });
-      }
-
-      // Revert to active and clear volunteerId
-      memoryDb.requests[reqIdx].status = "active";
-      memoryDb.requests[reqIdx].volunteerId = null;
-
-      return res.json({
-        message: "Presa in carico annullata con successo. La richiesta è di nuovo disponibile in bacheca."
-      });
-    }
-
     const db = req.app.locals.db;
+    if (!db) return res.status(500).json({ error: "Database non connesso" });
+
     const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
     if (!volunteer) {
       return res.status(404).json({ error: "Volontario non trovato" });
@@ -371,37 +206,9 @@ router.post("/coupons/redeem", async (req, res) => {
       return res.status(400).json({ error: "Punti non validi" });
     }
 
-    if (useDbFallback(req)) {
-      const volunteerIdx = memoryDb.users.findIndex(u => u.email === email && u.role === "volunteer");
-      if (volunteerIdx === -1) {
-        return res.status(404).json({ error: "Volontario non trovato" });
-      }
-      
-      const volunteer = memoryDb.users[volunteerIdx];
-      
-      // OCL Constraint: check self.punti >= costoPunti
-      if ((volunteer.points || 0) < pointsToDeduct) {
-        return res.status(400).json({ error: "Punti insufficienti per riscattare questo coupon" });
-      }
-
-      // Deduct points and add coupon
-      volunteer.points -= pointsToDeduct;
-      const newCoupon = {
-        name: couponName,
-        cost: pointsToDeduct,
-        code: "TC-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
-        acquiredAt: new Date()
-      };
-      if (!volunteer.coupons) volunteer.coupons = [];
-      volunteer.coupons.push(newCoupon);
-
-      return res.json({
-        message: `Coupon "${couponName}" riscattato con successo!`,
-        newPoints: volunteer.points
-      });
-    }
-
     const db = req.app.locals.db;
+    if (!db) return res.status(500).json({ error: "Database non connesso" });
+
     const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
     if (!volunteer) {
       return res.status(404).json({ error: "Volontario non trovato" });
