@@ -246,7 +246,7 @@ window.loadActiveRequests = async function() {
         
         requests.forEach(req => {
             const badgeClass = getCategoryBadgeClass(req.category);
-            const badgeStyle = req.category === "Tecnologia" ? 'style="background-color: #E2D9F3; color: #5F25B4;"' : '';
+            const badgeStyle = '';
             
             html += `
                 <div class="card flex flex-col justify-between" style="padding: 1.5rem; height: 100%;">
@@ -288,8 +288,8 @@ window.loadActiveRequests = async function() {
 
 // 3. Helper to determine CSS class based on Category
 function getCategoryBadgeClass(cat) {
-    if (cat === "Spesa") return "badge-primary";
-    if (cat === "Farmaci") return "badge-success";
+    if (cat === "Trasporto") return "badge-primary";
+    if (cat === "Accompagnamento") return "badge-success";
     if (cat === "Compagnia") return "badge-warning";
     return "badge-primary"; // fallback
 }
@@ -314,13 +314,8 @@ window.showRequestDetails = function(requestId) {
     const badge = document.getElementById("modal-req-badge");
     badge.innerText = req.category;
     badge.className = `badge ${getCategoryBadgeClass(req.category)}`;
-    if (req.category === "Tecnologia") {
-        badge.style.backgroundColor = "#E2D9F3";
-        badge.style.color = "#5F25B4";
-    } else {
-        badge.style.backgroundColor = "";
-        badge.style.color = "";
-    }
+    badge.style.backgroundColor = "";
+    badge.style.color = "";
 
     // Accept button setup
     const acceptBtn = document.getElementById("modal-accept-btn");
@@ -385,7 +380,7 @@ async function loadMyTasks() {
         let html = '';
         tasks.forEach(task => {
             const badgeClass = getCategoryBadgeClass(task.category);
-            const badgeStyle = task.category === "Tecnologia" ? 'style="background-color: #E2D9F3; color: #5F25B4;"' : '';
+            const badgeStyle = '';
             
             html += `
                 <div class="card" style="padding: 1.25rem; border-left: 5px solid var(--secondary-color); margin-bottom: 1rem;">

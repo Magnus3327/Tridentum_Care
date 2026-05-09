@@ -14,16 +14,16 @@ const memoryDb = {
       address: "Via Roma 1, Trento",
       points: 1250,
       phone: "333 123 4567",
-      skills: ["Spesa", "Farmaci", "Compagnia"],
+      skills: ["Trasporto", "Accompagnamento", "Compagnia"],
       createdAt: new Date()
     }
   ],
   requests: [
     {
       _id: "req_1",
-      title: "Spesa settimanale di alimentari (Mock DB)",
-      category: "Spesa",
-      description: "Avrei bisogno di acquistare latte parzialmente scremato, un pacco di pasta Barilla n.5, pomodori freschi e pane comune. Abito al secondo piano senza ascensore, quindi serve un po' di forza fisica.",
+      title: "Trasporto per visita medica (Mock DB)",
+      category: "Trasporto",
+      description: "Avrei bisogno di un passaggio per recarmi all'ospedale Santa Chiara per una visita di controllo. Non posso guidare.",
       address: "Via Belenzani 12, Trento",
       dateTime: "Oggi, 17:00",
       requesterName: "Angela Bianchi",
@@ -34,9 +34,9 @@ const memoryDb = {
     },
     {
       _id: "req_2",
-      title: "Ritiro farmaci salvavita (Mock DB)",
-      category: "Farmaci",
-      description: "Ritiro ricetta medica presso la farmacia di Piazza Duomo. La ricetta è già pagata e ho caricato il codice fiscale. Bisogna solo ritirare la scatola di cardioaspirina.",
+      title: "Accompagnamento al parco (Mock DB)",
+      category: "Accompagnamento",
+      description: "Cerco qualcuno che possa accompagnarmi a fare una passeggiata al parco vicino casa. Ho bisogno di un braccio a cui appoggiarmi.",
       address: "Piazza Duomo 3, Trento",
       dateTime: "Domani, 10:00",
       requesterName: "Giuseppe N.",
@@ -102,7 +102,7 @@ router.get("/profile", async (req, res) => {
           address: "Via Roma 1, Trento",
           points: 1250,
           phone: "333 123 4567",
-          skills: ["Spesa", "Farmaci", "Compagnia"],
+          skills: ["Trasporto", "Accompagnamento", "Compagnia"],
           createdAt: new Date()
         };
         memoryDb.users.push(volunteer);

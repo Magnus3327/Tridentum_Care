@@ -34,7 +34,7 @@ async function seed() {
         address: "Via Roma 1, Trento",
         points: 1250,
         phone: "333 123 4567",
-        skills: ["Spesa", "Farmaci", "Compagnia"],
+        skills: ["Trasporto", "Accompagnamento", "Compagnia"],
         age: 25,
         license: "Sì (Patente B)",
         gender: "M",
@@ -57,9 +57,9 @@ async function seed() {
     // Dati Mock Requests
     const requests = [
       {
-        title: "Spesa settimanale di alimentari",
-        category: "Spesa",
-        description: "Avrei bisogno di acquistare latte parzialmente scremato, un pacco di pasta Barilla n.5, pomodori freschi e pane comune. Abito al secondo piano senza ascensore, quindi serve un po' di forza fisica.",
+        title: "Trasporto per visita medica",
+        category: "Trasporto",
+        description: "Avrei bisogno di un passaggio per recarmi all'ospedale Santa Chiara per una visita di controllo. Non posso guidare.",
         address: "Via Belenzani 12, Trento",
         dateTime: "Oggi, 17:00",
         requesterName: "Angela Bianchi",
@@ -69,9 +69,9 @@ async function seed() {
         createdAt: new Date()
       },
       {
-        title: "Ritiro farmaci salvavita",
-        category: "Farmaci",
-        description: "Ritiro ricetta medica presso la farmacia di Piazza Duomo. La ricetta è già pagata e ho caricato il codice fiscale. Bisogna solo ritirare la scatola di cardioaspirina.",
+        title: "Accompagnamento al parco",
+        category: "Accompagnamento",
+        description: "Cerco qualcuno che possa accompagnarmi a fare una passeggiata al parco vicino casa. Ho bisogno di un braccio a cui appoggiarmi.",
         address: "Piazza Duomo 3, Trento",
         dateTime: "Domani, 10:00",
         requesterName: "Giuseppe N.",
@@ -92,18 +92,7 @@ async function seed() {
         volunteerId: null,
         createdAt: new Date()
       },
-      {
-        title: "Aiuto configurazione smartphone",
-        category: "Tecnologia",
-        description: "Non riesco a configurare l'applicazione della sanità provinciale (TreC+) sul mio nuovo telefono Android. Qualcuno con pazienza saprebbe installarla e spiegarmi come si accede?",
-        address: "Viale Verona 18, Trento",
-        dateTime: "Sabato, 11:00",
-        requesterName: "Luigi T.",
-        points: 100,
-        status: "active",
-        volunteerId: null,
-        createdAt: new Date()
-      }
+
     ];
 
     const requestsResult = await requestsCol.insertMany(requests);
