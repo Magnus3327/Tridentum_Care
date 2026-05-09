@@ -384,8 +384,17 @@ router.post("/coupons/redeem", async (req, res) => {
         return res.status(400).json({ error: "Punti insufficienti per riscattare questo coupon" });
       }
 
-      // Deduct points
+      // Deduct points and add coupon
       volunteer.points -= pointsToDeduct;
+      const newCoupon = {
+        name: couponName,
+        cost: pointsToDeduct,
+        code: "TC-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
+        acquiredAt: new Date()
+      };
+      if (!volunteer.coupons) volunteer.coupons = [];
+      volunteer.coupons.push(newCoupon);
+
       return res.json({
         message: `Coupon "${couponName}" riscattato con successo!`,
         newPoints: volunteer.points
@@ -405,11 +414,20 @@ router.post("/coupons/redeem", async (req, res) => {
     }
 
     const newPoints = currentPoints - pointsToDeduct;
+    const newCoupon = {
+      name: couponName,
+      cost: pointsToDeduct,
+      code: "TC-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
+      acquiredAt: new Date()
+    };
 
-    // Save points deduction in DB
+    // Save points deduction and add coupon in DB
     await db.collection("users").updateOne(
       { _id: volunteer._id },
-      { $set: { points: newPoints } }
+      { 
+        $set: { points: newPoints },
+        $push: { coupons: newCoupon }
+      }
     );
 
     res.json({
