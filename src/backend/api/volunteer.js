@@ -47,7 +47,6 @@ router.put("/profile", async (req, res) => {
       address,
       phone,
       skills: Array.isArray(skills) ? skills : [],
-      age: age ? parseInt(age) : null,
       license: license || "",
       gender: gender || "",
       updatedAt: new Date()
