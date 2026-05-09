@@ -523,7 +523,7 @@ window.loadProfile = async function() {
                                 <div>
                                     <h4 style="margin-bottom: 0.25rem;">${c.name}</h4>
                                     <small class="text-muted" style="display: block; margin-bottom: 0.25rem;">Codice: <span style="font-family: monospace; font-weight: bold;">${c.code}</span></small>
-                                    <small class="text-muted"><i class="fa-regular fa-clock"></i> Acquistato il: ${dateStr}</small>
+                                    <small class="text-muted"><i class="fa-regular fa-clock"></i> Acquistato il:<br> ${dateStr}</small>
                                 </div>
                                 <button type="button" class="btn btn-outline btn-sm" onclick="showQRCode('${c.name}', '${c.code}')">Mostra QR</button>
                             </div>
