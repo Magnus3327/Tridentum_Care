@@ -98,6 +98,13 @@ window.closeModal = function(modalId) {
     document.getElementById(modalId).classList.remove('active');
 }
 
+window.showQRCode = function(name, code) {
+    document.getElementById("qr-modal-title").innerText = name;
+    document.getElementById("qr-modal-code").innerText = code;
+    document.getElementById("qr-modal-image").src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(code)}`;
+    openModal("qr-code-modal");
+}
+
 // Global Toast System (silent, elegant, non-blocking notifications)
 window.showToast = function(message, type = 'success') {
     let container = document.getElementById('toast-container');
@@ -468,8 +475,12 @@ window.loadProfile = async function() {
 
     // Toggle volunteer-specific skills form section
     const volunteerFields = document.getElementById("profile-volunteer-fields");
+    const volunteerCoupons = document.getElementById("profile-volunteer-coupons");
     if (volunteerFields) {
         volunteerFields.style.display = (role === 'volunteer') ? 'block' : 'none';
+    }
+    if (volunteerCoupons) {
+        volunteerCoupons.style.display = (role === 'volunteer') ? 'block' : 'none';
     }
 
     try {
@@ -497,6 +508,28 @@ window.loadProfile = async function() {
             if (document.getElementById("profile-age")) document.getElementById("profile-age").value = profile.age || "";
             if (document.getElementById("profile-license")) document.getElementById("profile-license").value = profile.license || "";
             if (document.getElementById("profile-gender")) document.getElementById("profile-gender").value = profile.gender || "";
+
+            const couponsList = document.getElementById("volunteer-coupons-list");
+            if (couponsList) {
+                const coupons = profile.coupons || [];
+                if (coupons.length === 0) {
+                    couponsList.innerHTML = `<p class="text-muted" style="font-size: 0.875rem; grid-column: span 2;">Nessun coupon acquistato.</p>`;
+                } else {
+                    let html = '';
+                    coupons.forEach(c => {
+                        html += `
+                            <div class="card flex justify-between items-center" style="padding: 1rem;">
+                                <div>
+                                    <h4 style="margin-bottom: 0.25rem;">${c.name}</h4>
+                                    <small class="text-muted">Codice: ${c.code}</small>
+                                </div>
+                                <button type="button" class="btn btn-outline btn-sm" onclick="showQRCode('${c.name}', '${c.code}')">Mostra QR</button>
+                            </div>
+                        `;
+                    });
+                    couponsList.innerHTML = html;
+                }
+            }
         }
     } catch (e) {
         console.error("Errore nel caricamento del profilo:", e);
