@@ -72,14 +72,31 @@ router.put("/profile", async (req, res) => {
 // 3. GET Active Requests (Bacheca)
 router.get("/requests", async (req, res) => {
   try {
-    const { category } = req.query;
+    const { category, email } = req.query;
 
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });
 
+    let skillsFilter = null;
+    if (email) {
+      const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
+      if (volunteer && volunteer.skills) {
+        skillsFilter = volunteer.skills;
+      } else {
+        skillsFilter = [];
+      }
+    }
+
     const query = { status: "active" };
+
+    if (skillsFilter) {
+      query.category = { $in: skillsFilter };
+    }
+
     if (category && category !== "Tutti i servizi") {
-      query.category = category;
+      if (!skillsFilter || skillsFilter.includes(category)) {
+        query.category = category;
+      }
     }
 
     const requests = await db.collection("requests").find(query).sort({ createdAt: -1 }).toArray();

@@ -196,6 +196,7 @@ async function loadVolunteerDashboard() {
         if (response.ok) {
             const profile = await response.json();
             appState.points = profile.points || 0;
+            appState.skills = profile.skills || [];
             
             // Set values on dashboard
             const welcomeName = document.getElementById("volunteer-welcome-name");
@@ -203,6 +204,22 @@ async function loadVolunteerDashboard() {
             if (welcomeName) welcomeName.innerText = profile.name || "Volontario";
             if (headerPoints) headerPoints.innerHTML = `${profile.points} <span style="font-size: 1rem;">pts</span>`;
             
+            // Update category filter based on skills
+            const filterSelect = document.getElementById("request-category-filter");
+            if (filterSelect) {
+                let optionsHtml = '<option value="Tutti i servizi">Tutti i servizi</option>';
+                appState.skills.forEach(skill => {
+                    optionsHtml += `<option value="${skill}">${skill}</option>`;
+                });
+                const currentVal = filterSelect.value;
+                filterSelect.innerHTML = optionsHtml;
+                if (appState.skills.includes(currentVal) || currentVal === "Tutti i servizi") {
+                    filterSelect.value = currentVal;
+                } else {
+                    filterSelect.value = "Tutti i servizi";
+                }
+            }
+
             // Sync with navbar points preview
             updateNavbar('vol-board');
         }
@@ -222,9 +239,10 @@ window.loadActiveRequests = async function() {
 
     const filterSelect = document.getElementById("request-category-filter");
     const category = filterSelect ? filterSelect.value : "Tutti i servizi";
+    const email = appState.userEmail || "mario.rossi@email.it";
 
     try {
-        const url = `/api/volunteer/requests?category=${encodeURIComponent(category)}`;
+        const url = `/api/volunteer/requests?email=${encodeURIComponent(email)}&category=${encodeURIComponent(category)}`;
         const response = await fetch(url);
         if (!response.ok) throw new Error("Errore nel caricamento richieste");
 
