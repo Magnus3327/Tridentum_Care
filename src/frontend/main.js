@@ -500,10 +500,9 @@ window.loadProfile = async function() {
         // Populate skills checkbox if volunteer
         if (role === 'volunteer') {
             const skills = profile.skills || [];
-            document.getElementById("skill-spesa").checked = skills.includes("Spesa");
-            document.getElementById("skill-farmaci").checked = skills.includes("Farmaci");
-            document.getElementById("skill-compagnia").checked = skills.includes("Compagnia");
-            document.getElementById("skill-tecnologia").checked = skills.includes("Tecnologia");
+            if (document.getElementById("skill-trasporto")) document.getElementById("skill-trasporto").checked = skills.includes("Trasporto");
+            if (document.getElementById("skill-accompagnamento")) document.getElementById("skill-accompagnamento").checked = skills.includes("Accompagnamento");
+            if (document.getElementById("skill-compagnia")) document.getElementById("skill-compagnia").checked = skills.includes("Compagnia");
 
             if (document.getElementById("profile-age")) document.getElementById("profile-age").value = profile.age || "";
             if (document.getElementById("profile-license")) document.getElementById("profile-license").value = profile.license || "";
@@ -576,10 +575,9 @@ window.saveProfile = async function(event) {
         }
 
         const skills = [];
-        if (document.getElementById("skill-spesa").checked) skills.push("Spesa");
-        if (document.getElementById("skill-farmaci").checked) skills.push("Farmaci");
-        if (document.getElementById("skill-compagnia").checked) skills.push("Compagnia");
-        if (document.getElementById("skill-tecnologia").checked) skills.push("Tecnologia");
+        if (document.getElementById("skill-trasporto") && document.getElementById("skill-trasporto").checked) skills.push("Trasporto");
+        if (document.getElementById("skill-accompagnamento") && document.getElementById("skill-accompagnamento").checked) skills.push("Accompagnamento");
+        if (document.getElementById("skill-compagnia") && document.getElementById("skill-compagnia").checked) skills.push("Compagnia");
         
         profileData.skills = skills;
         profileData.age = age;
