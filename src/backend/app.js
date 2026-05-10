@@ -3,6 +3,7 @@ const path = require('path');
 const connectDB = require('../config/db');
 
 const volunteerRouter = require('./api/volunteer');
+const requesterRouter = require('./api/requester');
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 
 // Registrazione dei router API
 app.use('/api/volunteer', volunteerRouter);
+app.use('/api/requester', requesterRouter);
 
 // Configurazione base per le API
 app.get('/api/status', (req, res) => {
