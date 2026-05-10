@@ -100,18 +100,34 @@ window.resetRequesterForm = function() {
     const form = document.getElementById('requester-form');
     if (form) form.reset();
     window.currentRequesterRequestId = null;
+    const title = document.getElementById('req-form-title');
+    const submitButton = form ? form.querySelector('button[type="submit"]') : null;
+    if (title) title.innerText = 'Crea Nuova Richiesta di Aiuto';
+    if (submitButton) submitButton.innerText = 'Invia Richiesta';
 };
 
-window.createRequesterRequest = async function(event) {
-    if (event) event.preventDefault();
-    const userId = appState.userId || '647d3e2f8a4fde1b2c3a4d5f';
-    const serviceType = document.getElementById('req-serviceType')?.value;
-    const location = document.getElementById('req-location')?.value;
-    const date = document.getElementById('req-date')?.value;
-    const time = document.getElementById('req-time')?.value;
-    const notes = document.getElementById('req-notes')?.value || '';
+function getRequesterFormData() {
+    return {
+        userId: appState.userId || '647d3e2f8a4fde1b2c3a4d5f',
+        serviceType: document.getElementById('req-serviceType')?.value,
+        location: document.getElementById('req-location')?.value,
+        date: document.getElementById('req-date')?.value,
+        time: document.getElementById('req-time')?.value,
+        notes: document.getElementById('req-notes')?.value || ''
+    };
+}
 
-    if (!serviceType || !location || !date || !time) {
+window.submitRequesterRequest = async function(event) {
+    if (event) event.preventDefault();
+    if (window.currentRequesterRequestId) {
+        return updateRequesterRequest(window.currentRequesterRequestId);
+    }
+    return createRequesterRequest();
+};
+
+window.createRequesterRequest = async function() {
+    const payload = getRequesterFormData();
+    if (!payload.serviceType || !payload.location || !payload.date || !payload.time) {
         showToast('Compila tutti i campi richiesti prima di inviare la richiesta.', 'danger');
         return;
     }
@@ -122,7 +138,7 @@ window.createRequesterRequest = async function(event) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ userId, serviceType, location, date, time, notes })
+            body: JSON.stringify(payload)
         });
 
         const data = await response.json();
@@ -136,6 +152,67 @@ window.createRequesterRequest = async function(event) {
     } catch (error) {
         console.error('Errore nella creazione della richiesta:', error);
         showToast('Si è verificato un errore durante l invio della richiesta.', 'danger');
+    }
+};
+
+window.openRequesterEdit = function(requestId) {
+    const req = (window.requesterRequestsCache || []).find(r => r._id === requestId);
+    if (!req) return;
+    if (!isRequesterRequestEditable(req)) {
+        showToast('Non è possibile modificare questa richiesta.', 'danger');
+        return;
+    }
+
+    const form = document.getElementById('requester-form');
+    if (!form) return;
+
+    document.getElementById('req-serviceType').value = req.serviceType;
+    document.getElementById('req-location').value = req.location;
+    document.getElementById('req-date').value = req.date;
+    document.getElementById('req-time').value = req.time;
+    document.getElementById('req-notes').value = req.notes || '';
+
+    window.currentRequesterRequestId = requestId;
+    document.getElementById('req-form-title').innerText = 'Modifica Richiesta';
+    form.querySelector('button[type="submit"]').innerText = 'Salva Modifiche';
+    navigateTo('req-form');
+};
+
+window.isRequesterRequestEditable = function(req) {
+    if (!req) return false;
+    if (req.status !== 'In Attesa di Volontario') return false;
+    const now = new Date();
+    const requestDate = new Date(`${req.date}T${req.time}`);
+    return requestDate > now;
+};
+
+window.updateRequesterRequest = async function(requestId) {
+    const payload = getRequesterFormData();
+    if (!payload.serviceType || !payload.location || !payload.date || !payload.time) {
+        showToast('Compila tutti i campi richiesti prima di salvare le modifiche.', 'danger');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/requester/requests/${encodeURIComponent(requestId)}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            showToast(`Errore: ${data.error || 'Impossibile aggiornare la richiesta.'}`, 'danger');
+            return;
+        }
+
+        showToast('Richiesta aggiornata con successo.', 'success');
+        navigateTo('req-dashboard');
+    } catch (error) {
+        console.error('Errore nell aggiornamento della richiesta:', error);
+        showToast('Si è verificato un errore durante l aggiornamento della richiesta.', 'danger');
     }
 };
 
@@ -210,12 +287,17 @@ window.openRequesterDetail = function(requestId) {
 
     const cancelBtn = document.getElementById('req-detail-cancel-btn');
     const completeBtn = document.getElementById('req-detail-complete-btn');
+    const editBtn = document.getElementById('req-detail-edit-btn');
+    const editable = isRequesterRequestEditable(req);
+
     if (req.status === 'Annullata' || req.status === 'Completata') {
         if (cancelBtn) cancelBtn.disabled = true;
         if (completeBtn) completeBtn.disabled = true;
+        if (editBtn) editBtn.disabled = true;
     } else {
-        if (cancelBtn) cancelBtn.disabled = false;
-        if (completeBtn) completeBtn.disabled = false;
+        if (cancelBtn) cancelBtn.disabled = !editable;
+        if (completeBtn) completeBtn.disabled = !editable;
+        if (editBtn) editBtn.disabled = !editable;
     }
 
     navigateTo('req-detail');
