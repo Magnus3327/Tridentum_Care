@@ -1,40 +1,13 @@
 <!-- Dashboard "Le mie richieste" -->
 <section id="view-req-dashboard" class="view-section accessible-view">
-    <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
+    <div class="flex justify-between items-center" style="margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap;">
         <h2>Le Mie Richieste</h2>
         <button class="btn btn-secondary btn-large" onclick="navigateTo('req-form')">
             <i class="fa-solid fa-plus"></i> Nuova Richiesta
         </button>
     </div>
-    
-    <div class="card" style="margin-bottom: 2rem; border-color: var(--secondary-color);">
-        <div class="flex justify-between items-center">
-            <div>
-                <span class="badge badge-warning" style="font-size: 1.2rem; padding: 0.5rem 1rem;">In Attesa di Volontario</span>
-                <h3 style="margin: 1rem 0 0;">Spesa al Supermercato</h3>
-                <p style="font-size: 1.2rem;">Domani, ore 10:00 • Via Roma 1</p>
-            </div>
-            <button class="btn btn-outline btn-large" onclick="navigateTo('req-detail')">Vedi Dettagli</button>
-        </div>
-    </div>
-    
-    <h3 style="margin-top: 4rem;">Storico Passate</h3>
-    <div class="card" style="opacity: 0.8;">
-        <div class="flex justify-between items-center">
-            <div>
-                <span class="badge badge-success">Completata</span>
-                <h4 style="margin: 0.5rem 0 0;">Ritiro Farmaci</h4>
-                <p>12 Maggio 2026</p>
-            </div>
-            <div>
-                <i class="fa-solid fa-star text-secondary"></i>
-                <i class="fa-solid fa-star text-secondary"></i>
-                <i class="fa-solid fa-star text-secondary"></i>
-                <i class="fa-solid fa-star text-secondary"></i>
-                <i class="fa-solid fa-star text-secondary"></i>
-            </div>
-        </div>
-    </div>
+
+    <div id="requester-requests-container"></div>
 </section>
 
 <!-- Form Crea/Modifica Richiesta -->
@@ -42,74 +15,58 @@
     <button class="btn btn-outline" onclick="navigateTo('req-dashboard')" style="margin-bottom: 2rem;"><i class="fa-solid fa-arrow-left"></i> Torna Indietro</button>
     <div class="card">
         <h2>Crea Nuova Richiesta di Aiuto</h2>
-        <form onsubmit="event.preventDefault(); alert('Richiesta Creata con Successo!'); navigateTo('req-dashboard');">
+        <form id="requester-form" onsubmit="createRequesterRequest(event)">
             <div class="form-group">
                 <label class="form-label">Di cosa hai bisogno?</label>
-                <select class="form-control form-control-lg" required>
+                <select id="req-serviceType" class="form-control form-control-lg" required>
                     <option value="">Seleziona un servizio...</option>
-                    <option value="spesa">Spesa a domicilio</option>
-                    <option value="farmaci">Ritiro farmaci</option>
-                    <option value="compagnia">Compagnia</option>
-                    <option value="trasporto">Trasporto medico</option>
+                    <option value="Spesa a domicilio">Spesa a domicilio</option>
+                    <option value="Ritiro farmaci">Ritiro farmaci</option>
+                    <option value="Compagnia">Compagnia</option>
+                    <option value="Trasporto medico">Trasporto medico</option>
                 </select>
             </div>
             <div class="form-group">
                 <label class="form-label">Dove?</label>
-                <input type="text" class="form-control form-control-lg" value="Via Roma 1, Trento" required>
+                <input id="req-location" type="text" class="form-control form-control-lg" placeholder="Via Roma 1, Trento" required>
             </div>
             <div class="grid-2">
                 <div class="form-group">
                     <label class="form-label">Data</label>
-                    <input type="date" class="form-control form-control-lg" required>
+                    <input id="req-date" type="date" class="form-control form-control-lg" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Ora (indicativa)</label>
-                    <input type="time" class="form-control form-control-lg" required>
+                    <input id="req-time" type="time" class="form-control form-control-lg" required>
                 </div>
             </div>
             <div class="form-group">
                 <label class="form-label">Note aggiuntive (Opzionale)</label>
-                <textarea class="form-control form-control-lg" rows="3" placeholder="Es. Suonare il campanello Rossi..."></textarea>
+                <textarea id="req-notes" class="form-control form-control-lg" rows="3" placeholder="Es. Suonare il campanello Rossi..."></textarea>
             </div>
             <button type="submit" class="btn btn-secondary btn-large btn-block" style="margin-top: 2rem;">Invia Richiesta</button>
         </form>
     </div>
 </section>
 
-<!-- Dettaglio Richiesta e Valutazione -->
+<!-- Dettaglio Richiesta -->
 <section id="view-req-detail" class="view-section accessible-view">
     <button class="btn btn-outline" onclick="navigateTo('req-dashboard')" style="margin-bottom: 2rem;"><i class="fa-solid fa-arrow-left"></i> Torna Indietro</button>
     <div class="card">
-        <div class="flex justify-between">
-            <span class="badge badge-warning" style="font-size: 1.2rem; padding: 0.5rem 1rem;">In Attesa</span>
-            <button class="btn btn-danger" onclick="alert('Richiesta Annullata!'); navigateTo('req-dashboard');">Annulla Richiesta</button>
-        </div>
-        <h1 style="margin-top: 1rem;">Spesa al Supermercato</h1>
-        
-        <div style="margin: 2rem 0; font-size: 1.5rem; background: #f8f9fa; padding: 1.5rem; border-radius: var(--radius-md);">
-            <p><strong><i class="fa-regular fa-calendar"></i> Data:</strong> Domani</p>
-            <p><strong><i class="fa-regular fa-clock"></i> Ora:</strong> 10:00</p>
-            <p><strong><i class="fa-solid fa-location-dot"></i> Luogo:</strong> Via Roma 1, Trento</p>
-            <p><strong><i class="fa-solid fa-circle-info"></i> Note:</strong> Comprare pane e latte. I soldi li darò al momento.</p>
-        </div>
-        
-        <!-- Azione visibile solo quando la richiesta è in corso o finita -->
-        <button class="btn btn-primary btn-large btn-block" onclick="openModal('rating-modal')">Segna come Completata & Lascia Recensione</button>
-    </div>
-    
-    <!-- Rating Modal -->
-    <div class="modal-overlay" id="rating-modal">
-        <div class="modal-content text-center">
-            <h2>Servizio Completato!</h2>
-            <p style="font-size: 1.2rem; margin-bottom: 2rem;">Come valuti l'aiuto del volontario?</p>
-            <div style="font-size: 3rem; color: var(--border-color); cursor: pointer; margin-bottom: 2rem;">
-                <i class="fa-solid fa-star text-secondary"></i>
-                <i class="fa-solid fa-star text-secondary"></i>
-                <i class="fa-solid fa-star text-secondary"></i>
-                <i class="fa-solid fa-star text-secondary"></i>
-                <i class="fa-solid fa-star"></i>
+        <div class="flex justify-between items-center" style="gap: 1rem; flex-wrap: wrap;">
+            <span id="req-detail-status" class="badge badge-warning" style="font-size: 1.2rem; padding: 0.5rem 1rem;">Stato</span>
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <button id="req-detail-cancel-btn" class="btn btn-danger" onclick="cancelRequesterRequest(window.currentRequesterRequestId)">Annulla Richiesta</button>
+                <button id="req-detail-complete-btn" class="btn btn-primary" onclick="updateRequesterStatus(window.currentRequesterRequestId, 'Completata')">Segna come Completata</button>
             </div>
-            <button class="btn btn-secondary btn-large btn-block" onclick="alert('Grazie per il feedback!'); closeModal('rating-modal'); navigateTo('req-dashboard')">Invia Recensione</button>
+        </div>
+        <h1 id="req-detail-title" style="margin-top: 1rem;">Titolo richiesta</h1>
+        
+        <div style="margin: 2rem 0; font-size: 1.1rem; background: #f8f9fa; padding: 1.5rem; border-radius: var(--radius-md);">
+            <p><strong><i class="fa-regular fa-calendar"></i> Data:</strong> <span id="req-detail-date"></span></p>
+            <p><strong><i class="fa-regular fa-clock"></i> Ora:</strong> <span id="req-detail-time"></span></p>
+            <p><strong><i class="fa-solid fa-location-dot"></i> Luogo:</strong> <span id="req-detail-location"></span></p>
+            <p><strong><i class="fa-solid fa-circle-info"></i> Note:</strong> <span id="req-detail-notes"></span></p>
         </div>
     </div>
 </section>

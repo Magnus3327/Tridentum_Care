@@ -2,6 +2,7 @@
 const appState = {
     userRole: null, // 'requester', 'volunteer', 'partner', 'admin', null
     userEmail: null, // email dell'utente loggato
+    userId: null, // id utente simulato per le richieste
     points: 1250,
 };
 
@@ -39,7 +40,11 @@ function navigateTo(routeId) {
     updateNavbar(routeId);
 
     // Caricamento dinamico dei dati in base alla vista
-    if (routeId === 'vol-board') {
+    if (routeId === 'req-dashboard') {
+        loadRequesterDashboard();
+    } else if (routeId === 'req-form') {
+        resetRequesterForm();
+    } else if (routeId === 'vol-board') {
         loadVolunteerDashboard();
     } else if (routeId === 'profile') {
         loadProfile();
@@ -58,6 +63,7 @@ function updateNavbar(routeId) {
     if (routeId.startsWith('req-') || (routeId === 'profile' && appState.userRole === 'requester')) {
         linksHTML = `
             <a href="#" class="nav-link" onclick="navigateTo('req-dashboard')">Le mie richieste</a>
+            <a href="#" class="nav-link" onclick="navigateTo('req-form')">Nuova richiesta</a>
             <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
             <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
         `;
@@ -88,6 +94,177 @@ function updateNavbar(routeId) {
     
     navLinks.innerHTML = linksHTML;
 }
+
+// Funzioni e logica per il requester
+window.resetRequesterForm = function() {
+    const form = document.getElementById('requester-form');
+    if (form) form.reset();
+    window.currentRequesterRequestId = null;
+};
+
+window.createRequesterRequest = async function(event) {
+    if (event) event.preventDefault();
+    const userId = appState.userId || '647d3e2f8a4fde1b2c3a4d5f';
+    const serviceType = document.getElementById('req-serviceType')?.value;
+    const location = document.getElementById('req-location')?.value;
+    const date = document.getElementById('req-date')?.value;
+    const time = document.getElementById('req-time')?.value;
+    const notes = document.getElementById('req-notes')?.value || '';
+
+    if (!serviceType || !location || !date || !time) {
+        showToast('Compila tutti i campi richiesti prima di inviare la richiesta.', 'danger');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/requester/requests', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ userId, serviceType, location, date, time, notes })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            showToast(`Errore: ${data.error || 'Impossibile creare la richiesta.'}`, 'danger');
+            return;
+        }
+
+        showToast('Richiesta creata con successo.', 'success');
+        navigateTo('req-dashboard');
+    } catch (error) {
+        console.error('Errore nella creazione della richiesta:', error);
+        showToast('Si è verificato un errore durante l invio della richiesta.', 'danger');
+    }
+};
+
+window.loadRequesterDashboard = async function() {
+    const container = document.getElementById('requester-requests-container');
+    if (!container) return;
+
+    const userId = appState.userId || '647d3e2f8a4fde1b2c3a4d5f';
+
+    try {
+        const response = await fetch(`/api/requester/requests/${encodeURIComponent(userId)}`);
+        if (!response.ok) throw new Error('Impossibile caricare le richieste.');
+
+        const requests = await response.json();
+        if (!Array.isArray(requests) || requests.length === 0) {
+            container.innerHTML = `
+                <div class="card text-center text-muted" style="padding: 2rem;">
+                    <i class="fa-solid fa-clipboard-question" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p style="margin: 0; font-weight: 600;">Non ci sono richieste per il momento.</p>
+                    <p style="margin: 0.5rem 0 0;">Crea una nuova richiesta per avere aiuto dai volontari.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="grid-2" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; width: 100%;">';
+        requests.forEach(req => {
+            const badgeClass = req.status === 'Completata' ? 'badge-success' : req.status === 'Annullata' ? 'badge-danger' : 'badge-warning';
+            html += `
+                <div class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; min-height: 260px;">
+                    <div>
+                        <div class="flex justify-between items-center" style="margin-bottom: 1rem; gap: 1rem; flex-wrap: wrap;">
+                            <span class="badge ${badgeClass}">${req.status}</span>
+                            <span style="font-size: 0.9rem; color: var(--text-muted);">${req.date} ${req.time}</span>
+                        </div>
+                        <h3 style="margin: 0 0 0.75rem;">${req.serviceType}</h3>
+                        <p style="margin: 0.25rem 0; color: var(--text-muted);">${req.location}</p>
+                        <p style="margin: 1rem 0 0; color: var(--text-dark);">${req.notes || 'Nessuna nota aggiuntiva.'}</p>
+                    </div>
+                    <button class="btn btn-outline btn-block btn-sm" onclick="openRequesterDetail('${req._id}')">Vedi Dettagli</button>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+        window.requesterRequestsCache = requests;
+    } catch (error) {
+        console.error('Errore nel caricamento delle richieste requester:', error);
+        container.innerHTML = `
+            <div class="card text-center text-danger" style="padding: 2rem;">
+                <p>Impossibile caricare le tue richieste in questo momento. Riprova più tardi.</p>
+            </div>
+        `;
+    }
+};
+
+window.openRequesterDetail = function(requestId) {
+    const req = (window.requesterRequestsCache || []).find(r => r._id === requestId);
+    if (!req) return;
+
+    window.currentRequesterRequestId = requestId;
+    document.getElementById('req-detail-status').innerText = req.status;
+    document.getElementById('req-detail-title').innerText = req.serviceType;
+    document.getElementById('req-detail-date').innerText = req.date;
+    document.getElementById('req-detail-time').innerText = req.time;
+    document.getElementById('req-detail-location').innerText = req.location;
+    document.getElementById('req-detail-notes').innerText = req.notes || 'Nessuna nota aggiuntiva.';
+
+    const cancelBtn = document.getElementById('req-detail-cancel-btn');
+    const completeBtn = document.getElementById('req-detail-complete-btn');
+    if (req.status === 'Annullata' || req.status === 'Completata') {
+        if (cancelBtn) cancelBtn.disabled = true;
+        if (completeBtn) completeBtn.disabled = true;
+    } else {
+        if (cancelBtn) cancelBtn.disabled = false;
+        if (completeBtn) completeBtn.disabled = false;
+    }
+
+    navigateTo('req-detail');
+};
+
+window.updateRequesterStatus = async function(requestId, status) {
+    if (!requestId) return;
+
+    try {
+        const response = await fetch(`/api/requester/requests/${encodeURIComponent(requestId)}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            showToast(`Errore: ${data.error || 'Non è stato possibile aggiornare lo stato.'}`, 'danger');
+            return;
+        }
+
+        showToast('Stato aggiornato con successo.', 'success');
+        await loadRequesterDashboard();
+        if (window.currentRequesterRequestId === requestId) {
+            openRequesterDetail(requestId);
+        }
+    } catch (error) {
+        console.error('Errore nell aggiornamento dello stato:', error);
+        showToast('Si è verificato un errore durante l aggiornamento dello stato.', 'danger');
+    }
+};
+
+window.cancelRequesterRequest = async function(requestId) {
+    if (!requestId) return;
+
+    try {
+        const response = await fetch(`/api/requester/requests/${encodeURIComponent(requestId)}`, {
+            method: 'DELETE'
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            showToast(`Errore: ${data.error || 'Non è stato possibile annullare la richiesta.'}`, 'danger');
+            return;
+        }
+
+        showToast('Richiesta annullata con successo.', 'success');
+        navigateTo('req-dashboard');
+    } catch (error) {
+        console.error('Errore nell annullamento della richiesta:', error);
+        showToast('Si è verificato un errore durante l annullamento della richiesta.', 'danger');
+    }
+};
 
 // Funzioni per i Modal
 // Rese globali per far funzionare gli attributi onclick
@@ -175,6 +352,7 @@ window.handleLogin = function(e, role) {
         navigateTo('vol-board');
     } else if (role === 'requester') {
         appState.userEmail = "angela.bianchi@email.it";
+        appState.userId = "647d3e2f8a4fde1b2c3a4d5f";
         navigateTo('req-dashboard');
     } else if (role === 'partner') {
         navigateTo('partner-dash');
