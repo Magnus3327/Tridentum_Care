@@ -60,4 +60,41 @@ router.get("/requests/:userId", async (req, res) => {
   }
 });
 
+// API per aggiornare lo stato di una richiesta
+router.put("/requests/:requestId/status", async (req, res) => {
+  try {
+    const db = await connectDB();
+    const { requestId } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = [
+      "In Attesa di Volontario",
+      "In Corso",
+      "Completata",
+      "Annullata",
+    ];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: "Stato non valido" });
+    }
+
+    const updateData = { status };
+    if (status === "Completata") {
+      updateData.completedAt = new Date();
+    }
+
+    const result = await db
+      .collection("requests")
+      .updateOne({ _id: new ObjectId(requestId) }, { $set: updateData });
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Richiesta non trovata" });
+    }
+
+    res.json({ message: "Stato aggiornato con successo" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 module.exports = router;
