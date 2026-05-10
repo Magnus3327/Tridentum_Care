@@ -6,10 +6,15 @@ const connectDB = require('../../config/db');
 
 const router = express.Router();
 
+async function getDatabase(req) {
+  if (req.app?.locals?.db) return req.app.locals.db;
+  return await connectDB();
+}
+
 // API per la creazione di una nuova richiesta di assistenza
 router.post("/requests", async (req, res) => {
   try {
-    const db = await connectDB();
+    const db = await getDatabase(req);
     const { userId, serviceType, location, date, time, notes } = req.body;
 
     // Validate required fields
@@ -43,9 +48,31 @@ router.post("/requests", async (req, res) => {
 });
 
 // API per ottenere tutte le richieste di un utente specifico
+router.get("/requests", async (req, res) => {
+  try {
+    const db = await getDatabase(req);
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: "userId query parameter is required" });
+    }
+
+    const requests = await db
+      .collection("requests")
+      .find({ userId: new ObjectId(userId) })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.json(requests);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API per ottenere tutte le richieste di un utente specifico (compatibilità path param)
 router.get("/requests/:userId", async (req, res) => {
   try {
-    const db = await connectDB();
+    const db = await getDatabase(req);
     const { userId } = req.params;
 
     const requests = await db

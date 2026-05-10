@@ -146,8 +146,12 @@ window.loadRequesterDashboard = async function() {
     const userId = appState.userId || '647d3e2f8a4fde1b2c3a4d5f';
 
     try {
-        const response = await fetch(`/api/requester/requests/${encodeURIComponent(userId)}`);
-        if (!response.ok) throw new Error('Impossibile caricare le richieste.');
+        const response = await fetch(`/api/requester/requests?userId=${encodeURIComponent(userId)}`);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            const message = errorData?.error || 'Impossibile caricare le richieste.';
+            throw new Error(message);
+        }
 
         const requests = await response.json();
         if (!Array.isArray(requests) || requests.length === 0) {
