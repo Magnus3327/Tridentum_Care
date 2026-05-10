@@ -96,5 +96,27 @@ router.put("/requests/:requestId/status", async (req, res) => {
   }
 });
 
+// Cancel request
+router.delete("/requests/:requestId", async (req, res) => {
+  try {
+    const db = await connectDB();
+    const { requestId } = req.params;
+
+    const result = await db
+      .collection("requests")
+      .updateOne(
+        { _id: new ObjectId(requestId) },
+        { $set: { status: "Annullata" } }
+      );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Richiesta non trovata" });
+    }
+
+    res.json({ message: "Richiesta annullata con successo" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 module.exports = router;
