@@ -48,7 +48,10 @@
             </div>
             <div class="form-group">
                 <label class="form-label" style="font-weight: 600;">Password</label>
-                <input type="password" id="login-password" class="form-control" placeholder="••••••••" required>
+                <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="login-password" class="form-control" placeholder="••••••••" style="padding-right: 2.5rem;" required>
+                    <i class="fa-solid fa-eye" id="toggle-login-password" style="position: absolute; right: 1rem; cursor: pointer; color: var(--text-muted);" onclick="togglePasswordVisibility('login-password', 'toggle-login-password')"></i>
+                </div>
                 <div class="text-right" style="margin-top: 0.5rem; text-align: right;">
                     <a href="#" onclick="navigateTo('recovery')" style="font-size: 0.875rem; color: var(--primary-color);">Password dimenticata?</a>
                 </div>
@@ -79,7 +82,10 @@
             </div>
             <div class="form-group">
                 <label class="form-label" style="font-weight: 600;">Password</label>
-                <input type="password" id="reg-password" class="form-control" placeholder="Crea una password" required>
+                <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="reg-password" class="form-control" placeholder="Crea una password" style="padding-right: 2.5rem;" required>
+                    <i class="fa-solid fa-eye" id="toggle-reg-password" style="position: absolute; right: 1rem; cursor: pointer; color: var(--text-muted);" onclick="togglePasswordVisibility('reg-password', 'toggle-reg-password')"></i>
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label" style="font-weight: 600;">Ruolo</label>
