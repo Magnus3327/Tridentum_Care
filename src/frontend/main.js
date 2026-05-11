@@ -4,7 +4,63 @@ const appState = {
     userEmail: null, // email dell'utente loggato
     userId: null, // id utente reale estratto dal token
     points: 0,
+    constants: null,
 };
+
+async function fetchConstants() {
+    if (appState.constants) return appState.constants;
+    try {
+        const response = await fetch('/api/constants');
+        if (response.ok) {
+            appState.constants = await response.json();
+            return appState.constants;
+        }
+    } catch (e) {
+        console.error("Errore nel caricamento delle costanti:", e);
+    }
+    return {
+        SERVICES: ["Trasporto", "Accompagnamento", "Compagnia"]
+    };
+}
+
+async function renderDynamicProfileSkills(userSkills = []) {
+    const container = document.getElementById('profile-skills-container');
+    if (!container) return;
+    
+    const consts = await fetchConstants();
+    const services = consts.SERVICES || [];
+    
+    container.innerHTML = '';
+    services.forEach(service => {
+        const idSafe = `skill-${service.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-")}`;
+        const div = document.createElement('div');
+        div.style = 'display: flex; align-items: center; gap: 0.75rem;';
+        
+        const isChecked = userSkills.includes(service) ? 'checked' : '';
+        
+        div.innerHTML = `
+            <input type="checkbox" id="${idSafe}" data-service="${service}" ${isChecked} style="width: 1.25rem; height: 1.25rem; cursor: pointer;">
+            <label for="${idSafe}" style="font-weight: 500; cursor: pointer;">${service}</label>
+        `;
+        container.appendChild(div);
+    });
+}
+
+async function renderDynamicRequestServices() {
+    const select = document.getElementById('req-serviceType');
+    if (!select) return;
+    
+    const consts = await fetchConstants();
+    const services = consts.SERVICES || [];
+    
+    select.innerHTML = '<option value="">Seleziona un servizio...</option>';
+    services.forEach(service => {
+        const option = document.createElement('option');
+        option.value = service;
+        option.textContent = service;
+        select.appendChild(option);
+    });
+}
 
 // Mappatura della navigazione
 const routes = {
@@ -114,8 +170,9 @@ window.resetRequesterForm = function() {
     if (submitButton) submitButton.innerText = 'Invia Richiesta';
 };
 
-window.openNewRequesterRequest = function() {
+window.openNewRequesterRequest = async function() {
     resetRequesterForm();
+    await renderDynamicRequestServices();
     navigateTo('req-form');
 };
 
@@ -171,7 +228,7 @@ window.createRequesterRequest = async function() {
     }
 };
 
-window.openRequesterEdit = function(requestId) {
+window.openRequesterEdit = async function(requestId) {
     const req = (window.requesterRequestsCache || []).find(r => r._id === requestId);
     if (!req) return;
     if (!isRequesterRequestEditable(req)) {
@@ -181,6 +238,8 @@ window.openRequesterEdit = function(requestId) {
 
     const form = document.getElementById('requester-form');
     if (!form) return;
+
+    await renderDynamicRequestServices();
 
     document.getElementById('req-serviceType').value = req.serviceType;
     document.getElementById('req-location').value = req.location;
@@ -1027,9 +1086,7 @@ window.loadProfile = async function() {
 
         if (role === 'volunteer') {
             const skills = profile.skills || [];
-            if (document.getElementById("skill-trasporto")) document.getElementById("skill-trasporto").checked = skills.includes("Trasporto");
-            if (document.getElementById("skill-accompagnamento")) document.getElementById("skill-accompagnamento").checked = skills.includes("Accompagnamento");
-            if (document.getElementById("skill-compagnia")) document.getElementById("skill-compagnia").checked = skills.includes("Compagnia");
+            await renderDynamicProfileSkills(skills);
 
             if (document.getElementById("profile-age")) document.getElementById("profile-age").value = profile.age || "";
             if (document.getElementById("profile-license")) document.getElementById("profile-license").value = profile.license || "";
@@ -1123,9 +1180,15 @@ window.saveProfile = async function(event) {
         }
 
         const skills = [];
-        if (document.getElementById("skill-trasporto") && document.getElementById("skill-trasporto").checked) skills.push("Trasporto");
-        if (document.getElementById("skill-accompagnamento") && document.getElementById("skill-accompagnamento").checked) skills.push("Accompagnamento");
-        if (document.getElementById("skill-compagnia") && document.getElementById("skill-compagnia").checked) skills.push("Compagnia");
+        const container = document.getElementById('profile-skills-container');
+        if (container) {
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    skills.push(cb.getAttribute('data-service'));
+                }
+            });
+        }
         
         profileData.skills = skills;
         profileData.age = age;
