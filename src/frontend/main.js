@@ -897,8 +897,12 @@ window.loadActiveRequests = async function() {
                         <p style="font-size: 0.9rem; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 1.5rem;">
                             ${req.description}
                         </p>
+                    <div class="flex gap-1" style="margin-top: auto;">
+                        <button class="btn btn-outline btn-sm" style="flex: 1; padding: 0.5rem 0.75rem;" onclick="showRequestDetails('${req._id}')">Dettagli</button>
+                        <button class="btn btn-primary btn-sm" style="flex: 1.2; padding: 0.5rem 0.75rem; font-weight: 700;" onclick="acceptRequestImmediately('${req._id}')">
+                            <i class="fa-solid fa-check" style="margin-right: 0.25rem;"></i> Accetta
+                        </button>
                     </div>
-                    <button class="btn btn-outline btn-block btn-sm" onclick="showRequestDetails('${req._id}')">Vedi Dettagli</button>
                 </div>
             `;
         });
@@ -968,6 +972,10 @@ async function acceptRequest(requestId) {
         showToast("Si è verificato un errore durante l'operazione di presa in carico.", "danger");
     }
 }
+
+window.acceptRequestImmediately = async function(requestId) {
+    await acceptRequest(requestId);
+};
 
 async function loadMyTasks() {
     const container = document.getElementById("volunteer-my-tasks-container");
