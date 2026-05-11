@@ -96,6 +96,7 @@
                 <button id="req-detail-edit-btn" class="btn btn-secondary" onclick="openRequesterEdit(window.currentRequesterRequestId)">Modifica</button>
                 <button id="req-detail-cancel-btn" class="btn btn-danger" onclick="cancelRequesterRequest(window.currentRequesterRequestId)">Annulla</button>
                 <button id="req-detail-complete-btn" class="btn btn-primary" onclick="updateRequesterStatus(window.currentRequesterRequestId, 'Completata')">Segna come Completata</button>
+                <button id="req-detail-delete-btn" class="btn btn-danger" style="display: none;" onclick="deleteRequesterRequest(window.currentRequesterRequestId)"><i class="fa-solid fa-trash-can" style="margin-right: 0.5rem;"></i> Elimina definitivamente</button>
             </div>
         </div>
         <h1 id="req-detail-title" style="margin-bottom: 1.5rem;">Titolo richiesta</h1>

@@ -313,7 +313,7 @@ router.put('/requests/:requestId/rating', async (req, res) => {
   }
 });
 
-// Elimina (Annulla) richiesta
+// Elimina o Annulla richiesta
 router.delete('/requests/:requestId', async (req, res) => {
   try {
     const db = await getDatabase(req);
@@ -327,6 +327,12 @@ router.delete('/requests/:requestId', async (req, res) => {
 
     if (!request) {
       return res.status(404).json({ error: 'Richiesta non trovata o non autorizzata' });
+    }
+
+    // Se la richiesta è già annullata, l'utente vuole eliminarla del tutto dal database per pulire la cronologia!
+    if (request.status === 'Annullata') {
+      await db.collection('requests').deleteOne({ _id: new ObjectId(requestId) });
+      return res.json({ message: 'Richiesta eliminata definitivamente con successo' });
     }
 
     if (!canEditRequest(request)) {

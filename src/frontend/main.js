@@ -495,15 +495,19 @@ window.openRequesterDetail = function(requestId) {
     const cancelBtn = document.getElementById('req-detail-cancel-btn');
     const completeBtn = document.getElementById('req-detail-complete-btn');
     const editBtn = document.getElementById('req-detail-edit-btn');
+    const deleteBtn = document.getElementById('req-detail-delete-btn');
     const editable = isRequesterRequestEditable(req);
     const canComplete = window.canRequesterComplete(req);
     const canCancel = window.canRequesterCancel(req);
 
-    // Nasconde completamente i bottoni per richieste completate o annullate
+    // Gestione bottoni per richieste completate o annullate
     if (req.status === 'Annullata' || req.status === 'Completata') {
         if (cancelBtn) cancelBtn.style.display = 'none';
         if (completeBtn) completeBtn.style.display = 'none';
         if (editBtn) editBtn.style.display = 'none';
+        if (deleteBtn) {
+            deleteBtn.style.display = (req.status === 'Annullata') ? 'inline-block' : 'none';
+        }
     } else {
         // Mostra i bottoni e gestisci la loro abilitazione
         if (cancelBtn) {
@@ -515,10 +519,37 @@ window.openRequesterDetail = function(requestId) {
         if (editBtn) {
             editBtn.style.display = editable ? 'inline-block' : 'none';
         }
+        if (deleteBtn) {
+            deleteBtn.style.display = 'none';
+        }
     }
 
     window.renderRequesterRatingSection(req);
     navigateTo('req-detail');
+};
+
+window.deleteRequesterRequest = async function(requestId) {
+    if (!requestId) return;
+    if (!confirm('Sei sicuro di voler eliminare definitivamente questa richiesta dalla tua cronologia?')) {
+        return;
+    }
+    
+    try {
+        const response = await authorizedFetch(`/api/requester/requests/${requestId}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || 'Errore durante l\'eliminazione della richiesta');
+        }
+        
+        showNotification('Richiesta eliminata definitivamente con successo', 'success');
+        navigateTo('requester'); // torna alla dashboard
+    } catch (error) {
+        console.error('Errore eliminazione richiesta:', error);
+        showNotification(error.message, 'danger');
+    }
 };
 
 window.updateRequesterStatus = async function(requestId, status) {
