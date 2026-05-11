@@ -98,11 +98,7 @@ function updateNavbar(routeId) {
             <a href="#" class="nav-link" onclick="navigateTo('admin-dash')">Moderazione</a>
             <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
         `;
-    } else {
-        linksHTML = `
-            <a href="#" class="nav-link" onclick="navigateTo('home')">Home</a>
-        `;
-    }
+        }
     
     navLinks.innerHTML = linksHTML;
 }
