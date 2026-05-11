@@ -268,4 +268,21 @@ router.post("/coupons/redeem", async (req, res) => {
   }
 });
 
+// API per eliminare definitivamente il profilo del volontario.
+router.delete('/profile', async (req, res) => {
+  try {
+    const db = await getDatabase(req);
+    const userId = req.user.userId;
+
+    const result = await db.collection('users').deleteOne({ _id: new ObjectId(userId) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Profilo non trovato' });
+    }
+
+    res.json({ message: 'Profilo eliminato definitivamente con successo' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
