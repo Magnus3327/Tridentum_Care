@@ -10,10 +10,11 @@ Il progetto si distingue per la sua interfaccia **Single Page Application (SPA)*
 
 ## 🛠️ Tecnologie Utilizzate
 
-- **Frontend:** HTML5, CSS , Vanilla JavaScript.
+- **Frontend:** HTML5, CSS3, Vanilla JavaScript, Font Awesome.
 - **Backend:** Node.js con Express.js.
-- **Database:** MongoDB Atlas (NoSQL Cloud).
-- **Extra:** Autenticazione Mongoose (predisposta), dotenv per l'ambiente.
+- **Sicurezza:** `bcryptjs` per la cifratura delle password e `jsonwebtoken` (JWT) per la gestione sicura delle sessioni di autenticazione.
+- **Database:** MongoDB Atlas (NoSQL Cloud) con driver ufficiale `mongodb`.
+- **Ambiente:** `dotenv` per la configurazione sicura delle chiavi e delle porte.
 
 ---
 
@@ -25,21 +26,22 @@ Per avviare il progetto localmente, assicurati di avere installati **[Node.js](h
 Apri il terminale e naviga nella root del progetto:
 
 ### 2. Installa le dipendenze
-Installa i moduli necessari (Express, MongoDB driver, ecc.) definiti nel `package.json`:
+Installa i moduli necessari (Express, MongoDB driver, bcryptjs, jsonwebtoken, ecc.) definiti nel `package.json`:
 ```bash
 npm install
 ```
 
 ### 3. Configura le variabili d'ambiente
-Affinché il backend possa comunicare con il database Cloud, assicurati che esista un file denominato `.env` nella directory radice e che contenga la stringa di connessione (se l'hai già configurata in passato, salta questo passaggio):
+Affinché il backend possa comunicare con il database Cloud e firmare i token di sessione in modo sicuro, crea o modifica il file denominato `.env` nella directory radice aggiungendo la stringa di connessione e la chiave segreta JWT:
 ```env
 MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/tridentum_care
 PORT=3000
+JWT_SECRET=una_chiave_segreta_molto_sicura_e_lunga_123!
 ```
 
 ### 4. Popola il Database (Seeding)
-Per avere subito dei dati funzionanti e testare la piattaforma (utenti mock, richieste già pronte in bacheca con i corretti punteggi), esegui lo script di popolamento iniziale.
-*Attenzione: questo comando piallerà e riscriverà i dati base.*
+Per avere subito i dati pronti per il testing (utenti di test reali e richieste caricate in bacheca), esegui lo script di popolamento iniziale.
+*Attenzione: questo comando piallerà e riscriverà i dati delle collezioni `users` e `requests`.*
 ```bash
 node src/backend/seed.js
 ```
@@ -60,15 +62,16 @@ A questo punto, apri il tuo browser preferito e vai all'indirizzo:
 
 ---
 
-## 🗂 Struttura dei Ruoli e Testing
+## 🔑 Credenziali Utenti di Test
 
-Il sistema prevede quattro principali "Viste" o ruoli, testabili cliccando i rispettivi pulsanti nella pagina di autenticazione:
-1. **Volontario:** Può filtrare la bacheca in base alle proprie skill, accettare task, vedere i punti aumentare e comprare Coupon.
-2. **Cittadino (Richiedente):** Può inserire nuove richieste di assistenza *(in fase di allineamento e completamento dinamico, vedi `TODO.md`)*.
-3. **Ente Partner:** Generatore e validatore dei premi/coupon.
-4. **Amministrazione:** Controllo globale.
+I vecchi pulsanti demo di bypass sono stati rimossi. Per provare le varie aree dell'applicazione, effettua l'accesso dalla pagina **Accedi** con i seguenti account:
 
-In futuro bisognerebbe integrare in volontario anche la vista admin.
-Visto che abbiamo pensato che l'utente admin può avere vari livelli di autorizzazione e che esso è anche volontario. 
-Dunque, in base al ruolo dell'utente, gli verranno mostrate diverse opzioni.
-Quindi, bisognerebbe implementare un modo per identificare il ruolo dell'utente e mostrarli le opzioni corrette.
+### 👨‍✈️ Profilo Volontario
+* **Email:** `mario.rossi@email.it`
+* **Password:** `password123`
+* **Funzionalità:** Visualizza bacheca attiva basata sulle proprie competenze, accetta/annulla prese in carico, accumula punti e riscatta coupon nello store con generazione di QR code dinamici.
+
+### 👵 Profilo Cittadino (Richiedente)
+* **Email:** `angela.bianchi@email.it`
+* **Password:** `password123`
+* **Funzionalità:** Dashboard personale dinamica per controllare le proprie richieste caricate dal DB, form per la creazione di nuove richieste e modifica o eliminazione (annullamento) in tempo reale prima della presa in carico.
