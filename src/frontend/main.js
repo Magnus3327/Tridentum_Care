@@ -2,8 +2,8 @@
 const appState = {
     userRole: null, // 'requester', 'volunteer', 'partner', 'admin', null
     userEmail: null, // email dell'utente loggato
-    userId: null, // id utente simulato per le richieste
-    points: 1250,
+    userId: null, // id utente reale estratto dal token
+    points: 0,
 };
 
 // Mappatura della navigazione
@@ -21,6 +21,19 @@ const routes = {
     'partner-coupon': 'view-partner-coupon',
     'admin-dash': 'view-admin-dash'
 };
+
+// Helper per fetch autenticate con JWT
+async function authorizedFetch(url, options = {}) {
+    const token = localStorage.getItem('token');
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return fetch(url, { ...options, headers });
+}
 
 function navigateTo(routeId) {
     if (!routes[routeId]) return;
@@ -109,7 +122,6 @@ window.resetRequesterForm = function() {
 
 function getRequesterFormData() {
     return {
-        userId: appState.userId || '647d3e2f8a4fde1b2c3a4d5f',
         serviceType: document.getElementById('req-serviceType')?.value,
         location: document.getElementById('req-location')?.value,
         date: document.getElementById('req-date')?.value,
@@ -134,11 +146,8 @@ window.createRequesterRequest = async function() {
     }
 
     try {
-        const response = await fetch('/api/requester/requests', {
+        const response = await authorizedFetch('/api/requester/requests', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify(payload)
         });
 
@@ -152,7 +161,7 @@ window.createRequesterRequest = async function() {
         navigateTo('req-dashboard');
     } catch (error) {
         console.error('Errore nella creazione della richiesta:', error);
-        showToast('Si è verificato un errore durante l invio della richiesta.', 'danger');
+        showToast('Si è verificato un errore durante l\'invio della richiesta.', 'danger');
     }
 };
 
@@ -195,11 +204,8 @@ window.updateRequesterRequest = async function(requestId) {
     }
 
     try {
-        const response = await fetch(`/api/requester/requests/${encodeURIComponent(requestId)}`, {
+        const response = await authorizedFetch(`/api/requester/requests/${encodeURIComponent(requestId)}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify(payload)
         });
 
@@ -212,8 +218,8 @@ window.updateRequesterRequest = async function(requestId) {
         showToast('Richiesta aggiornata con successo.', 'success');
         navigateTo('req-dashboard');
     } catch (error) {
-        console.error('Errore nell aggiornamento della richiesta:', error);
-        showToast('Si è verificato un errore durante l aggiornamento della richiesta.', 'danger');
+        console.error('Errore nell\'aggiornamento della richiesta:', error);
+        showToast('Si è verificato un errore durante l\'aggiornamento della richiesta.', 'danger');
     }
 };
 
@@ -221,10 +227,8 @@ window.loadRequesterDashboard = async function() {
     const container = document.getElementById('requester-requests-container');
     if (!container) return;
 
-    const userId = appState.userId || '647d3e2f8a4fde1b2c3a4d5f';
-
     try {
-        const response = await fetch(`/api/requester/requests?userId=${encodeURIComponent(userId)}`);
+        const response = await authorizedFetch('/api/requester/requests');
         if (!response.ok) {
             const errorData = await response.json().catch(() => null);
             const message = errorData?.error || 'Impossibile caricare le richieste.';
@@ -297,7 +301,7 @@ window.openRequesterDetail = function(requestId) {
         if (editBtn) editBtn.disabled = true;
     } else {
         if (cancelBtn) cancelBtn.disabled = !editable;
-        if (completeBtn) completeBtn.disabled = !editable;
+        if (completeBtn) completeBtn.disabled = false; // Permetti di completare le richieste in corso
         if (editBtn) editBtn.disabled = !editable;
     }
 
@@ -308,11 +312,8 @@ window.updateRequesterStatus = async function(requestId, status) {
     if (!requestId) return;
 
     try {
-        const response = await fetch(`/api/requester/requests/${encodeURIComponent(requestId)}/status`, {
+        const response = await authorizedFetch(`/api/requester/requests/${encodeURIComponent(requestId)}/status`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({ status })
         });
         const data = await response.json();
@@ -324,11 +325,11 @@ window.updateRequesterStatus = async function(requestId, status) {
         showToast('Stato aggiornato con successo.', 'success');
         await loadRequesterDashboard();
         if (window.currentRequesterRequestId === requestId) {
-            openRequesterDetail(requestId);
+            navigateTo('req-dashboard');
         }
     } catch (error) {
-        console.error('Errore nell aggiornamento dello stato:', error);
-        showToast('Si è verificato un errore durante l aggiornamento dello stato.', 'danger');
+        console.error('Errore nell\'aggiornamento dello stato:', error);
+        showToast('Si è verificato un errore durante l\'aggiornamento dello stato.', 'danger');
     }
 };
 
@@ -336,7 +337,7 @@ window.cancelRequesterRequest = async function(requestId) {
     if (!requestId) return;
 
     try {
-        const response = await fetch(`/api/requester/requests/${encodeURIComponent(requestId)}`, {
+        const response = await authorizedFetch(`/api/requester/requests/${encodeURIComponent(requestId)}`, {
             method: 'DELETE'
         });
         const data = await response.json();
@@ -348,18 +349,19 @@ window.cancelRequesterRequest = async function(requestId) {
         showToast('Richiesta annullata con successo.', 'success');
         navigateTo('req-dashboard');
     } catch (error) {
-        console.error('Errore nell annullamento della richiesta:', error);
-        showToast('Si è verificato un errore durante l annullamento della richiesta.', 'danger');
+        console.error('Errore nell\'annullamento della richiesta:', error);
+        showToast('Si è verificato un errore durante l\'annullamento della richiesta.', 'danger');
     }
 };
 
 // Funzioni per i Modal
-// Rese globali per far funzionare gli attributi onclick
 window.openModal = function(modalId) {
-    document.getElementById(modalId).classList.add('active');
+    const el = document.getElementById(modalId);
+    if (el) el.classList.add('active');
 }
 window.closeModal = function(modalId) {
-    document.getElementById(modalId).classList.remove('active');
+    const el = document.getElementById(modalId);
+    if (el) el.classList.remove('active');
 }
 
 window.showQRCode = function(name, code) {
@@ -369,7 +371,7 @@ window.showQRCode = function(name, code) {
     openModal("qr-code-modal");
 }
 
-// Sistema di Notifiche Globali (Toast silenziose, eleganti e non bloccanti)
+// Sistema di Notifiche Globali
 window.showToast = function(message, type = 'success') {
     let container = document.getElementById('toast-container');
     if (!container) {
@@ -422,14 +424,16 @@ window.showToast = function(message, type = 'success') {
     }, 3500);
 }
 
-// Helper per il logout
+// Helper per il logout reale
 window.logout = function() {
+    localStorage.removeItem('token');
     appState.userRole = null;
     appState.userEmail = null;
     appState.userId = null;
+    appState.points = 0;
     navigateTo('home');
+    showToast('Hai disconnesso il profilo correttamente.', 'success');
 }
-
 
 // Funzioni per l'autenticazione reale e tabbed login/register
 window.openAuth = function(mode) {
@@ -480,23 +484,114 @@ window.toggleRegisterRoleFields = function() {
     }
 };
 
+// Funzione di gestione degli eventi dei form caricati dinamicamente
+function bindAuthEvents() {
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
 
-// Simula il Login
-window.handleLogin = function(e, role) {
-    if (e) e.preventDefault();
-    appState.userRole = role;
-    
-    if (role === 'volunteer') {
-        appState.userEmail = "mario.rossi@email.it";
-        navigateTo('vol-board');
-    } else if (role === 'requester') {
-        appState.userEmail = "angela.bianchi@email.it";
-        appState.userId = "647d3e2f8a4fde1b2c3a4d5f";
-        navigateTo('req-dashboard');
-    } else if (role === 'partner') {
-        navigateTo('partner-dash');
-    } else if (role === 'admin') {
-        navigateTo('admin-dash');
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    showToast(data.error || 'Credenziali non valide', 'danger');
+                    return;
+                }
+
+                // Salva token e ripristina lo stato globale
+                localStorage.setItem('token', data.token);
+                appState.userRole = data.user.role;
+                appState.userEmail = data.user.email;
+                appState.userId = data.user.id;
+                appState.points = data.user.points || 0;
+
+                showToast(data.message, 'success');
+
+                // Reindirizzamento basato sul ruolo
+                if (data.user.role === 'volunteer') {
+                    navigateTo('vol-board');
+                } else if (data.user.role === 'requester') {
+                    navigateTo('req-dashboard');
+                } else {
+                    navigateTo('home');
+                }
+            } catch (error) {
+                console.error('Errore login:', error);
+                showToast('Errore durante l\'accesso. Controlla la connessione.', 'danger');
+            }
+        });
+    }
+
+    const registerForm = document.getElementById('register-form');
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value;
+            const surname = document.getElementById('reg-surname').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const role = document.getElementById('reg-role').value;
+
+            const payload = { name, surname, email, password, role };
+
+            if (role === 'volunteer') {
+                const ageVal = document.getElementById('reg-age').value;
+                if (!ageVal) {
+                    showToast('L\'età è obbligatoria per registrarsi come volontario.', 'danger');
+                    return;
+                }
+                const age = parseInt(ageVal);
+                if (age < 18) {
+                    showToast('Un volontario deve essere maggiorenne (Età >= 18)!', 'danger');
+                    return;
+                }
+                payload.age = age;
+                payload.gender = document.getElementById('reg-gender').value;
+                payload.license = document.getElementById('reg-license').value;
+            }
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    showToast(data.error || 'Impossibile completare la registrazione.', 'danger');
+                    return;
+                }
+
+                // Salva token e aggiorna stato
+                localStorage.setItem('token', data.token);
+                appState.userRole = data.user.role;
+                appState.userEmail = data.user.email;
+                appState.userId = data.user.id;
+                appState.points = data.user.points || 0;
+
+                showToast(data.message, 'success');
+
+                if (data.user.role === 'volunteer') {
+                    navigateTo('vol-board');
+                } else if (data.user.role === 'requester') {
+                    navigateTo('req-dashboard');
+                } else {
+                    navigateTo('home');
+                }
+            } catch (error) {
+                console.error('Errore registrazione:', error);
+                showToast('Errore durante la registrazione. Riprova più tardi.', 'danger');
+            }
+        });
     }
 }
 
@@ -504,12 +599,9 @@ window.handleLogin = function(e, role) {
 // AZIONI VOLONTARIO E LOGICA BACHECA
 // ==========================================
 
-// 1. Get volunteer profile information & populate dashboard header
 async function loadVolunteerDashboard() {
-    const email = appState.userEmail || "mario.rossi@email.it";
-    
     try {
-        const response = await fetch(`/api/volunteer/profile?email=${encodeURIComponent(email)}`);
+        const response = await authorizedFetch('/api/volunteer/profile');
         if (response.ok) {
             const profile = await response.json();
             appState.points = profile.points || 0;
@@ -549,18 +641,16 @@ async function loadVolunteerDashboard() {
     loadMyTasks();
 }
 
-// 2. Recupera richieste attive e renderizza
 window.loadActiveRequests = async function() {
     const container = document.getElementById("volunteer-requests-container");
     if (!container) return;
 
     const filterSelect = document.getElementById("request-category-filter");
     const category = filterSelect ? filterSelect.value : "Tutti i servizi";
-    const email = appState.userEmail || "mario.rossi@email.it";
 
     try {
-        const url = `/api/volunteer/requests?email=${encodeURIComponent(email)}&category=${encodeURIComponent(category)}`;
-        const response = await fetch(url);
+        const url = `/api/volunteer/requests?category=${encodeURIComponent(category)}`;
+        const response = await authorizedFetch(url);
         if (!response.ok) throw new Error("Errore nel caricamento richieste");
 
         const requests = await response.json();
@@ -569,25 +659,22 @@ window.loadActiveRequests = async function() {
             container.innerHTML = `
                 <div class="card text-center text-muted" style="padding: 3rem 0; grid-column: span 2;">
                     <i class="fa-solid fa-clipboard-question" style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
-                    <p style="font-weight: 500; margin-bottom: 0;">Nessuna richiesta attiva disponibile al momento.</p>
-                    <small>Riprova più tardi o cambia filtro di categoria.</small>
+                    <p style="font-weight: 500; margin-bottom: 0;">Nessuna richiesta attiva compatibile disponibile al momento.</p>
+                    <small>Riprova più tardi, cambia filtro o aggiungi competenze nel tuo profilo.</small>
                 </div>
             `;
             return;
         }
 
-        // Renderizza le card delle richieste in stile griglia o lista
         let html = '<div class="grid-2" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; width: 100%;">';
         
         requests.forEach(req => {
             const badgeClass = getCategoryBadgeClass(req.category);
-            const badgeStyle = '';
-            
             html += `
                 <div class="card flex flex-col justify-between" style="padding: 1.5rem; height: 100%;">
                     <div>
                         <div class="flex justify-between items-center" style="margin-bottom: 0.75rem;">
-                            <span class="badge ${badgeClass}" ${badgeStyle}>${req.category}</span>
+                            <span class="badge ${badgeClass}">${req.category}</span>
                             <span style="font-weight: bold; color: var(--accent-color); font-size: 0.95rem;">+${req.points} pts</span>
                         </div>
                         <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem; color: var(--primary-color);">${req.title}</h3>
@@ -608,28 +695,24 @@ window.loadActiveRequests = async function() {
         
         html += '</div>';
         container.innerHTML = html;
-        
-        // Salva le richieste in cache per accedervi senza doverle ricaricare
         window.activeRequestsCache = requests;
     } catch (e) {
         console.error("Errore nel caricamento delle richieste:", e);
         container.innerHTML = `
             <div class="card text-center text-danger" style="padding: 2rem;">
-                <p>Impossibile caricare le richieste attive. Controlla la connessione al database backend.</p>
+                <p>Impossibile caricare le richieste attive in questo momento.</p>
             </div>
         `;
     }
 }
 
-// 3. Helper per classe CSS in base alla Categoria
 function getCategoryBadgeClass(cat) {
     if (cat === "Trasporto") return "badge-primary";
     if (cat === "Accompagnamento") return "badge-success";
     if (cat === "Compagnia") return "badge-warning";
-    return "badge-primary"; // fallback
+    return "badge-primary";
 }
 
-// 4. Show request details in a modal
 window.showRequestDetails = function(requestId) {
     const req = window.activeRequestsCache.find(r => r._id === requestId);
     if (!req) return;
@@ -637,7 +720,6 @@ window.showRequestDetails = function(requestId) {
     const modal = document.getElementById("vol-req-detail-modal");
     if (!modal) return;
 
-    // Imposta i dettagli testuali
     document.getElementById("modal-req-title").innerText = req.title;
     document.getElementById("modal-req-requester").innerHTML = `<i class="fa-solid fa-user"></i> <strong>Richiedente:</strong> ${req.requesterName}`;
     document.getElementById("modal-req-address").innerText = req.address;
@@ -645,14 +727,10 @@ window.showRequestDetails = function(requestId) {
     document.getElementById("modal-req-points").innerText = `+${req.points} pts`;
     document.getElementById("modal-req-description").innerText = req.description;
 
-    // Dettagli dei badge
     const badge = document.getElementById("modal-req-badge");
     badge.innerText = req.category;
     badge.className = `badge ${getCategoryBadgeClass(req.category)}`;
-    badge.style.backgroundColor = "";
-    badge.style.color = "";
 
-    // Configurazione pulsante accetta
     const acceptBtn = document.getElementById("modal-accept-btn");
     acceptBtn.onclick = async function() {
         await acceptRequest(req._id);
@@ -662,24 +740,16 @@ window.showRequestDetails = function(requestId) {
     openModal("vol-req-detail-modal");
 }
 
-// 5. Accetta Richiesta via API
 async function acceptRequest(requestId) {
-    const email = appState.userEmail || "mario.rossi@email.it";
-    
     try {
-        const response = await fetch(`/api/volunteer/requests/${requestId}/accept`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ email })
+        const response = await authorizedFetch(`/api/volunteer/requests/${requestId}/accept`, {
+            method: "POST"
         });
         
         const data = await response.json();
-        
         if (response.ok) {
             showToast("Richiesta Accettata con successo! L'attività è stata aggiunta ai tuoi incarichi.", "success");
-            loadVolunteerDashboard(); // ricarica i dati
+            loadVolunteerDashboard();
         } else {
             showToast(`Errore: ${data.error}`, "danger");
         }
@@ -689,15 +759,12 @@ async function acceptRequest(requestId) {
     }
 }
 
-// 6. Carica incarichi assegnati per il volontario corrente
 async function loadMyTasks() {
     const container = document.getElementById("volunteer-my-tasks-container");
     if (!container) return;
 
-    const email = appState.userEmail || "mario.rossi@email.it";
-
     try {
-        const response = await fetch(`/api/volunteer/my-tasks?email=${encodeURIComponent(email)}`);
+        const response = await authorizedFetch('/api/volunteer/my-tasks');
         if (!response.ok) throw new Error("Errore nel caricamento dei propri compiti");
 
         const tasks = await response.json();
@@ -706,7 +773,7 @@ async function loadMyTasks() {
             container.innerHTML = `
                 <div class="card text-center text-muted" style="padding: 2rem 1rem; border: 2px dashed var(--border-color); border-radius: var(--radius-lg); background: var(--surface-color);">
                     <i class="fa-solid fa-hands-holding" style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text-muted);"></i>
-                    <p style="font-size: 0.875rem; margin-bottom: 0;">Nessun incarico in corso. Accetta qualche richiesta per aiutare chi ha bisogno!</p>
+                    <p style="font-size: 0.875rem; margin-bottom: 0;">Nessun incarico in corso. Accetta qualche richiesta in bacheca per aiutare!</p>
                 </div>
             `;
             return;
@@ -715,12 +782,10 @@ async function loadMyTasks() {
         let html = '';
         tasks.forEach(task => {
             const badgeClass = getCategoryBadgeClass(task.category);
-            const badgeStyle = '';
-            
             html += `
                 <div class="card" style="padding: 1.25rem; border-left: 5px solid var(--secondary-color); margin-bottom: 1rem;">
                     <div class="flex justify-between items-start" style="margin-bottom: 0.5rem;">
-                        <span class="badge ${badgeClass}" ${badgeStyle}>${task.category}</span>
+                        <span class="badge ${badgeClass}">${task.category}</span>
                         <span style="font-weight: bold; color: var(--accent-color); font-size: 0.875rem;">+${task.points} pts</span>
                     </div>
                     <h4 style="font-size: 1rem; margin-bottom: 0.25rem; color: var(--primary-color);">${task.title}</h4>
@@ -749,22 +814,15 @@ async function loadMyTasks() {
 }
 
 window.cancelTask = async function(taskId) {
-    const email = appState.userEmail || "mario.rossi@email.it";
-    
     try {
-        const response = await fetch(`/api/volunteer/requests/${taskId}/cancel`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ email })
+        const response = await authorizedFetch(`/api/volunteer/requests/${taskId}/cancel`, {
+            method: "POST"
         });
 
         const data = await response.json();
-
         if (response.ok) {
             showToast("Presa in carico annullata. La richiesta è tornata in bacheca!", "success");
-            loadVolunteerDashboard(); // ricarica per sincronizzare le liste
+            loadVolunteerDashboard();
         } else {
             showToast(`Errore: ${data.error}`, "danger");
         }
@@ -774,7 +832,6 @@ window.cancelTask = async function(taskId) {
     }
 }
 
-// 8. Aggiorna punti visualizzati nello store
 function updateStorePoints() {
     const pointsBal = document.getElementById("store-points-balance");
     if (pointsBal) {
@@ -786,12 +843,9 @@ function updateStorePoints() {
 // CARICAMENTO E SALVATAGGIO PROFILO
 // ==========================================
 
-// 1. Recupera profilo dall'API e riempie i campi
 window.loadProfile = async function() {
-    const email = appState.userEmail || "mario.rossi@email.it";
     const role = appState.userRole || "volunteer";
     
-    // Imposta il badge del ruolo nella vista profilo
     const roleBadge = document.getElementById("profile-role-badge");
     if (roleBadge) {
         if (role === 'volunteer') {
@@ -803,7 +857,6 @@ window.loadProfile = async function() {
         }
     }
 
-    // Mostra/nasconde la sezione delle competenze specifiche del volontario
     const volunteerFields = document.getElementById("profile-volunteer-fields");
     const volunteerCoupons = document.getElementById("profile-volunteer-coupons");
     if (volunteerFields) {
@@ -814,20 +867,17 @@ window.loadProfile = async function() {
     }
 
     try {
-        // Recupera i dettagli dall'API backend
-        const response = await fetch(`/api/volunteer/profile?email=${encodeURIComponent(email)}`);
+        const response = await authorizedFetch(`/api/volunteer/profile`);
         if (!response.ok) throw new Error("Errore nel caricamento dati profilo");
 
         const profile = await response.json();
 
-        // Compila i campi
         document.getElementById("profile-name").value = profile.name || "";
         document.getElementById("profile-surname").value = profile.surname || "";
-        document.getElementById("profile-email").value = profile.email || email;
+        document.getElementById("profile-email").value = profile.email || appState.userEmail;
         document.getElementById("profile-phone").value = profile.phone || "";
         document.getElementById("profile-address").value = profile.address || "";
 
-        // Compila le checkbox delle competenze se è un volontario
         if (role === 'volunteer') {
             const skills = profile.skills || [];
             if (document.getElementById("skill-trasporto")) document.getElementById("skill-trasporto").checked = skills.includes("Trasporto");
@@ -864,16 +914,9 @@ window.loadProfile = async function() {
         }
     } catch (e) {
         console.error("Errore nel caricamento del profilo:", e);
-        // Dati segnaposto di fallback se la connessione è lenta
-        document.getElementById("profile-name").value = role === "volunteer" ? "Mario" : "Angela";
-        document.getElementById("profile-surname").value = role === "volunteer" ? "Rossi" : "Bianchi";
-        document.getElementById("profile-email").value = email;
-        document.getElementById("profile-phone").value = "333 123 4567";
-        document.getElementById("profile-address").value = "Via Roma 1, Trento";
     }
 }
 
-// 2. Raccoglie input e invia PUT all'API
 window.saveProfile = async function(event) {
     if (event) event.preventDefault();
 
@@ -900,7 +943,7 @@ window.saveProfile = async function(event) {
 
         // L'età deve essere >= 18 (maggiorenne)
         if (age !== null && age < 18) {
-            showToast("Vincolo OCL fallito: Un volontario deve essere maggiorenne (Età >= 18)!", "danger");
+            showToast("Un volontario deve essere maggiorenne (Età >= 18)!", "danger");
             return;
         }
 
@@ -916,11 +959,8 @@ window.saveProfile = async function(event) {
     }
 
     try {
-        const response = await fetch(`/api/volunteer/profile`, {
+        const response = await authorizedFetch(`/api/volunteer/profile`, {
             method: "PUT",
-            headers: {
-                "Content-Type": "application/json"
-            },
             body: JSON.stringify(profileData)
         });
 
@@ -929,7 +969,7 @@ window.saveProfile = async function(event) {
         if (response.ok) {
             showToast("Profilo aggiornato con successo!", "success");
             if (role === 'volunteer') {
-                loadVolunteerDashboard(); // aggiorna header volontario e sincronizza i punti
+                loadVolunteerDashboard();
             }
         } else {
             showToast(`Errore: ${result.error}`, "danger");
@@ -940,23 +980,16 @@ window.saveProfile = async function(event) {
     }
 }
 
-// 3. Funzione reale per acquisto coupon con punti 
 window.buyCoupon = async function(couponName, costoPunti) {
-    const email = appState.userEmail || "mario.rossi@email.it";
-    
-    // Controllo locale per mostrare una notifica immediata
     if ((appState.points || 0) < costoPunti) {
         showToast(`Punti insufficienti per riscattare "${couponName}" (Costo: ${costoPunti} pts, Tuo saldo: ${appState.points} pts)`, "danger");
         return;
     }
 
     try {
-        const response = await fetch(`/api/volunteer/coupons/redeem`, {
+        const response = await authorizedFetch(`/api/volunteer/coupons/redeem`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ email, couponName, costoPunti })
+            body: JSON.stringify({ couponName, costoPunti })
         });
 
         const data = await response.json();
@@ -964,12 +997,7 @@ window.buyCoupon = async function(couponName, costoPunti) {
         if (response.ok) {
             showToast(`Coupon "${couponName}" acquistato con successo! Saldo ricalcolato.`, "success");
             
-            // Scala i punti localmente e sincronizza la dashboard
             appState.points = data.newPoints;
-            
-            // Aggiorna gli elementi dei punti nelle varie viste
-            const userPointsEl = document.getElementById("user-points");
-            if (userPointsEl) userPointsEl.innerText = `${data.newPoints} pts`;
             
             const storePointsEl = document.getElementById("store-points-balance");
             if (storePointsEl) storePointsEl.innerHTML = `${data.newPoints} <span style="font-size: 1.5rem;">pts</span>`;
@@ -992,7 +1020,7 @@ window.buyCoupon = async function(couponName, costoPunti) {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
-    // Inject Font Awesome for icons (if used)
+    // Inject Font Awesome per icone
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
@@ -1004,13 +1032,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     fonts.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
     document.head.appendChild(fonts);
 
-    // Fetch and load all views into the container
+    // Carica dinamicamente i template delle viste HTML nel container
     const viewFiles = ['public.html', 'shared.html', 'requester.html', 'volunteer.html', 'partner.html', 'admin.html'];
     const container = document.getElementById('app-container');
     
     try {
         for (const file of viewFiles) {
-            // Append a timestamp to completely bypass browser caching during development!
             const response = await fetch(`/views/${file}?t=${Date.now()}`);
             if (response.ok) {
                 const html = await response.text();
@@ -1018,15 +1045,50 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        // Teleport MODALS directly to the body to bypass layout and transform restrictions!
+        // Teletrasporta le sovrapposizioni MODAL al body per bypassare restrizioni di stile parent
         document.querySelectorAll('.modal-overlay').forEach(modal => {
             document.body.appendChild(modal);
         });
 
+        // Configura gli handler di submit per login e registrazione (caricati ora nel DOM)
+        bindAuthEvents();
+
     } catch (e) {
-        console.error("Errore nel caricamento delle viste:", e);
+        console.error("Errore nel caricamento delle viste o bind degli eventi:", e);
     }
 
-    // Initial navigation
+    // Ripristina la sessione utente se è presente un token JWT valido in localStorage
+    const token = localStorage.getItem('token');
+    if (token) {
+        try {
+            const response = await fetch('/api/auth/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                appState.userRole = data.role;
+                appState.userEmail = data.email;
+                appState.userId = data.id;
+                appState.points = data.points || 0;
+                
+                showToast(`Bentornato, ${data.name}!`, 'success');
+                if (data.role === 'volunteer') {
+                    navigateTo('vol-board');
+                } else if (data.role === 'requester') {
+                    navigateTo('req-dashboard');
+                } else {
+                    navigateTo('home');
+                }
+                return;
+            } else {
+                localStorage.removeItem('token');
+            }
+        } catch (error) {
+            console.error('Errore nel ripristino della sessione:', error);
+            localStorage.removeItem('token');
+        }
+    }
+
+    // Se non è loggato, naviga alla home pubblica
     navigateTo('home');
 });
