@@ -7,8 +7,7 @@
 const SERVICE_POINTS = {
   "Trasporto": 150,       // Richiede patente, mezzo proprio e spostamenti su strada (impegno alto)
   "Accompagnamento": 100, // Richiede presenza e accompagnamento a piedi o visite (impegno medio)
-  "Compagnia": 50,         // Visite domiciliari per conversazione, lettura o svago (impegno base)
-  "test": 1
+  "Compagnia": 50         // Visite domiciliari per conversazione, lettura o svago (impegno base)
 };
 
 // Genera automaticamente la lista dei servizi a partire dalle chiavi dei punti

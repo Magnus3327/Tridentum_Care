@@ -11,7 +11,7 @@ const appState = {
 async function fetchConstants() {
     if (appState.constants) return appState.constants;
     try {
-        const response = await fetch(`/api/constants?t=${Date.now()}`);
+        const response = await fetch('/api/constants');
         if (response.ok) {
             appState.constants = await response.json();
             return appState.constants;
