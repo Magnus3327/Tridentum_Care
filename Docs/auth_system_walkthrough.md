@@ -21,8 +21,8 @@ Abbiamo implementato un sistema di autenticazione e gestione delle sessioni **re
    - Collegato correttamente le richieste fittizie nel DB all'ID reale dell'utente di test Angela Bianchi, allineando tutti gli stati delle richieste tra le varie bacheche.
 
 4. **Sicurezza degli Endpoint API**:
-   (Da verificare con alessio la modifica) - **Richiedente** (requester.js): Ora estrae l'ID utente direttamente dal token JWT decodificato e verifica i permessi di ruolo (`requester`), impedendo ad utenti esterni di leggere, modificare o eliminare richieste altrui.
-   - **Volontario** (volunteer.js): Ora estrae l'email direttamente dal token JWT decodificato, impedendo accessi non autorizzati o contraffazioni di identità.
+   - **Richiedente** (requester.js): Ora estrae l'ID utente (`userId`) direttamente dal token JWT decodificato e verifica i permessi di ruolo (`requester`), impedendo ad utenti esterni di leggere, modificare o eliminare richieste altrui.
+   - **Volontario** (volunteer.js): Ora estrae l'ID utente (`userId`) direttamente dal token JWT decodificato, cercando il profilo per `ObjectId` e garantendo totale isolamento delle sessioni e coerenza di dati.
 
 5. **Integrazione Frontend Completa**:
    - Aggiornato main.js per implementare un helper di chiamata di rete `authorizedFetch` che inserisce automaticamente l'header `Authorization: Bearer <token>` in tutte le richieste verso il backend.
