@@ -271,7 +271,8 @@ router.post("/coupons/redeem", async (req, res) => {
 // API per eliminare definitivamente il profilo del volontario.
 router.delete('/profile', async (req, res) => {
   try {
-    const db = await getDatabase(req);
+    const db = req.app.locals.db;
+    if (!db) return res.status(500).json({ error: "Database non connesso" });
     const userId = req.user.userId;
 
     // GDPR: Se ci sono richieste "In Corso" accettate da questo volontario,
