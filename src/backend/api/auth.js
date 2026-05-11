@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { ObjectId } = require("mongodb");
 const authMiddleware = require("../middleware/auth");
+const { SERVICES, ROLES } = require("../../config/constants");
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "tridentum_care_secret_key_123";
@@ -27,7 +28,7 @@ router.post("/register", async (req, res) => {
 
     // Validazione specifica per il Volontario
     let volunteerData = {};
-    if (role === "volunteer") {
+    if (role === ROLES.VOLUNTEER) {
       const parsedAge = parseInt(age);
       if (isNaN(parsedAge) || parsedAge < 18) {
         return res.status(400).json({ error: "Un volontario deve essere maggiorenne (Età >= 18)!" });
@@ -37,7 +38,7 @@ router.post("/register", async (req, res) => {
         gender: gender || "",
         license: license || "No",
         points: 0,
-        skills: ["Trasporto", "Accompagnamento", "Compagnia"], // tutte le competenze attive di default
+        skills: [...SERVICES], // tutte le competenze attive di default, clonate dalle costanti
         coupons: []
       };
     }

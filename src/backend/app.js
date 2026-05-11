@@ -31,8 +31,14 @@ app.use('/api/volunteer', volunteerRouter);
 app.use('/api/requester', requesterRouter);
 
 // Configurazione base per le API
+const { SERVICES, ROLES, REQUEST_STATUS, DEFAULT_POINTS } = require('../config/constants');
+
 app.get('/api/status', (req, res) => {
     res.json({ status: 'ok', message: 'API funzionante' });
+});
+
+app.get('/api/constants', (req, res) => {
+    res.json({ SERVICES, ROLES, REQUEST_STATUS, DEFAULT_POINTS });
 });
 
 module.exports = app;
