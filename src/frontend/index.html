@@ -18,13 +18,12 @@
         #goog-gt-tt { display: none !important; }
         .goog-text-highlight { background-color: transparent !important; border: none !important; box-shadow: none !important; }
         
-        .flag-icon {
-            transition: transform 0.2s, filter 0.2s;
-            filter: grayscale(40%);
+        .lang-option {
+            transition: color 0.2s, transform 0.1s;
         }
-        .flag-icon:hover {
-            transform: scale(1.2);
-            filter: grayscale(0%);
+        .lang-option:hover {
+            color: var(--primary-color) !important;
+            transform: scale(1.05);
         }
     </style>
     <!-- Google Translate Script -->
@@ -37,6 +36,17 @@
             if (teCombo) {
                 teCombo.value = lang;
                 teCombo.dispatchEvent(new Event('change'));
+                
+                // Highlight active language
+                document.querySelectorAll('.lang-option').forEach(function(el) {
+                    el.style.color = 'var(--text-muted)';
+                    el.style.fontWeight = '500';
+                });
+                var activeEl = document.querySelector('.lang-option[data-lang="' + lang + '"]');
+                if (activeEl) {
+                    activeEl.style.color = 'var(--primary-color)';
+                    activeEl.style.fontWeight = '700';
+                }
             } else {
                 setTimeout(function() { changeLanguage(lang); }, 300);
             }
@@ -59,10 +69,12 @@
                     <!-- Injected via app.js -->
                 </div>
                 <!-- Language Selector -->
-                <div class="lang-flags" style="display: flex; gap: 0.75rem; cursor: pointer; font-size: 1.5rem; border-left: 1px solid var(--border-color); padding-left: 1.5rem;">
-                    <span class="flag-icon" onclick="changeLanguage('it')" title="Italiano">🇮🇹</span>
-                    <span class="flag-icon" onclick="changeLanguage('en')" title="English">🇬🇧</span>
-                    <span class="flag-icon" onclick="changeLanguage('de')" title="Deutsch">🇩🇪</span>
+                <div class="lang-selector" style="display: flex; gap: 0.5rem; align-items: center; cursor: pointer; font-size: 0.875rem; font-weight: 500; border-left: 1px solid var(--border-color); padding-left: 1.25rem; user-select: none;">
+                    <span class="lang-option" data-lang="it" onclick="changeLanguage('it')" title="Italiano" style="color: var(--primary-color); font-weight: 700;">IT</span>
+                    <span class="lang-divider" style="color: var(--border-color); font-weight: 300; font-size: 0.8rem;">|</span>
+                    <span class="lang-option" data-lang="en" onclick="changeLanguage('en')" title="English" style="color: var(--text-muted);">ENG</span>
+                    <span class="lang-divider" style="color: var(--border-color); font-weight: 300; font-size: 0.8rem;">|</span>
+                    <span class="lang-option" data-lang="de" onclick="changeLanguage('de')" title="Deutsch" style="color: var(--text-muted);">DE</span>
                 </div>
             </div>
         </div>
