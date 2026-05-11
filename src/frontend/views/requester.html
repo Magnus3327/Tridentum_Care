@@ -1,56 +1,94 @@
 <!-- Dashboard "Le mie richieste" -->
 <section id="view-req-dashboard" class="view-section">
-    <div class="flex justify-between items-center" style="margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap;">
-        <h2>Le Mie Richieste</h2>
-        <button class="btn btn-secondary" onclick="openNewRequesterRequest()">
-            <i class="fa-solid fa-plus" style="margin-right: 0.5rem;"></i> Nuova Richiesta
-        </button>
+    <div class="card" style="background: linear-gradient(135deg, var(--primary-color), #2d7da6); color: white; margin-bottom: 2rem; border: none; padding: 2rem;">
+        <div class="flex justify-between items-center flex-col md-row gap-2" style="text-align: left; flex-wrap: wrap;">
+            <div>
+                <h1 style="color: white; margin-bottom: 0.5rem; font-size: 2.25rem;">👋 Benvenuto!</h1>
+                <p style="margin-bottom: 0; opacity: 0.9;">Gestisci le tue richieste d'aiuto nel territorio di Trento o richiedi un nuovo intervento.</p>
+            </div>
+            <div>
+                <button class="btn" onclick="openNewRequesterRequest()" style="background: white; color: var(--primary-color); border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.15); font-weight: 700; padding: 0.75rem 1.5rem;">
+                    <i class="fa-solid fa-plus" style="margin-right: 0.5rem;"></i> Nuova Richiesta
+                </button>
+            </div>
+        </div>
     </div>
 
-    <div id="requester-requests-container"></div>
+    <div class="flex justify-between items-center" style="margin-bottom: 1.5rem;">
+        <h2 style="margin-bottom: 0; font-size: 1.5rem;"><i class="fa-solid fa-clock-rotate-left text-primary" style="margin-right: 0.5rem;"></i> Cronologia Richieste</h2>
+    </div>
+
+    <div id="requester-requests-container" class="flex flex-col gap-2"></div>
 </section>
 
 <!-- Form Crea/Modifica Richiesta -->
 <section id="view-req-form" class="view-section">
-    <button class="btn btn-outline" onclick="navigateTo('req-dashboard')" style="margin-bottom: 2rem;"><i class="fa-solid fa-arrow-left" style="margin-right: 0.5rem;"></i> Torna Indietro</button>
-    <div class="card">
-        <h2 id="req-form-title">Crea Nuova Richiesta di Aiuto</h2>
+    <button class="btn btn-outline" onclick="navigateTo('req-dashboard')" style="margin-bottom: 2rem;">
+        <i class="fa-solid fa-arrow-left" style="margin-right: 0.5rem;"></i> Torna alla Dashboard
+    </button>
+    
+    <div class="card" style="background: linear-gradient(135deg, var(--secondary-color), var(--primary-color)); color: white; margin-bottom: 2rem; border: none; padding: 2rem;">
+        <h1 style="color: white; margin-bottom: 0.5rem; font-size: 2.25rem;" id="req-form-title">Crea Nuova Richiesta</h1>
+        <p style="margin-bottom: 0; opacity: 0.9;">Inserisci i dettagli dell'attività d'aiuto di cui hai bisogno. I nostri volontari saranno felici di aiutarti!</p>
+    </div>
+
+    <div class="card" style="padding: 2.5rem; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);">
         <form id="requester-form" onsubmit="submitRequesterRequest(event)">
-            <div class="form-group">
-                <label class="form-label">Di cosa hai bisogno?</label>
-                <select id="req-serviceType" class="form-control" required>
-                    <option value="">Seleziona un servizio...</option>
-                    <option value="Trasporto">Trasporto</option>
-                    <option value="Accompagnamento">Accompagnamento</option>
-                    <option value="Compagnia">Compagnia</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Dove?</label>
-                <input id="req-location" type="text" class="form-control" placeholder="Via Roma 1, Trento" required>
-            </div>
-            <div class="grid-2">
-                <div class="form-group">
-                    <label class="form-label">Data</label>
-                    <input id="req-date" type="date" class="form-control" required>
+            <div class="grid-2" style="gap: 1.5rem; margin-bottom: 1.5rem;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-weight: 600; display: flex; align-items: center; gap: 0.5rem; color: var(--text-dark); margin-bottom: 0.5rem;">
+                        <i class="fa-solid fa-hands-holding" style="color: var(--secondary-color);"></i> Di cosa hai bisogno?
+                    </label>
+                    <select id="req-serviceType" class="form-control" style="border-radius: var(--radius-md); border: 1px solid var(--border-color); height: 48px;" required>
+                        <option value="">Seleziona un servizio...</option>
+                        <option value="Trasporto">Trasporto</option>
+                        <option value="Accompagnamento">Accompagnamento</option>
+                        <option value="Compagnia">Compagnia</option>
+                    </select>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Ora (indicativa)</label>
-                    <input id="req-time" type="time" class="form-control" required>
+                
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-weight: 600; display: flex; align-items: center; gap: 0.5rem; color: var(--text-dark); margin-bottom: 0.5rem;">
+                        <i class="fa-solid fa-location-dot" style="color: var(--primary-color);"></i> Dove si svolgerà?
+                    </label>
+                    <input id="req-location" type="text" class="form-control" placeholder="Via Roma 1, Trento" style="border-radius: var(--radius-md); border: 1px solid var(--border-color); height: 48px;" required>
                 </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Note aggiuntive (Opzionale)</label>
-                <textarea id="req-notes" class="form-control" rows="3" placeholder="Es. Suonare il campanello Rossi..."></textarea>
+            
+            <div class="grid-2" style="gap: 1.5rem; margin-bottom: 1.5rem;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-weight: 600; display: flex; align-items: center; gap: 0.5rem; color: var(--text-dark); margin-bottom: 0.5rem;">
+                        <i class="fa-regular fa-calendar" style="color: var(--primary-color);"></i> Data dell'intervento
+                    </label>
+                    <input id="req-date" type="date" class="form-control" style="border-radius: var(--radius-md); border: 1px solid var(--border-color); height: 48px;" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-weight: 600; display: flex; align-items: center; gap: 0.5rem; color: var(--text-dark); margin-bottom: 0.5rem;">
+                        <i class="fa-regular fa-clock" style="color: var(--secondary-color);"></i> Ora indicativa
+                    </label>
+                    <input id="req-time" type="time" class="form-control" style="border-radius: var(--radius-md); border: 1px solid var(--border-color); height: 48px;" required>
+                </div>
             </div>
-            <button type="submit" class="btn btn-secondary btn-block" style="margin-top: 2rem;">Invia Richiesta</button>
+            
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <label class="form-label" style="font-weight: 600; display: flex; align-items: center; gap: 0.5rem; color: var(--text-dark); margin-bottom: 0.5rem;">
+                    <i class="fa-solid fa-align-left" style="color: var(--text-muted);"></i> Note o indicazioni speciali (Opzionale)
+                </label>
+                <textarea id="req-notes" class="form-control" rows="4" placeholder="Inserisci indicazioni utili, ad esempio: campanello da suonare, scale, necessità particolari, ecc." style="border-radius: var(--radius-md); border: 1px solid var(--border-color); padding: 1rem; font-family: inherit; resize: vertical;"></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-secondary btn-block" style="padding: 1rem; font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 0.5rem; border-radius: var(--radius-md);">
+                <i class="fa-solid fa-paper-plane"></i> Invia Richiesta di Assistenza
+            </button>
         </form>
     </div>
 </section>
 
 <!-- Dettaglio Richiesta -->
 <section id="view-req-detail" class="view-section">
-    <button class="btn btn-outline" onclick="navigateTo('req-dashboard')" style="margin-bottom: 2rem;"><i class="fa-solid fa-arrow-left" style="margin-right: 0.5rem;"></i> Torna Indietro</button>
+    <button class="btn btn-outline" onclick="navigateTo('req-dashboard')" style="margin-bottom: 2rem;">
+        <i class="fa-solid fa-arrow-left" style="margin-right: 0.5rem;"></i> Torna Indietro
+    </button>
     <div class="card">
         <div class="flex justify-between items-center" style="gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
             <span id="req-detail-status" class="badge badge-warning" style="font-size: 1rem; padding: 0.4rem 0.8rem;">Stato</span>
