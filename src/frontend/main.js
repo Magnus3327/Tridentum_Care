@@ -952,7 +952,12 @@ function updateStorePoints() {
 // ==========================================
 
 window.loadProfile = async function() {
-    const role = appState.userRole || "volunteer";
+    const role = appState.userRole;
+    if (!role) {
+        showToast("Devi effettuare il login per visualizzare il profilo.", "danger");
+        navigateTo('auth');
+        return;
+    }
     
     const roleBadge = document.getElementById("profile-role-badge");
     if (roleBadge) {
@@ -975,8 +980,23 @@ window.loadProfile = async function() {
     }
 
     try {
-        const response = await authorizedFetch(`/api/volunteer/profile`);
-        if (!response.ok) throw new Error("Errore nel caricamento dati profilo");
+        let profileEndpoint;
+        if (role === 'volunteer') {
+            profileEndpoint = '/api/volunteer/profile';
+        } else if (role === 'requester') {
+            profileEndpoint = '/api/requester/profile';
+        } else {
+            showToast("Ruolo utente non valido. Effettua nuovamente il login.", "danger");
+            navigateTo('auth');
+            return;
+        }
+
+        const response = await authorizedFetch(profileEndpoint);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            const message = errorData?.error || `Errore ${response.status}`;
+            throw new Error(message);
+        }
 
         const profile = await response.json();
 
@@ -1028,7 +1048,13 @@ window.loadProfile = async function() {
 window.saveProfile = async function(event) {
     if (event) event.preventDefault();
 
-    const role = appState.userRole || "volunteer";
+    const role = appState.userRole;
+    if (!role) {
+        showToast("Devi effettuare il login per modificare il profilo.", "danger");
+        navigateTo('auth');
+        return;
+    }
+
     const email = document.getElementById("profile-email").value;
     const name = document.getElementById("profile-name").value;
     const surname = document.getElementById("profile-surname").value;
@@ -1067,12 +1093,23 @@ window.saveProfile = async function(event) {
     }
 
     try {
-        const response = await authorizedFetch(`/api/volunteer/profile`, {
+        let profileEndpoint;
+        if (role === 'volunteer') {
+            profileEndpoint = '/api/volunteer/profile';
+        } else if (role === 'requester') {
+            profileEndpoint = '/api/requester/profile';
+        } else {
+            showToast("Ruolo utente non valido. Effettua nuovamente il login.", "danger");
+            navigateTo('auth');
+            return;
+        }
+
+        const response = await authorizedFetch(profileEndpoint, {
             method: "PUT",
             body: JSON.stringify(profileData)
         });
 
-        const result = await response.json();
+        const result = await response.json().catch(() => ({}));
 
         if (response.ok) {
             showToast("Profilo aggiornato con successo!", "success");
@@ -1080,7 +1117,7 @@ window.saveProfile = async function(event) {
                 loadVolunteerDashboard();
             }
         } else {
-            showToast(`Errore: ${result.error}`, "danger");
+            showToast(`Errore: ${result.error || `HTTP ${response.status}`}`, "danger");
         }
     } catch (e) {
         console.error("Errore nel salvataggio del profilo:", e);

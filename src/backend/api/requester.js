@@ -307,10 +307,7 @@ router.get('/profile', async (req, res) => {
     const db = await getDatabase(req);
     const userId = req.user.userId;
 
-    const requester = await db.collection('users').findOne({ 
-      _id: new ObjectId(userId), 
-      role: 'requester' 
-    });
+    const requester = await db.collection('users').findOne({ _id: new ObjectId(userId) });
 
     if (!requester) {
       return res.status(404).json({ error: 'Profilo richiedente non trovato' });
@@ -334,7 +331,7 @@ router.put('/profile', async (req, res) => {
     }
 
     const result = await db.collection('users').updateOne(
-      { _id: new ObjectId(userId), role: 'requester' },
+      { _id: new ObjectId(userId) },
       { $set: { name, surname, phone: phone || '', address: address || '', updatedAt: new Date() } }
     );
 
