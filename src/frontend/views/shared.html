@@ -95,7 +95,7 @@
             <p>Sei sicuro di voler richiedere l'eliminazione definitiva del tuo account e di tutti i dati associati (conforme alla normativa GDPR)? Questa azione è irreversibile.</p>
             <div class="flex gap-2 justify-center" style="margin-top: 2rem;">
                 <button class="btn btn-outline" onclick="closeModal('delete-account-modal')">Annulla</button>
-                <button class="btn btn-danger" onclick="alert('Richiesta inviata. Il tuo account verrà eliminato entro le tempistiche GDPR. Sarai disconnesso.'); navigateTo('home'); closeModal('delete-account-modal')">Conferma Eliminazione</button>
+                <button id="confirm-delete-profile-btn" class="btn btn-danger" onclick="deleteUserProfile()">Conferma Eliminazione</button>
             </div>
         </div>
     </div>

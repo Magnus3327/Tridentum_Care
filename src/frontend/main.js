@@ -1165,6 +1165,11 @@ window.loadProfile = async function() {
         return;
     }
     
+    const confirmBtn = document.getElementById('confirm-delete-profile-btn');
+    if (confirmBtn) {
+        resetProfileDeleteButton(confirmBtn);
+    }
+    
     const roleBadge = document.getElementById("profile-role-badge");
     if (roleBadge) {
         if (role === 'volunteer') {
@@ -1470,3 +1475,69 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Se non è loggato, naviga alla home pubblica
     navigateTo('home');
 });
+
+window.deleteUserProfile = async function() {
+    const confirmBtn = document.getElementById('confirm-delete-profile-btn');
+    if (!confirmBtn) return;
+    
+    // Se il pulsante è già in attesa di conferma (secondo click)
+    if (confirmBtn.dataset.confirmState === 'active') {
+        try {
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right: 0.5rem;"></i> Eliminazione in corso...';
+            
+            const role = appState.userRole; // 'requester' o 'volunteer'
+            const endpoint = `/api/${role}/profile`;
+            
+            const response = await authorizedFetch(endpoint, {
+                method: 'DELETE'
+            });
+            
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Errore durante l\'eliminazione del profilo');
+            }
+            
+            // Chiudi il modal
+            closeModal('delete-account-modal');
+            
+            // Svuota i dati di sessione (logout silente)
+            localStorage.removeItem('token');
+            appState.userRole = null;
+            appState.userEmail = null;
+            appState.userId = null;
+            appState.points = 0;
+            
+            // Naviga alla home
+            navigateTo('home');
+            
+            // Mostra la notifica in rosso (danger) di avvenuta eliminazione profilo
+            showToast('Il tuo profilo e tutti i tuoi dati sono stati eliminati definitivamente.', 'danger');
+        } catch (error) {
+            console.error('Errore eliminazione profilo:', error);
+            showToast(error.message, 'danger');
+            resetProfileDeleteButton(confirmBtn);
+        }
+    } else {
+        // Primo click: entra nello stato di conferma
+        confirmBtn.dataset.confirmState = 'active';
+        confirmBtn.style.backgroundColor = '#d32f2f';
+        confirmBtn.style.borderColor = '#d32f2f';
+        confirmBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="margin-right: 0.5rem;"></i> Clicca di nuovo per eliminare il tuo account per sempre';
+        
+        // Timeout di 4 secondi per ripristinare il bottone originario se desiste
+        if (window.profileDeleteBtnTimeout) clearTimeout(window.profileDeleteBtnTimeout);
+        window.profileDeleteBtnTimeout = setTimeout(() => {
+            resetProfileDeleteButton(confirmBtn);
+        }, 4000);
+    }
+};
+
+function resetProfileDeleteButton(btn) {
+    if (!btn) return;
+    btn.disabled = false;
+    btn.dataset.confirmState = 'inactive';
+    btn.style.backgroundColor = '';
+    btn.style.borderColor = '';
+    btn.innerHTML = 'Conferma Eliminazione';
+}
