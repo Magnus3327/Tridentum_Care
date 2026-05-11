@@ -1454,7 +1454,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 appState.userName = data.name;
                 appState.points = data.points || 0;
                 
-                showToast(`Bentornato, ${data.name}!`, 'success');
+                showToast(`Ciao, ${data.name}!`, 'success');
                 if (data.role === 'volunteer') {
                     navigateTo('vol-board');
                 } else if (data.role === 'requester') {
