@@ -4,6 +4,7 @@ const express = require('express');
 const { ObjectId } = require('mongodb');
 const connectDB = require('../../config/db');
 const authMiddleware = require('../middleware/auth');
+const { SERVICE_POINTS } = require('../../config/constants');
 
 const router = express.Router();
 
@@ -63,7 +64,7 @@ router.post('/requests', async (req, res) => {
       dateTime: `${date}, ${time}`, // per compatibilità volontario
       notes: notes || '',
       description: notes || '', // per compatibilità volontario
-      points: 100, // punti predefiniti che guadagnerà il volontario
+      points: SERVICE_POINTS[serviceType] || 100, // punti associati all'attività presi dalle costanti
       status: 'In Attesa di Volontario',
       createdAt: new Date(),
       volunteerId: null,

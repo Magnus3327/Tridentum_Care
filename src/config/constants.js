@@ -3,7 +3,15 @@
  * Questo file funge da "Single Source of Truth" (SST) per evitare disallineamenti di stringhe nel codice.
  */
 
-const SERVICES = ["Trasporto", "Accompagnamento", "Compagnia"];
+// Punti differenti assegnati a ciascuna attività in base alla complessità e all'impegno richiesto
+const SERVICE_POINTS = {
+  "Trasporto": 150,       // Richiede patente, mezzo proprio e spostamenti su strada (impegno alto)
+  "Accompagnamento": 100, // Richiede presenza e accompagnamento a piedi o visite (impegno medio)
+  "Compagnia": 50         // Visite domiciliari per conversazione, lettura o svago (impegno base)
+};
+
+// Genera automaticamente la lista dei servizi a partire dalle chiavi dei punti
+const SERVICES = Object.keys(SERVICE_POINTS);
 
 const ROLES = {
   VOLUNTEER: "volunteer",
@@ -19,13 +27,9 @@ const REQUEST_STATUS = {
   CANCELLED: "Annullata"
 };
 
-const DEFAULT_POINTS = {
-  REWARD_TASK: 100 // Punti assegnati di default per il completamento di un incarico
-};
-
 module.exports = {
+  SERVICE_POINTS,
   SERVICES,
   ROLES,
-  REQUEST_STATUS,
-  DEFAULT_POINTS
+  REQUEST_STATUS
 };
