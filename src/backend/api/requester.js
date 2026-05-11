@@ -302,28 +302,50 @@ router.delete('/requests/:requestId', async (req, res) => {
 });
 
 // API per caricare il profilo del richiedente.
-
 router.get('/profile', async (req, res) => {
-  const userId = req.user.userId;
-  const requester = await db.collection('users').findOne({ 
-    _id: new ObjectId(userId), 
-    role: 'requester' 
-  });
-  res.json(requester);
+  try {
+    const db = await getDatabase(req);
+    const userId = req.user.userId;
+
+    const requester = await db.collection('users').findOne({ 
+      _id: new ObjectId(userId), 
+      role: 'requester' 
+    });
+
+    if (!requester) {
+      return res.status(404).json({ error: 'Profilo richiedente non trovato' });
+    }
+
+    res.json(requester);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // API per aggiornare il profilo del richiedente.
-
 router.put('/profile', async (req, res) => {
-  const userId = req.user.userId;
-  const { name, surname, phone, address } = req.body;
-  
-  await db.collection('users').updateOne(
-    { _id: new ObjectId(userId), role: 'requester' },
-    { $set: { name, surname, phone, address, updatedAt: new Date() } }
-  );
-  
-  res.json({ message: 'Profilo aggiornato con successo' });
+  try {
+    const db = await getDatabase(req);
+    const userId = req.user.userId;
+    const { name, surname, phone, address } = req.body;
+
+    if (!name || !surname) {
+      return res.status(400).json({ error: 'Nome e cognome sono obbligatori' });
+    }
+
+    const result = await db.collection('users').updateOne(
+      { _id: new ObjectId(userId), role: 'requester' },
+      { $set: { name, surname, phone: phone || '', address: address || '', updatedAt: new Date() } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'Profilo richiedente non trovato o non autorizzato' });
+    }
+
+    res.json({ message: 'Profilo aggiornato con successo' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;
