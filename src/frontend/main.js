@@ -3,6 +3,7 @@ const appState = {
     userRole: null, // 'requester', 'volunteer', 'partner', 'admin', null
     userEmail: null, // email dell'utente loggato
     userId: null, // id utente reale estratto dal token
+    userName: null, // nome dell'utente loggato per instant rendering
     points: 0,
     constants: null,
 };
@@ -386,6 +387,28 @@ window.loadRequesterDashboard = async function() {
     const container = document.getElementById('requester-requests-container');
     if (!container) return;
 
+    // Mostra istantaneamente il nome salvato in stato locale per evitare sfarfallii
+    const welcomeName = document.getElementById("requester-welcome-name");
+    if (welcomeName && appState.userName) {
+        welcomeName.innerText = appState.userName;
+    }
+
+    // Carica/Aggiorna il nome reale del richiedente per il banner di benvenuto
+    try {
+        const profileRes = await authorizedFetch('/api/requester/profile');
+        if (profileRes.ok) {
+            const profile = await profileRes.json();
+            if (profile.name) {
+                appState.userName = profile.name;
+                if (welcomeName) {
+                    welcomeName.innerText = profile.name;
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Errore nel caricamento del nome richiedente:", e);
+    }
+
     try {
         const response = await authorizedFetch('/api/requester/requests');
         if (!response.ok) {
@@ -697,6 +720,7 @@ function bindAuthEvents() {
                 appState.userRole = data.user.role;
                 appState.userEmail = data.user.email;
                 appState.userId = data.user.id;
+                appState.userName = data.user.name;
                 appState.points = data.user.points || 0;
 
                 showToast(data.message, 'success');
@@ -1318,6 +1342,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 appState.userRole = data.role;
                 appState.userEmail = data.email;
                 appState.userId = data.id;
+                appState.userName = data.name;
                 appState.points = data.points || 0;
                 
                 showToast(`Bentornato, ${data.name}!`, 'success');
