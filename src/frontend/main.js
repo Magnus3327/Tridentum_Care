@@ -55,8 +55,6 @@ function navigateTo(routeId) {
     // Caricamento dinamico dei dati in base alla vista
     if (routeId === 'req-dashboard') {
         loadRequesterDashboard();
-    } else if (routeId === 'req-form') {
-        resetRequesterForm();
     } else if (routeId === 'vol-board') {
         loadVolunteerDashboard();
     } else if (routeId === 'profile') {
@@ -120,6 +118,11 @@ window.resetRequesterForm = function() {
     if (submitButton) submitButton.innerText = 'Invia Richiesta';
 };
 
+window.openNewRequesterRequest = function() {
+    resetRequesterForm();
+    navigateTo('req-form');
+};
+
 function getRequesterFormData() {
     return {
         serviceType: document.getElementById('req-serviceType')?.value,
@@ -142,6 +145,13 @@ window.createRequesterRequest = async function() {
     const payload = getRequesterFormData();
     if (!payload.serviceType || !payload.location || !payload.date || !payload.time) {
         showToast('Compila tutti i campi richiesti prima di inviare la richiesta.', 'danger');
+        return;
+    }
+
+    // Validazione data futura
+    const requestDate = new Date(`${payload.date}T${payload.time}`);
+    if (isNaN(requestDate.getTime()) || requestDate <= new Date()) {
+        showToast('La data e ora della richiesta devono essere valide e future.', 'danger');
         return;
     }
 
@@ -190,11 +200,22 @@ window.openRequesterEdit = function(requestId) {
 
 window.isRequesterRequestEditable = function(req) {
     if (!req) return false;
-    return req.status === 'In Attesa di Volontario';
+    if (req.status !== 'In Attesa di Volontario') return false;
+    const now = new Date();
+    const requestDate = new Date(`${req.date}T${req.time}`);
+    return requestDate > now;
 };
 
 window.canRequesterComplete = function(req) {
     return req && req.status === 'In Corso';
+};
+
+window.canRequesterCancel = function(req) {
+    if (!req) return false;
+    if (req.status !== 'In Attesa di Volontario') return false;
+    const now = new Date();
+    const requestDate = new Date(`${req.date}T${req.time}`);
+    return requestDate > now;
 };
 
 window.canRequesterRate = function(req) {
@@ -276,6 +297,13 @@ window.updateRequesterRequest = async function(requestId) {
     const payload = getRequesterFormData();
     if (!payload.serviceType || !payload.location || !payload.date || !payload.time) {
         showToast('Compila tutti i campi richiesti prima di salvare le modifiche.', 'danger');
+        return;
+    }
+
+    // Validazione data futura
+    const requestDate = new Date(`${payload.date}T${payload.time}`);
+    if (isNaN(requestDate.getTime()) || requestDate <= new Date()) {
+        showToast('La data e ora della richiesta devono essere valide e future.', 'danger');
         return;
     }
 
@@ -371,6 +399,7 @@ window.openRequesterDetail = function(requestId) {
     const editBtn = document.getElementById('req-detail-edit-btn');
     const editable = isRequesterRequestEditable(req);
     const canComplete = window.canRequesterComplete(req);
+    const canCancel = window.canRequesterCancel(req);
 
     // Nasconde completamente i bottoni per richieste completate o annullate
     if (req.status === 'Annullata' || req.status === 'Completata') {
@@ -380,16 +409,13 @@ window.openRequesterDetail = function(requestId) {
     } else {
         // Mostra i bottoni e gestisci la loro abilitazione
         if (cancelBtn) {
-            cancelBtn.style.display = 'inline-block';
-            cancelBtn.disabled = !editable;
+            cancelBtn.style.display = canCancel ? 'inline-block' : 'none';
         }
         if (completeBtn) {
-            completeBtn.style.display = 'inline-block';
-            completeBtn.disabled = !canComplete;
+            completeBtn.style.display = canComplete ? 'inline-block' : 'none';
         }
         if (editBtn) {
-            editBtn.style.display = 'inline-block';
-            editBtn.disabled = !editable;
+            editBtn.style.display = editable ? 'inline-block' : 'none';
         }
     }
 
@@ -1057,6 +1083,28 @@ window.saveProfile = async function(event) {
     const surname = document.getElementById("profile-surname").value;
     const phone = document.getElementById("profile-phone").value;
     const address = document.getElementById("profile-address").value;
+
+    // Validazioni di base
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showToast('Inserisci un indirizzo email valido.', 'danger');
+        return;
+    }
+    if (!name || name.length < 2) {
+        showToast('Il nome deve avere almeno 2 caratteri.', 'danger');
+        return;
+    }
+    if (!surname || surname.length < 2) {
+        showToast('Il cognome deve avere almeno 2 caratteri.', 'danger');
+        return;
+    }
+    if (phone && !/^\+?\d{10,15}$/.test(phone.replace(/\s/g, ''))) {
+        showToast('Inserisci un numero di telefono valido (10-15 cifre).', 'danger');
+        return;
+    }
+    if (!address || address.length < 5) {
+        showToast('L\'indirizzo deve avere almeno 5 caratteri.', 'danger');
+        return;
+    }
 
     const profileData = {
         email,
