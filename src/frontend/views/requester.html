@@ -1,9 +1,9 @@
 <!-- Dashboard "Le mie richieste" -->
-<section id="view-req-dashboard" class="view-section accessible-view">
+<section id="view-req-dashboard" class="view-section">
     <div class="flex justify-between items-center" style="margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap;">
         <h2>Le Mie Richieste</h2>
-        <button class="btn btn-secondary btn-large" onclick="openNewRequesterRequest()">
-            <i class="fa-solid fa-plus"></i> Nuova Richiesta
+        <button class="btn btn-secondary" onclick="openNewRequesterRequest()">
+            <i class="fa-solid fa-plus" style="margin-right: 0.5rem;"></i> Nuova Richiesta
         </button>
     </div>
 
@@ -11,14 +11,14 @@
 </section>
 
 <!-- Form Crea/Modifica Richiesta -->
-<section id="view-req-form" class="view-section accessible-view">
-    <button class="btn btn-outline" onclick="navigateTo('req-dashboard')" style="margin-bottom: 2rem;"><i class="fa-solid fa-arrow-left"></i> Torna Indietro</button>
+<section id="view-req-form" class="view-section">
+    <button class="btn btn-outline" onclick="navigateTo('req-dashboard')" style="margin-bottom: 2rem;"><i class="fa-solid fa-arrow-left" style="margin-right: 0.5rem;"></i> Torna Indietro</button>
     <div class="card">
         <h2 id="req-form-title">Crea Nuova Richiesta di Aiuto</h2>
         <form id="requester-form" onsubmit="submitRequesterRequest(event)">
             <div class="form-group">
                 <label class="form-label">Di cosa hai bisogno?</label>
-                <select id="req-serviceType" class="form-control form-control-lg" required>
+                <select id="req-serviceType" class="form-control" required>
                     <option value="">Seleziona un servizio...</option>
                     <option value="Trasporto">Trasporto</option>
                     <option value="Accompagnamento">Accompagnamento</option>
@@ -27,50 +27,50 @@
             </div>
             <div class="form-group">
                 <label class="form-label">Dove?</label>
-                <input id="req-location" type="text" class="form-control form-control-lg" placeholder="Via Roma 1, Trento" required>
+                <input id="req-location" type="text" class="form-control" placeholder="Via Roma 1, Trento" required>
             </div>
             <div class="grid-2">
                 <div class="form-group">
                     <label class="form-label">Data</label>
-                    <input id="req-date" type="date" class="form-control form-control-lg" required>
+                    <input id="req-date" type="date" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Ora (indicativa)</label>
-                    <input id="req-time" type="time" class="form-control form-control-lg" required>
+                    <input id="req-time" type="time" class="form-control" required>
                 </div>
             </div>
             <div class="form-group">
                 <label class="form-label">Note aggiuntive (Opzionale)</label>
-                <textarea id="req-notes" class="form-control form-control-lg" rows="3" placeholder="Es. Suonare il campanello Rossi..."></textarea>
+                <textarea id="req-notes" class="form-control" rows="3" placeholder="Es. Suonare il campanello Rossi..."></textarea>
             </div>
-            <button type="submit" class="btn btn-secondary btn-large btn-block" style="margin-top: 2rem;">Invia Richiesta</button>
+            <button type="submit" class="btn btn-secondary btn-block" style="margin-top: 2rem;">Invia Richiesta</button>
         </form>
     </div>
 </section>
 
 <!-- Dettaglio Richiesta -->
-<section id="view-req-detail" class="view-section accessible-view">
-    <button class="btn btn-outline" onclick="navigateTo('req-dashboard')" style="margin-bottom: 2rem;"><i class="fa-solid fa-arrow-left"></i> Torna Indietro</button>
+<section id="view-req-detail" class="view-section">
+    <button class="btn btn-outline" onclick="navigateTo('req-dashboard')" style="margin-bottom: 2rem;"><i class="fa-solid fa-arrow-left" style="margin-right: 0.5rem;"></i> Torna Indietro</button>
     <div class="card">
-        <div class="flex justify-between items-center" style="gap: 1rem; flex-wrap: wrap;">
-            <span id="req-detail-status" class="badge badge-warning" style="font-size: 1.2rem; padding: 0.5rem 1rem;">Stato</span>
+        <div class="flex justify-between items-center" style="gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+            <span id="req-detail-status" class="badge badge-warning" style="font-size: 1rem; padding: 0.4rem 0.8rem;">Stato</span>
             <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                <button id="req-detail-edit-btn" class="btn btn-secondary" onclick="openRequesterEdit(window.currentRequesterRequestId)">Modifica Richiesta</button>
-                <button id="req-detail-cancel-btn" class="btn btn-danger" onclick="cancelRequesterRequest(window.currentRequesterRequestId)">Annulla Richiesta</button>
+                <button id="req-detail-edit-btn" class="btn btn-secondary" onclick="openRequesterEdit(window.currentRequesterRequestId)">Modifica</button>
+                <button id="req-detail-cancel-btn" class="btn btn-danger" onclick="cancelRequesterRequest(window.currentRequesterRequestId)">Annulla</button>
                 <button id="req-detail-complete-btn" class="btn btn-primary" onclick="updateRequesterStatus(window.currentRequesterRequestId, 'Completata')">Segna come Completata</button>
             </div>
         </div>
-        <h1 id="req-detail-title" style="margin-top: 1rem;">Titolo richiesta</h1>
+        <h1 id="req-detail-title" style="margin-bottom: 1.5rem;">Titolo richiesta</h1>
         
-        <div style="margin: 2rem 0; font-size: 1.1rem; background: #f8f9fa; padding: 1.5rem; border-radius: var(--radius-md);">
-            <p><strong><i class="fa-regular fa-calendar"></i> Data:</strong> <span id="req-detail-date"></span></p>
-            <p><strong><i class="fa-regular fa-clock"></i> Ora:</strong> <span id="req-detail-time"></span></p>
-            <p><strong><i class="fa-solid fa-location-dot"></i> Luogo:</strong> <span id="req-detail-location"></span></p>
-            <p><strong><i class="fa-solid fa-circle-info"></i> Note:</strong> <span id="req-detail-notes"></span></p>
+        <div style="margin: 1.5rem 0; font-size: 1rem; background: var(--background-light); border: 1px solid var(--border-color); padding: 1.5rem; border-radius: var(--radius-md);">
+            <p style="margin-bottom: 0.75rem;"><strong><i class="fa-regular fa-calendar" style="margin-right: 0.5rem; color: var(--primary-color);"></i> Data:</strong> <span id="req-detail-date"></span></p>
+            <p style="margin-bottom: 0.75rem;"><strong><i class="fa-regular fa-clock" style="margin-right: 0.5rem; color: var(--secondary-color);"></i> Ora:</strong> <span id="req-detail-time"></span></p>
+            <p style="margin-bottom: 0.75rem;"><strong><i class="fa-solid fa-location-dot" style="margin-right: 0.5rem; color: var(--primary-color);"></i> Luogo:</strong> <span id="req-detail-location"></span></p>
+            <p style="margin-bottom: 0;"><strong><i class="fa-solid fa-circle-info" style="margin-right: 0.5rem; color: var(--text-muted);"></i> Note:</strong> <span id="req-detail-notes"></span></p>
         </div>
         <div id="req-detail-rating-section" style="margin-top: 1.5rem; display: none;">
-            <div class="card" style="background: #fff9e6; border: 1px solid rgba(255, 193, 7, 0.25);">
-                <h3 style="margin-top: 0;">Valuta il servizio</h3>
+            <div class="card" style="background: #fff9e6; border: 1px solid rgba(255, 193, 7, 0.25); padding: 1.5rem;">
+                <h3 style="margin-top: 0; margin-bottom: 1rem;">Valuta il servizio</h3>
                 <div id="req-detail-rating-content"></div>
             </div>
         </div>
