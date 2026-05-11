@@ -301,4 +301,29 @@ router.delete('/requests/:requestId', async (req, res) => {
   }
 });
 
+// API per caricare il profilo del richiedente.
+
+router.get('/profile', async (req, res) => {
+  const userId = req.user.userId;
+  const requester = await db.collection('users').findOne({ 
+    _id: new ObjectId(userId), 
+    role: 'requester' 
+  });
+  res.json(requester);
+});
+
+// API per aggiornare il profilo del richiedente.
+
+router.put('/profile', async (req, res) => {
+  const userId = req.user.userId;
+  const { name, surname, phone, address } = req.body;
+  
+  await db.collection('users').updateOne(
+    { _id: new ObjectId(userId), role: 'requester' },
+    { $set: { name, surname, phone, address, updatedAt: new Date() } }
+  );
+  
+  res.json({ message: 'Profilo aggiornato con successo' });
+});
+
 module.exports = router;
