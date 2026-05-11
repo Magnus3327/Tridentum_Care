@@ -402,12 +402,16 @@ router.delete('/profile', async (req, res) => {
     const db = await getDatabase(req);
     const userId = req.user.userId;
 
+    // GDPR: Elimina tutte le richieste create da questo richiedente
+    await db.collection('requests').deleteMany({ userId: new ObjectId(userId) });
+
+    // Elimina il profilo utente stesso
     const result = await db.collection('users').deleteOne({ _id: new ObjectId(userId) });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Profilo non trovato' });
     }
 
-    res.json({ message: 'Profilo eliminato definitivamente con successo' });
+    res.json({ message: 'Profilo e tutte le richieste collegate eliminati definitivamente con successo' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

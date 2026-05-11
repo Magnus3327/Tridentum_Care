@@ -274,12 +274,26 @@ router.delete('/profile', async (req, res) => {
     const db = await getDatabase(req);
     const userId = req.user.userId;
 
+    // GDPR: Se ci sono richieste "In Corso" accettate da questo volontario,
+    // resettale allo stato "In Attesa di Volontario" in modo che tornino visibili in bacheca
+    await db.collection('requests').updateMany(
+      { volunteerId: userId, status: 'In Corso' },
+      { $set: { status: 'In Attesa di Volontario', volunteerId: null } }
+    );
+
+    // Per tutte le altre richieste (completate, annullate), rimuoviamo semplicemente il volunteerId per anonimizzazione
+    await db.collection('requests').updateMany(
+      { volunteerId: userId },
+      { $set: { volunteerId: null } }
+    );
+
+    // Elimina l'utente dal database
     const result = await db.collection('users').deleteOne({ _id: new ObjectId(userId) });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Profilo non trovato' });
     }
 
-    res.json({ message: 'Profilo eliminato definitivamente con successo' });
+    res.json({ message: 'Profilo eliminato definitivamente e contributi sbloccati/anonimizzati con successo' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
