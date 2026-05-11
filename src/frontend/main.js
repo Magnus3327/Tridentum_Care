@@ -496,6 +496,15 @@ window.openRequesterDetail = function(requestId) {
     const completeBtn = document.getElementById('req-detail-complete-btn');
     const editBtn = document.getElementById('req-detail-edit-btn');
     const deleteBtn = document.getElementById('req-detail-delete-btn');
+    
+    if (deleteBtn) {
+        deleteBtn.disabled = false;
+        deleteBtn.dataset.confirmState = 'inactive';
+        deleteBtn.style.backgroundColor = '';
+        deleteBtn.style.borderColor = '';
+        deleteBtn.innerHTML = '<i class="fa-solid fa-trash-can" style="margin-right: 0.5rem;"></i> Elimina definitivamente';
+    }
+
     const editable = isRequesterRequestEditable(req);
     const canComplete = window.canRequesterComplete(req);
     const canCancel = window.canRequesterCancel(req);
@@ -530,27 +539,56 @@ window.openRequesterDetail = function(requestId) {
 
 window.deleteRequesterRequest = async function(requestId) {
     if (!requestId) return;
-    if (!confirm('Sei sicuro di voler eliminare definitivamente questa richiesta dalla tua cronologia?')) {
-        return;
-    }
     
-    try {
-        const response = await authorizedFetch(`/api/requester/requests/${requestId}`, {
-            method: 'DELETE'
-        });
-        
-        if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || 'Errore durante l\'eliminazione della richiesta');
+    const deleteBtn = document.getElementById('req-detail-delete-btn');
+    if (!deleteBtn) return;
+    
+    // Se il pulsante è già in attesa di conferma (secondo click)
+    if (deleteBtn.dataset.confirmState === 'active') {
+        try {
+            deleteBtn.disabled = true;
+            deleteBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right: 0.5rem;"></i> Eliminazione in corso...';
+            
+            const response = await authorizedFetch(`/api/requester/requests/${requestId}`, {
+                method: 'DELETE'
+            });
+            
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Errore durante l\'eliminazione della richiesta');
+            }
+            
+            showNotification('Richiesta eliminata definitivamente con successo', 'success');
+            navigateTo('requester'); // torna alla dashboard
+        } catch (error) {
+            console.error('Errore eliminazione richiesta:', error);
+            showNotification(error.message, 'danger');
+            resetDeleteButton(deleteBtn);
         }
+    } else {
+        // Primo click: entra nello stato di conferma
+        deleteBtn.dataset.confirmState = 'active';
+        deleteBtn.style.backgroundColor = '#d32f2f'; // Rosso acceso/intenso
+        deleteBtn.style.borderColor = '#d32f2f';
+        deleteBtn.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="margin-right: 0.5rem;"></i> Premi di nuovo per eliminare definitivamente';
         
-        showNotification('Richiesta eliminata definitivamente con successo', 'success');
-        navigateTo('requester'); // torna alla dashboard
-    } catch (error) {
-        console.error('Errore eliminazione richiesta:', error);
-        showNotification(error.message, 'danger');
+        // Timeout di 4 secondi per ripristinare il bottone originale se l'utente desiste
+        if (window.deleteBtnTimeout) clearTimeout(window.deleteBtnTimeout);
+        window.deleteBtnTimeout = setTimeout(() => {
+            resetDeleteButton(deleteBtn);
+        }, 4000);
     }
 };
+
+// Funzione ausiliaria per resettare il bottone di eliminazione al suo stato originario
+function resetDeleteButton(btn) {
+    if (!btn) return;
+    btn.disabled = false;
+    btn.dataset.confirmState = 'inactive';
+    btn.style.backgroundColor = '';
+    btn.style.borderColor = '';
+    btn.innerHTML = '<i class="fa-solid fa-trash-can" style="margin-right: 0.5rem;"></i> Elimina definitivamente';
+}
 
 window.updateRequesterStatus = async function(requestId, status) {
     if (!requestId) return;
