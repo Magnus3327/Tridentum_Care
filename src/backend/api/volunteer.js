@@ -1,11 +1,23 @@
 const express = require("express");
 const { ObjectId } = require("mongodb");
+const authMiddleware = require("../middleware/auth");
 const router = express.Router();
+
+// Proteggi tutte le rotte di questo router con l'authMiddleware
+router.use(authMiddleware);
+
+// Verifica che il ruolo dell'utente autenticato sia 'volunteer'
+router.use((req, res, next) => {
+  if (req.user.role !== "volunteer") {
+    return res.status(403).json({ error: "Accesso negato: richiesto ruolo Volontario" });
+  }
+  next();
+});
 
 // 1. GET Profilo
 router.get("/profile", async (req, res) => {
   try {
-    const email = req.query.email || "mario.rossi@email.it";
+    const email = req.user.email;
     
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });
@@ -24,17 +36,14 @@ router.get("/profile", async (req, res) => {
 // 2. PUT Profilo
 router.put("/profile", async (req, res) => {
   try {
-    const { email, name, surname, address, phone, skills, age, license, gender } = req.body;
-    
-    if (!email) {
-      return res.status(400).json({ error: "Email richiesta per aggiornare il profilo" });
-    }
+    const email = req.user.email;
+    const { name, surname, address, phone, skills, age, license, gender } = req.body;
 
-    // Validazione vincolo OCL: Età >= 18
+    // Validazione: Età >= 18
     if (age !== undefined && age !== null && age !== "") {
       const parsedAge = parseInt(age);
       if (!isNaN(parsedAge) && parsedAge < 18) {
-        return res.status(400).json({ error: "Vincolo OCL: Un volontario deve essere maggiorenne (Età >= 18)!" });
+        return res.status(400).json({ error: "Un volontario deve essere maggiorenne (Età >= 18)!" });
       }
     }
 
@@ -71,7 +80,8 @@ router.put("/profile", async (req, res) => {
 // 3. GET Richieste attive (Bacheca)
 router.get("/requests", async (req, res) => {
   try {
-    const { category, email } = req.query;
+    const { category } = req.query;
+    const email = req.user.email;
 
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });
@@ -86,7 +96,8 @@ router.get("/requests", async (req, res) => {
       }
     }
 
-    const query = { status: "active" };
+    // Cerchiamo le richieste nello stato "In Attesa di Volontario"
+    const query = { status: "In Attesa di Volontario" };
 
     if (skillsFilter) {
       query.category = { $in: skillsFilter };
@@ -109,7 +120,7 @@ router.get("/requests", async (req, res) => {
 // 4. GET Incarichi Assegnati
 router.get("/my-tasks", async (req, res) => {
   try {
-    const email = req.query.email || "mario.rossi@email.it";
+    const email = req.user.email;
 
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });
@@ -119,9 +130,10 @@ router.get("/my-tasks", async (req, res) => {
       return res.status(404).json({ error: "Volontario non trovato" });
     }
 
+    // Cerchiamo gli incarichi nello stato "In Corso"
     const tasks = await db.collection("requests").find({
       volunteerId: volunteer._id.toString(),
-      status: "assigned"
+      status: "In Corso"
     }).sort({ createdAt: -1 }).toArray();
 
     res.json(tasks);
@@ -135,11 +147,7 @@ router.get("/my-tasks", async (req, res) => {
 router.post("/requests/:id/accept", async (req, res) => {
   try {
     const requestId = req.params.id;
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ error: "Email del volontario richiesta" });
-    }
+    const email = req.user.email;
 
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });
@@ -150,8 +158,8 @@ router.post("/requests/:id/accept", async (req, res) => {
     }
 
     const result = await db.collection("requests").updateOne(
-      { _id: new ObjectId(requestId), status: "active" },
-      { $set: { status: "assigned", volunteerId: volunteer._id.toString() } }
+      { _id: new ObjectId(requestId), status: "In Attesa di Volontario" },
+      { $set: { status: "In Corso", volunteerId: volunteer._id.toString() } }
     );
 
     if (result.modifiedCount === 0) {
@@ -165,15 +173,11 @@ router.post("/requests/:id/accept", async (req, res) => {
   }
 });
 
-// 6. POST Annulla Richiesta
+// 6. POST Annulla Presa in Carico
 router.post("/requests/:id/cancel", async (req, res) => {
   try {
     const requestId = req.params.id;
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ error: "Email del volontario richiesta" });
-    }
+    const email = req.user.email;
 
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });
@@ -186,7 +190,7 @@ router.post("/requests/:id/cancel", async (req, res) => {
     const request = await db.collection("requests").findOne({
       _id: new ObjectId(requestId),
       volunteerId: volunteer._id.toString(),
-      status: "assigned"
+      status: "In Corso"
     });
 
     if (!request) {
@@ -196,7 +200,7 @@ router.post("/requests/:id/cancel", async (req, res) => {
     // Resetta lo status e rimuovi il volunteerId
     await db.collection("requests").updateOne(
       { _id: new ObjectId(requestId) },
-      { $set: { status: "active", volunteerId: null } }
+      { $set: { status: "In Attesa di Volontario", volunteerId: null } }
     );
 
     res.json({
@@ -208,13 +212,14 @@ router.post("/requests/:id/cancel", async (req, res) => {
   }
 });
 
-// 7. POST Riscatta Coupon (Riscatto Coupon con addebito punti)
+// 7. POST Riscatta Coupon
 router.post("/coupons/redeem", async (req, res) => {
   try {
-    const { email, couponName, costoPunti } = req.body;
+    const { couponName, costoPunti } = req.body;
+    const email = req.user.email;
 
-    if (!email || !couponName || !costoPunti) {
-      return res.status(400).json({ error: "Parametri email, couponName e costoPunti obbligatori" });
+    if (!couponName || !costoPunti) {
+      return res.status(400).json({ error: "Parametri couponName e costoPunti obbligatori" });
     }
 
     const pointsToDeduct = parseInt(costoPunti);
@@ -230,7 +235,7 @@ router.post("/coupons/redeem", async (req, res) => {
       return res.status(404).json({ error: "Volontario non trovato" });
     }
 
-    // Vincolo OCL: controlla sufficienza punti
+    // Controlla sufficienza punti
     const currentPoints = parseInt(volunteer.points || 0);
     if (currentPoints < pointsToDeduct) {
       return res.status(400).json({ error: "Punti insufficienti per riscattare questo coupon!" });
