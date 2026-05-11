@@ -196,6 +196,88 @@ window.isRequesterRequestEditable = function(req) {
     return requestDate > now;
 };
 
+window.canRequesterComplete = function(req) {
+    return req && req.status === 'In Corso';
+};
+
+window.canRequesterRate = function(req) {
+    return req && req.status === 'Completata';
+};
+
+window.renderRequesterRatingSection = function(req) {
+    const ratingSection = document.getElementById('req-detail-rating-section');
+    const ratingContent = document.getElementById('req-detail-rating-content');
+    if (!ratingSection || !ratingContent) return;
+
+    if (!window.canRequesterRate(req)) {
+        ratingSection.style.display = 'none';
+        ratingContent.innerHTML = '';
+        return;
+    }
+
+    ratingSection.style.display = 'block';
+    if (typeof req.rating === 'number' && req.rating > 0) {
+        ratingContent.innerHTML = `
+            <p style="margin: 0 0 0.75rem;">Hai già valutato questa richiesta con <strong>${req.rating} su 5</strong>.</p>
+            <p style="margin: 0;">${req.review ? req.review : 'Nessuna recensione aggiunta.'}</p>
+        `;
+        return;
+    }
+
+    ratingContent.innerHTML = `
+        <div class="form-group">
+            <label class="form-label">Valutazione</label>
+            <select id="req-rating" class="form-control form-control-lg">
+                <option value="">Seleziona una valutazione...</option>
+                <option value="5">5 - Ottimo</option>
+                <option value="4">4 - Molto Buono</option>
+                <option value="3">3 - Buono</option>
+                <option value="2">2 - Sufficiente</option>
+                <option value="1">1 - Insufficiente</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Commento (opzionale)</label>
+            <textarea id="req-review" class="form-control form-control-lg" rows="3" placeholder="Racconta brevemente com'è andata."></textarea>
+        </div>
+        <button class="btn btn-secondary btn-large btn-block" onclick="submitRequesterRating(window.currentRequesterRequestId)">Invia Valutazione</button>
+    `;
+};
+
+window.submitRequesterRating = async function(requestId) {
+    if (!requestId) return;
+
+    const ratingValue = parseInt(document.getElementById('req-rating')?.value, 10);
+    const review = document.getElementById('req-review')?.value || '';
+
+    if (!ratingValue || ratingValue < 1 || ratingValue > 5) {
+        showToast('Seleziona una valutazione valida da 1 a 5.', 'danger');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/requester/requests/${encodeURIComponent(requestId)}/rating`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ rating: ratingValue, review })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            showToast(`Errore: ${data.error || 'Impossibile salvare la valutazione.'}`, 'danger');
+            return;
+        }
+
+        showToast('Valutazione inviata con successo.', 'success');
+        navigateTo('req-dashboard');
+    } catch (error) {
+        console.error('Errore nella valutazione della richiesta:', error);
+        showToast('Si è verificato un errore durante l invio della valutazione.', 'danger');
+    }
+};
+
 window.updateRequesterRequest = async function(requestId) {
     const payload = getRequesterFormData();
     if (!payload.serviceType || !payload.location || !payload.date || !payload.time) {
@@ -294,17 +376,23 @@ window.openRequesterDetail = function(requestId) {
     const completeBtn = document.getElementById('req-detail-complete-btn');
     const editBtn = document.getElementById('req-detail-edit-btn');
     const editable = isRequesterRequestEditable(req);
+    const canComplete = window.canRequesterComplete(req);
 
-    if (req.status === 'Annullata' || req.status === 'Completata') {
+    if (req.status === 'Annullata') {
+        if (cancelBtn) cancelBtn.disabled = true;
+        if (completeBtn) completeBtn.disabled = true;
+        if (editBtn) editBtn.disabled = true;
+    } else if (req.status === 'Completata') {
         if (cancelBtn) cancelBtn.disabled = true;
         if (completeBtn) completeBtn.disabled = true;
         if (editBtn) editBtn.disabled = true;
     } else {
         if (cancelBtn) cancelBtn.disabled = !editable;
-        if (completeBtn) completeBtn.disabled = false; // Permetti di completare le richieste in corso
+        if (completeBtn) completeBtn.disabled = !canComplete;
         if (editBtn) editBtn.disabled = !editable;
     }
 
+    window.renderRequesterRatingSection(req);
     navigateTo('req-detail');
 };
 

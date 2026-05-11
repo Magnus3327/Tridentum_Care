@@ -228,6 +228,46 @@ router.put('/requests/:requestId/status', async (req, res) => {
   }
 });
 
+// API per aggiungere valutazione alla richiesta completata
+router.put('/requests/:requestId/rating', async (req, res) => {
+  try {
+    const db = await getDatabase(req);
+    const { requestId } = req.params;
+    const userId = req.user.userId;
+    const { rating, review } = req.body;
+
+    if (typeof rating !== 'number' || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: 'Valutazione non valida. Deve essere un numero da 1 a 5.' });
+    }
+
+    const request = await db.collection('requests').findOne({ 
+      _id: new ObjectId(requestId),
+      userId: new ObjectId(userId)
+    });
+    
+    if (!request) {
+      return res.status(404).json({ error: 'Richiesta non trovata o non autorizzata' });
+    }
+
+    if (request.status !== 'Completata') {
+      return res.status(400).json({ error: 'È possibile valutare solo richieste completate.' });
+    }
+
+    const result = await db.collection('requests').updateOne(
+      { _id: new ObjectId(requestId) },
+      { $set: { rating, review: review || '' } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'Richiesta non trovata' });
+    }
+
+    res.json({ message: 'Valutazione salvata con successo' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Elimina (Annulla) richiesta
 router.delete('/requests/:requestId', async (req, res) => {
   try {
