@@ -37,7 +37,7 @@ router.post("/register", async (req, res) => {
         gender: gender || "",
         license: license || "No",
         points: 0,
-        skills: [], // competenze vuote di default, modificabili dal profilo
+        skills: ["Trasporto", "Accompagnamento", "Compagnia"], // tutte le competenze attive di default
         coupons: []
       };
     }
