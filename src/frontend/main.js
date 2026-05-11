@@ -1434,6 +1434,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Configura gli handler di submit per login e registrazione (caricati ora nel DOM)
         bindAuthEvents();
+        
+        // Carica istantaneamente i servizi del modulo di richiesta dalle costanti di sistema (SST)
+        await renderDynamicRequestServices();
+        
+        // Assicura l'attivazione immediata del calendario/orologio al click/focus (Safari/Chrome)
+        bindDatePickerEvents();
 
     } catch (e) {
         console.error("Errore nel caricamento delle viste o bind degli eventi:", e);
@@ -1540,4 +1546,38 @@ function resetProfileDeleteButton(btn) {
     btn.style.backgroundColor = '';
     btn.style.borderColor = '';
     btn.innerHTML = 'Conferma Eliminazione';
+}
+
+// Assicura l'attivazione immediata del calendario/orologio nativo al click/focus (ottimizzato per Safari)
+function bindDatePickerEvents() {
+    const dateInput = document.getElementById('req-date');
+    const timeInput = document.getElementById('req-time');
+    
+    if (dateInput) {
+        const handler = function(e) {
+            try {
+                if (typeof dateInput.showPicker === 'function') {
+                    dateInput.showPicker();
+                }
+            } catch (err) {
+                console.warn('showPicker bloccato o non supportato:', err);
+            }
+        };
+        dateInput.addEventListener('click', handler);
+        dateInput.addEventListener('focus', handler);
+    }
+    
+    if (timeInput) {
+        const handler = function(e) {
+            try {
+                if (typeof timeInput.showPicker === 'function') {
+                    timeInput.showPicker();
+                }
+            } catch (err) {
+                console.warn('showPicker bloccato o non supportato:', err);
+            }
+        };
+        timeInput.addEventListener('click', handler);
+        timeInput.addEventListener('focus', handler);
+    }
 }
