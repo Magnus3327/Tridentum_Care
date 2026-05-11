@@ -96,7 +96,30 @@ router.get('/requests', async (req, res) => {
       .sort({ createdAt: -1 })
       .toArray();
 
-    res.json(requests);
+    console.log("DEBUG /api/requester/requests - requests in DB:", JSON.stringify(requests, null, 2));
+
+    const enrichedRequests = await Promise.all(requests.map(async (request) => {
+      if (request.volunteerId) {
+        try {
+          const volunteer = await db.collection('users').findOne(
+            { _id: new ObjectId(request.volunteerId) },
+            { projection: { name: 1, surname: 1 } }
+          );
+          if (volunteer) {
+            return {
+              ...request,
+              volunteerName: volunteer.name,
+              volunteerSurname: volunteer.surname
+            };
+          }
+        } catch (e) {
+          console.error("Errore recupero volontario:", e);
+        }
+      }
+      return request;
+    }));
+
+    res.json(enrichedRequests);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -118,7 +141,28 @@ router.get('/requests/:userId', async (req, res) => {
       .sort({ createdAt: -1 })
       .toArray();
 
-    res.json(requests);
+    const enrichedRequests = await Promise.all(requests.map(async (request) => {
+      if (request.volunteerId) {
+        try {
+          const volunteer = await db.collection('users').findOne(
+            { _id: new ObjectId(request.volunteerId) },
+            { projection: { name: 1, surname: 1 } }
+          );
+          if (volunteer) {
+            return {
+              ...request,
+              volunteerName: volunteer.name,
+              volunteerSurname: volunteer.surname
+            };
+          }
+        } catch (e) {
+          console.error("Errore recupero volontario:", e);
+        }
+      }
+      return request;
+    }));
+
+    res.json(enrichedRequests);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

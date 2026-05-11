@@ -432,6 +432,14 @@ window.loadRequesterDashboard = async function() {
         let html = '<div class="grid-2" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; width: 100%;">';
         requests.forEach(req => {
             const badgeClass = req.status === 'Completata' ? 'badge-success' : req.status === 'Annullata' ? 'badge-danger' : 'badge-warning';
+            let volunteerHtml = '';
+            if (req.volunteerName) {
+                volunteerHtml = `
+                    <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed var(--border-color); font-size: 0.875rem; color: var(--primary-color); font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
+                        <i class="fa-solid fa-user"></i> Volontario: ${req.volunteerName} ${req.volunteerSurname}
+                    </div>
+                `;
+            }
             html += `
                 <div class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; min-height: 260px;">
                     <div>
@@ -442,8 +450,9 @@ window.loadRequesterDashboard = async function() {
                         <h3 style="margin: 0 0 0.75rem;">${req.serviceType}</h3>
                         <p style="margin: 0.25rem 0; color: var(--text-muted);">${req.location}</p>
                         <p style="margin: 1rem 0 0; color: var(--text-dark);">${req.notes || 'Nessuna nota aggiuntiva.'}</p>
+                        ${volunteerHtml}
                     </div>
-                    <button class="btn btn-outline btn-block btn-sm" onclick="openRequesterDetail('${req._id}')">Vedi Dettagli</button>
+                    <button class="btn btn-outline btn-block btn-sm" style="margin-top: 1.5rem;" onclick="openRequesterDetail('${req._id}')">Vedi Dettagli</button>
                 </div>
             `;
         });
@@ -471,6 +480,17 @@ window.openRequesterDetail = function(requestId) {
     document.getElementById('req-detail-time').innerText = req.time;
     document.getElementById('req-detail-location').innerText = req.location;
     document.getElementById('req-detail-notes').innerText = req.notes || 'Nessuna nota aggiuntiva.';
+    
+    const volunteerRow = document.getElementById('req-detail-volunteer-row');
+    const volunteerSpan = document.getElementById('req-detail-volunteer');
+    if (volunteerRow && volunteerSpan) {
+        if (req.volunteerName) {
+            volunteerSpan.innerText = `${req.volunteerName} ${req.volunteerSurname}`;
+            volunteerRow.style.display = 'block';
+        } else {
+            volunteerRow.style.display = 'none';
+        }
+    }
 
     const cancelBtn = document.getElementById('req-detail-cancel-btn');
     const completeBtn = document.getElementById('req-detail-complete-btn');
@@ -897,6 +917,7 @@ window.loadActiveRequests = async function() {
                         <p style="font-size: 0.9rem; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 1.5rem;">
                             ${req.description}
                         </p>
+                    </div>
                     <div class="flex gap-1" style="margin-top: auto;">
                         <button class="btn btn-outline btn-sm" style="flex: 1; padding: 0.5rem 0.75rem;" onclick="showRequestDetails('${req._id}')">Dettagli</button>
                         <button class="btn btn-primary btn-sm" style="flex: 1.2; padding: 0.5rem 0.75rem; font-weight: 700;" onclick="acceptRequestImmediately('${req._id}')">
