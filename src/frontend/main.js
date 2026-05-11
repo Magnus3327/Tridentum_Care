@@ -256,11 +256,8 @@ window.submitRequesterRating = async function(requestId) {
     }
 
     try {
-        const response = await fetch(`/api/requester/requests/${encodeURIComponent(requestId)}/rating`, {
+        const response = await authorizedFetch(`/api/requester/requests/${encodeURIComponent(requestId)}/rating`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({ rating: ratingValue, review })
         });
 
@@ -378,18 +375,25 @@ window.openRequesterDetail = function(requestId) {
     const editable = isRequesterRequestEditable(req);
     const canComplete = window.canRequesterComplete(req);
 
-    if (req.status === 'Annullata') {
-        if (cancelBtn) cancelBtn.disabled = true;
-        if (completeBtn) completeBtn.disabled = true;
-        if (editBtn) editBtn.disabled = true;
-    } else if (req.status === 'Completata') {
-        if (cancelBtn) cancelBtn.disabled = true;
-        if (completeBtn) completeBtn.disabled = true;
-        if (editBtn) editBtn.disabled = true;
+    // Nasconde completamente i bottoni per richieste completate o annullate
+    if (req.status === 'Annullata' || req.status === 'Completata') {
+        if (cancelBtn) cancelBtn.style.display = 'none';
+        if (completeBtn) completeBtn.style.display = 'none';
+        if (editBtn) editBtn.style.display = 'none';
     } else {
-        if (cancelBtn) cancelBtn.disabled = !editable;
-        if (completeBtn) completeBtn.disabled = !canComplete;
-        if (editBtn) editBtn.disabled = !editable;
+        // Mostra i bottoni e gestisci la loro abilitazione
+        if (cancelBtn) {
+            cancelBtn.style.display = 'inline-block';
+            cancelBtn.disabled = !editable;
+        }
+        if (completeBtn) {
+            completeBtn.style.display = 'inline-block';
+            completeBtn.disabled = !canComplete;
+        }
+        if (editBtn) {
+            editBtn.style.display = 'inline-block';
+            editBtn.disabled = !editable;
+        }
     }
 
     window.renderRequesterRatingSection(req);
