@@ -31,6 +31,102 @@
 </section>
  
 
+<!-- Authentication Page (Login/Register/Partner) -->
+<section id="view-public-auth" class="view-section">
+    <div class="card" style="max-width: 500px; margin: 0 auto; padding: 2.5rem;">
+        <!-- Tabs -->
+        <div class="flex justify-center" style="border-bottom: 2px solid var(--border-color); margin-bottom: 2.5rem;">
+            <button id="tab-login" class="btn btn-text" style="flex: 1; padding: 1rem; font-weight: 700; font-size: 1.1rem; border-bottom: 3px solid var(--primary-color); border-radius: 0; color: var(--primary-color);" onclick="toggleAuthMode('login')">Accedi</button>
+            <button id="tab-register" class="btn btn-text" style="flex: 1; padding: 1rem; font-weight: 700; font-size: 1.1rem; border-bottom: 3px solid transparent; border-radius: 0; color: var(--text-muted);" onclick="toggleAuthMode('register')">Registrati</button>
+        </div>
+        
+        <!-- Login Form -->
+        <form id="login-form">
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">Email</label>
+                <input type="email" id="login-email" class="form-control" placeholder="inserisci la tua email" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">Password</label>
+                <input type="password" id="login-password" class="form-control" placeholder="••••••••" required>
+                <div class="text-right" style="margin-top: 0.5rem; text-align: right;">
+                    <a href="#" onclick="navigateTo('recovery')" style="font-size: 0.875rem; color: var(--primary-color);">Password dimenticata?</a>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block btn-large" style="margin-top: 1.5rem; font-weight: 600;">Entra</button>
+            
+            <h4 class="text-center" style="margin: 2rem 0 1rem; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Simula Accesso Rapido (Demo)</h4>
+            <div class="grid-2" style="gap: 1rem;">
+                <button type="button" class="btn btn-secondary btn-block" onclick="handleLogin(event, 'requester')" style="padding: 0.6rem 0.5rem; font-size: 0.85rem;">Log in Anziano</button>
+                <button type="button" class="btn btn-primary btn-block" onclick="handleLogin(event, 'volunteer')" style="padding: 0.6rem 0.5rem; font-size: 0.85rem;">Log in Volontario</button>
+                <button type="button" class="btn btn-outline btn-block" onclick="handleLogin(event, 'partner')" style="padding: 0.6rem 0.5rem; font-size: 0.85rem;">Log in Partner</button>
+                <button type="button" class="btn btn-outline btn-block" onclick="handleLogin(event, 'admin')" style="padding: 0.6rem 0.5rem; font-size: 0.85rem;">Log in Admin</button>
+            </div>
+            
+            <hr style="margin: 2rem 0; border: 0; border-top: 1px solid var(--border-color);">
+            
+            <button type="button" class="btn btn-outline btn-block" style="color: #DB4437; border-color: #DB4437; font-weight: 500;">
+                <i class="fa-brands fa-google" style="margin-right: 0.5rem;"></i> Accedi con Google
+            </button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" style="display: none;">
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">Nome</label>
+                <input type="text" id="reg-name" class="form-control" placeholder="Il tuo nome" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">Cognome</label>
+                <input type="text" id="reg-surname" class="form-control" placeholder="Il tuo cognome" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">Email</label>
+                <input type="email" id="reg-email" class="form-control" placeholder="La tua email" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">Password</label>
+                <input type="password" id="reg-password" class="form-control" placeholder="Crea una password" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">Ruolo</label>
+                <select id="reg-role" class="form-control" required onchange="toggleRegisterRoleFields()">
+                    <option value="volunteer">Volontario</option>
+                    <option value="requester">Cittadino (Richiedente Aiuto)</option>
+                </select>
+            </div>
+
+            <!-- Campi aggiuntivi per il volontario (maggiorenne, patente ecc.) -->
+            <div id="reg-volunteer-fields" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">
+                <div class="form-group">
+                    <label class="form-label" style="font-weight: 600;">Età</label>
+                    <input type="number" id="reg-age" class="form-control" placeholder="Inserisci la tua età" min="18">
+                    <small class="text-muted" style="font-size: 0.75rem; display: block; margin-top: 0.25rem;">I volontari devono essere maggiorenni (>= 18 anni).</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" style="font-weight: 600;">Genere</label>
+                    <select id="reg-gender" class="form-control">
+                        <option value="">Seleziona genere (opzionale)</option>
+                        <option value="M">Maschio</option>
+                        <option value="F">Femmina</option>
+                        <option value="Altro">Altro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" style="font-weight: 600;">Patente di guida</label>
+                    <select id="reg-license" class="form-control">
+                        <option value="No">No</option>
+                        <option value="Sì (Automunito)">Sì (Automunito)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-secondary btn-block btn-large" style="margin-top: 1.5rem; font-weight: 600;">Registrati</button>
+        </form>
+    </div>
+</section>
+
 <!-- Password Recovery -->
 <section id="view-public-recovery" class="view-section">
     <div class="card" style="max-width: 500px; margin: 0 auto;">

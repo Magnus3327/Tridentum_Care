@@ -431,6 +431,55 @@ window.logout = function() {
 }
 
 
+// Funzioni per l'autenticazione reale e tabbed login/register
+window.openAuth = function(mode) {
+    navigateTo('auth');
+    setTimeout(() => {
+        toggleAuthMode(mode);
+    }, 50);
+};
+
+window.toggleAuthMode = function(mode) {
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+    
+    if (!loginForm || !registerForm || !tabLogin || !tabRegister) return;
+    
+    if (mode === 'login') {
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+        
+        tabLogin.style.borderBottom = '3px solid var(--primary-color)';
+        tabLogin.style.color = 'var(--primary-color)';
+        
+        tabRegister.style.borderBottom = '3px solid transparent';
+        tabRegister.style.color = 'var(--text-muted)';
+    } else {
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'block';
+        
+        tabLogin.style.borderBottom = '3px solid transparent';
+        tabLogin.style.color = 'var(--text-muted)';
+        
+        tabRegister.style.borderBottom = '3px solid var(--secondary-color, var(--primary-color))';
+        tabRegister.style.color = 'var(--secondary-color, var(--primary-color))';
+    }
+};
+
+window.toggleRegisterRoleFields = function() {
+    const roleSelect = document.getElementById('reg-role');
+    const volunteerFields = document.getElementById('reg-volunteer-fields');
+    if (!roleSelect || !volunteerFields) return;
+    
+    if (roleSelect.value === 'volunteer') {
+        volunteerFields.style.display = 'block';
+    } else {
+        volunteerFields.style.display = 'none';
+    }
+};
+
 
 // Simula il Login
 window.handleLogin = function(e, role) {
