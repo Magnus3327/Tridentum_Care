@@ -17,12 +17,12 @@ router.use((req, res, next) => {
 // 1. GET Profilo
 router.get("/profile", async (req, res) => {
   try {
-    const email = req.user.email;
+    const userId = req.user.userId;
     
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });
 
-    const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
+    const volunteer = await db.collection("users").findOne({ _id: new ObjectId(userId), role: "volunteer" });
     if (!volunteer) {
       return res.status(404).json({ error: "Profilo volontario non trovato" });
     }
@@ -36,7 +36,7 @@ router.get("/profile", async (req, res) => {
 // 2. PUT Profilo
 router.put("/profile", async (req, res) => {
   try {
-    const email = req.user.email;
+    const userId = req.user.userId;
     const { name, surname, address, phone, skills, age, license, gender } = req.body;
 
     // Validazione: Età >= 18
@@ -62,7 +62,7 @@ router.put("/profile", async (req, res) => {
     };
 
     const result = await db.collection("users").updateOne(
-      { email, role: "volunteer" },
+      { _id: new ObjectId(userId), role: "volunteer" },
       { $set: updateData }
     );
 
@@ -81,14 +81,14 @@ router.put("/profile", async (req, res) => {
 router.get("/requests", async (req, res) => {
   try {
     const { category } = req.query;
-    const email = req.user.email;
+    const userId = req.user.userId;
 
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });
 
     let skillsFilter = null;
-    if (email) {
-      const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
+    if (userId) {
+      const volunteer = await db.collection("users").findOne({ _id: new ObjectId(userId), role: "volunteer" });
       if (volunteer && volunteer.skills) {
         skillsFilter = volunteer.skills;
       } else {
@@ -120,12 +120,12 @@ router.get("/requests", async (req, res) => {
 // 4. GET Incarichi Assegnati
 router.get("/my-tasks", async (req, res) => {
   try {
-    const email = req.user.email;
+    const userId = req.user.userId;
 
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });
 
-    const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
+    const volunteer = await db.collection("users").findOne({ _id: new ObjectId(userId), role: "volunteer" });
     if (!volunteer) {
       return res.status(404).json({ error: "Volontario non trovato" });
     }
@@ -147,12 +147,12 @@ router.get("/my-tasks", async (req, res) => {
 router.post("/requests/:id/accept", async (req, res) => {
   try {
     const requestId = req.params.id;
-    const email = req.user.email;
+    const userId = req.user.userId;
 
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });
 
-    const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
+    const volunteer = await db.collection("users").findOne({ _id: new ObjectId(userId), role: "volunteer" });
     if (!volunteer) {
       return res.status(404).json({ error: "Volontario non trovato" });
     }
@@ -177,12 +177,12 @@ router.post("/requests/:id/accept", async (req, res) => {
 router.post("/requests/:id/cancel", async (req, res) => {
   try {
     const requestId = req.params.id;
-    const email = req.user.email;
+    const userId = req.user.userId;
 
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });
 
-    const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
+    const volunteer = await db.collection("users").findOne({ _id: new ObjectId(userId), role: "volunteer" });
     if (!volunteer) {
       return res.status(404).json({ error: "Volontario non trovato" });
     }
@@ -216,7 +216,7 @@ router.post("/requests/:id/cancel", async (req, res) => {
 router.post("/coupons/redeem", async (req, res) => {
   try {
     const { couponName, costoPunti } = req.body;
-    const email = req.user.email;
+    const userId = req.user.userId;
 
     if (!couponName || !costoPunti) {
       return res.status(400).json({ error: "Parametri couponName e costoPunti obbligatori" });
@@ -230,7 +230,7 @@ router.post("/coupons/redeem", async (req, res) => {
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });
 
-    const volunteer = await db.collection("users").findOne({ email, role: "volunteer" });
+    const volunteer = await db.collection("users").findOne({ _id: new ObjectId(userId), role: "volunteer" });
     if (!volunteer) {
       return res.status(404).json({ error: "Volontario non trovato" });
     }
