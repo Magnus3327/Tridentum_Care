@@ -190,10 +190,7 @@ window.openRequesterEdit = function(requestId) {
 
 window.isRequesterRequestEditable = function(req) {
     if (!req) return false;
-    if (req.status !== 'In Attesa di Volontario') return false;
-    const now = new Date();
-    const requestDate = new Date(`${req.date}T${req.time}`);
-    return requestDate > now;
+    return req.status === 'In Attesa di Volontario';
 };
 
 window.canRequesterComplete = function(req) {

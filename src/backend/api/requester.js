@@ -144,7 +144,7 @@ router.put('/requests/:requestId', async (req, res) => {
       return res.status(404).json({ error: 'Richiesta non trovata o non autorizzata' });
     }
 
-    if (!canEditRequest(request)) {
+    if (request.status !== 'In Attesa di Volontario') {
       return res.status(400).json({ error: 'La richiesta non può essere modificata' });
     }
 
