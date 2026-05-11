@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const connectDB = require('../config/db');
 
+const authRouter = require('./api/auth');
 const volunteerRouter = require('./api/volunteer');
 const requesterRouter = require('./api/requester');
 
@@ -25,6 +26,7 @@ connectDB()
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 // Registrazione dei router API
+app.use('/api/auth', authRouter);
 app.use('/api/volunteer', volunteerRouter);
 app.use('/api/requester', requesterRouter);
 
