@@ -515,7 +515,7 @@ window.openRequesterDetail = function(requestId) {
         if (completeBtn) completeBtn.style.display = 'none';
         if (editBtn) editBtn.style.display = 'none';
         if (deleteBtn) {
-            deleteBtn.style.display = (req.status === 'Annullata') ? 'inline-block' : 'none';
+            deleteBtn.style.display = 'inline-block';
         }
     } else {
         // Mostra i bottoni e gestisci la loro abilitazione

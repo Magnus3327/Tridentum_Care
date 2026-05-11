@@ -329,8 +329,8 @@ router.delete('/requests/:requestId', async (req, res) => {
       return res.status(404).json({ error: 'Richiesta non trovata o non autorizzata' });
     }
 
-    // Se la richiesta è già annullata, l'utente vuole eliminarla del tutto dal database per pulire la cronologia!
-    if (request.status === 'Annullata') {
+    // Se la richiesta è già annullata o completata, l'utente vuole eliminarla del tutto dal database per pulire la cronologia!
+    if (request.status === 'Annullata' || request.status === 'Completata') {
       await db.collection('requests').deleteOne({ _id: new ObjectId(requestId) });
       return res.json({ message: 'Richiesta eliminata definitivamente con successo' });
     }
