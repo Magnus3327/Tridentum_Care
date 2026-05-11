@@ -545,6 +545,7 @@ window.deleteRequesterRequest = async function(requestId) {
     
     // Se il pulsante è già in attesa di conferma (secondo click)
     if (deleteBtn.dataset.confirmState === 'active') {
+        let success = false;
         try {
             deleteBtn.disabled = true;
             deleteBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right: 0.5rem;"></i> Eliminazione in corso...';
@@ -558,12 +559,17 @@ window.deleteRequesterRequest = async function(requestId) {
                 throw new Error(data.error || 'Errore durante l\'eliminazione della richiesta');
             }
             
-            showNotification('Richiesta eliminata definitivamente con successo', 'success');
-            navigateTo('requester'); // torna alla dashboard
+            success = true;
         } catch (error) {
             console.error('Errore eliminazione richiesta:', error);
-            showNotification(error.message, 'danger');
+            showToast(error.message, 'danger');
             resetDeleteButton(deleteBtn);
+        }
+
+        if (success) {
+            // Mostra la notifica in rosso (danger) ed effettua il reindirizzamento alla bacheca
+            showToast('Richiesta eliminata definitivamente', 'danger');
+            navigateTo('req-dashboard');
         }
     } else {
         // Primo click: entra nello stato di conferma
