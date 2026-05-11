@@ -6,8 +6,8 @@
             La piattaforma che connette anziani e persone vulnerabili di Trento con volontari pronti ad aiutare nelle commissioni quotidiane.
         </p>
         <div class="flex justify-center gap-2">
-            <button class="btn btn-primary btn-large" onclick="navigateTo('auth')">Diventa Volontario</button>
-            <button class="btn btn-secondary btn-large" onclick="navigateTo('auth')">Richiedi Aiuto</button>
+            <button class="btn btn-primary btn-large" onclick="openAuth('login')">Accedi</button>
+            <button class="btn btn-secondary btn-large" onclick="openAuth('register')">Registrati</button>
         </div>
     </div>
     
@@ -29,41 +29,7 @@
         </div>
     </div>
 </section>
-
-<!-- Authentication Page (Login/Register/Partner) -->
-<section id="view-public-auth" class="view-section">
-    <div class="card" style="max-width: 500px; margin: 0 auto;">
-        <h2 class="text-center" style="margin-bottom: 2rem;">Accedi a TridentumCare</h2>
-        
-        <form id="login-form">
-            <div class="form-group">
-                <label class="form-label">Email</label>
-                <input type="email" class="form-control" placeholder="inserisci la tua email" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Password</label>
-                <input type="password" class="form-control" placeholder="••••••••" required>
-                <div class="text-right" style="margin-top: 0.5rem; text-align: right;">
-                    <a href="#" onclick="navigateTo('recovery')" style="font-size: 0.875rem; color: var(--primary-color);">Password dimenticata?</a>
-                </div>
-            </div>
-            
-            <h4 class="text-center" style="margin: 1.5rem 0;">Simula Accesso (Demo)</h4>
-            <div class="grid-2" style="gap: 1rem;">
-                <button type="button" class="btn btn-secondary btn-block" onclick="handleLogin(event, 'requester')">Log in Anziano</button>
-                <button type="button" class="btn btn-primary btn-block" onclick="handleLogin(event, 'volunteer')">Log in Volontario</button>
-                <button type="button" class="btn btn-outline btn-block" onclick="handleLogin(event, 'partner')">Log in Partner</button>
-                <button type="button" class="btn btn-outline btn-block" onclick="handleLogin(event, 'admin')">Log in Admin</button>
-            </div>
-            
-            <hr style="margin: 2rem 0; border: 0; border-top: 1px solid var(--border-color);">
-            
-            <button type="button" class="btn btn-outline btn-block" style="color: #DB4437; border-color: #DB4437;">
-                <i class="fa-brands fa-google" style="margin-right: 0.5rem;"></i> Accedi con Google
-            </button>
-        </form>
-    </div>
-</section>
+ 
 
 <!-- Password Recovery -->
 <section id="view-public-recovery" class="view-section">

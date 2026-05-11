@@ -50,6 +50,8 @@ function navigateTo(routeId) {
         loadProfile();
     } else if (routeId === 'vol-store') {
         updateStorePoints();
+    } else if (routeId === 'auth') {
+        toggleRegisterRoleFields();
     }
 }
 
@@ -88,7 +90,6 @@ function updateNavbar(routeId) {
     } else {
         linksHTML = `
             <a href="#" class="nav-link" onclick="navigateTo('home')">Home</a>
-            <a href="#" class="nav-link" onclick="navigateTo('auth')">Accedi / Registrati</a>
         `;
     }
     
@@ -425,8 +426,11 @@ window.showToast = function(message, type = 'success') {
 window.logout = function() {
     appState.userRole = null;
     appState.userEmail = null;
+    appState.userId = null;
     navigateTo('home');
 }
+
+
 
 // Simula il Login
 window.handleLogin = function(e, role) {
