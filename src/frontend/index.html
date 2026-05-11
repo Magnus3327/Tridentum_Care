@@ -6,57 +6,8 @@
     <meta name="description" content="TridentumCare - Supporto e cura per anziani a Trento">
     <title>TridentumCare | Supporto per Anziani</title>
     <link rel="stylesheet" href="./style.css">
-    <style>
-        /* Nasconde Google Translate */
-        .goog-te-banner-frame { display: none !important; }
-        .goog-te-banner-frame.skiptranslate { display: none !important; }
-        iframe.goog-te-banner-frame { display: none !important; }
-        body { top: 0px !important; }
-        html { top: 0px !important; }
-        .goog-tooltip { display: none !important; }
-        .goog-tooltip:hover { display: none !important; }
-        #goog-gt-tt { display: none !important; }
-        .goog-text-highlight { background-color: transparent !important; border: none !important; box-shadow: none !important; }
-        
-        .lang-option {
-            transition: color 0.2s, transform 0.1s;
-        }
-        .lang-option:hover {
-            color: var(--primary-color) !important;
-            transform: scale(1.05);
-        }
-    </style>
-    <!-- Google Translate Script -->
-    <script type="text/javascript">
-        function googleTranslateElementInit() {
-            new google.translate.TranslateElement({pageLanguage: 'it', includedLanguages: 'it,en,de,fr,es', autoDisplay: false}, 'google_translate_element');
-        }
-        function changeLanguage(lang) {
-            var teCombo = document.querySelector('.goog-te-combo');
-            if (teCombo) {
-                teCombo.value = lang;
-                teCombo.dispatchEvent(new Event('change'));
-                
-                // Highlight active language
-                document.querySelectorAll('.lang-option').forEach(function(el) {
-                    el.style.color = 'var(--text-muted)';
-                    el.style.fontWeight = '500';
-                });
-                var activeEl = document.querySelector('.lang-option[data-lang="' + lang + '"]');
-                if (activeEl) {
-                    activeEl.style.color = 'var(--primary-color)';
-                    activeEl.style.fontWeight = '700';
-                }
-            } else {
-                setTimeout(function() { changeLanguage(lang); }, 300);
-            }
-        }
-    </script>
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </head>
 <body>
-    <div id="google_translate_element" style="position: absolute; width: 0; height: 0; overflow: hidden; top: -100px;"></div>
-
     <!-- Navbar -->
     <nav class="navbar">
         <div class="container flex justify-between items-center">
@@ -64,18 +15,8 @@
                 <i class="fa-solid fa-shield-heart text-secondary"></i>
                 TRIDENTUM<span>CARE</span>
             </a>
-            <div style="display: flex; align-items: center; gap: 1.5rem;">
-                <div class="nav-links" id="dynamic-nav-links">
-                    <!-- Injected via app.js -->
-                </div>
-                <!-- Language Selector -->
-                <div class="lang-selector" style="display: flex; gap: 0.5rem; align-items: center; cursor: pointer; font-size: 0.875rem; font-weight: 500; border-left: 1px solid var(--border-color); padding-left: 1.25rem; user-select: none;">
-                    <span class="lang-option" data-lang="it" onclick="changeLanguage('it')" title="Italiano" style="color: var(--primary-color); font-weight: 700;">IT</span>
-                    <span class="lang-divider" style="color: var(--border-color); font-weight: 300; font-size: 0.8rem;">|</span>
-                    <span class="lang-option" data-lang="en" onclick="changeLanguage('en')" title="English" style="color: var(--text-muted);">ENG</span>
-                    <span class="lang-divider" style="color: var(--border-color); font-weight: 300; font-size: 0.8rem;">|</span>
-                    <span class="lang-option" data-lang="de" onclick="changeLanguage('de')" title="Deutsch" style="color: var(--text-muted);">DE</span>
-                </div>
+            <div class="nav-links" id="dynamic-nav-links">
+                <!-- Injected via main.js -->
             </div>
         </div>
     </nav>
