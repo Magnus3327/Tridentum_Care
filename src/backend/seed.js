@@ -1,5 +1,6 @@
 const { MongoClient } = require("mongodb");
 const path = require("path");
+const bcrypt = require("bcryptjs");
 require("dotenv").config({ path: path.join(__dirname, "../../.env") });
 
 const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
@@ -24,10 +25,14 @@ async function seed() {
     await requestsCol.deleteMany({});
     console.log("Collezioni 'users' e 'requests' ripulite.");
 
+    // Hash della password fissa per entrambi gli utenti di test
+    const hashedPassword = await bcrypt.hash("password123", 10);
+
     // Dati fittizi Utenti
     const users = [
       {
         email: "mario.rossi@email.it",
+        password: hashedPassword,
         name: "Mario",
         surname: "Rossi",
         role: "volunteer",
@@ -42,6 +47,7 @@ async function seed() {
       },
       {
         email: "angela.bianchi@email.it",
+        password: hashedPassword,
         name: "Angela",
         surname: "Bianchi",
         role: "requester",
@@ -51,52 +57,73 @@ async function seed() {
       }
     ];
 
-    const usersResult = await usersCol.insertMany(users);
-    console.log(`Inseriti ${usersResult.insertedCount} utenti mock.`);
+    await usersCol.insertMany(users);
+    console.log("Inseriti 2 utenti di test (Mario Rossi e Angela Bianchi) con password 'password123'.");
 
-    // Dati fittizi Richieste
+    // Recupera l'id generato di Angela Bianchi per associarle le richieste
+    const angela = await usersCol.findOne({ email: "angela.bianchi@email.it" });
+    const angelaId = angela._id;
+
+    // Dati fittizi Richieste di test (con campi mappati sia per richiedente che per volontario)
     const requests = [
       {
+        userId: angelaId,
         title: "Trasporto per visita medica",
         category: "Trasporto",
+        serviceType: "Trasporto",
         description: "Avrei bisogno di un passaggio per recarmi all'ospedale Santa Chiara per una visita di controllo. Non posso guidare.",
+        notes: "Avrei bisogno di un passaggio per recarmi all'ospedale Santa Chiara per una visita di controllo. Non posso guidare.",
         address: "Via Belenzani 12, Trento",
+        location: "Via Belenzani 12, Trento",
         dateTime: "Oggi, 17:00",
+        date: new Date().toISOString().split("T")[0], // Data di oggi
+        time: "17:00",
         requesterName: "Angela Bianchi",
         points: 150,
-        status: "active",
+        status: "In Attesa di Volontario", // Stato uniforme
         volunteerId: null,
         createdAt: new Date()
       },
       {
+        userId: angelaId,
         title: "Accompagnamento al parco",
         category: "Accompagnamento",
+        serviceType: "Accompagnamento",
         description: "Cerco qualcuno che possa accompagnarmi a fare una passeggiata al parco vicino casa. Ho bisogno di un braccio a cui appoggiarmi.",
+        notes: "Cerco qualcuno che possa accompagnarmi a fare una passeggiata al parco vicino casa. Ho bisogno di un braccio a cui appoggiarmi.",
         address: "Piazza Duomo 3, Trento",
+        location: "Piazza Duomo 3, Trento",
         dateTime: "Domani, 10:00",
-        requesterName: "Giuseppe N.",
+        date: new Date(Date.now() + 86400000).toISOString().split("T")[0], // Data di domani
+        time: "10:00",
+        requesterName: "Angela Bianchi",
         points: 100,
-        status: "active",
+        status: "In Attesa di Volontario", // Stato uniforme
         volunteerId: null,
         createdAt: new Date()
       },
       {
+        userId: angelaId,
         title: "Compagnia e lettura quotidiano",
         category: "Compagnia",
+        serviceType: "Compagnia",
         description: "Cerco una persona gentile per fare quattro chiacchiere in giardino nel pomeriggio e leggere insieme le principali notizie del quotidiano locale L'Adige.",
+        notes: "Cerco una persona gentile per fare quattro chiacchiere in giardino nel pomeriggio e leggere insieme le principali notizie del quotidiano locale L'Adige.",
         address: "Via Grazioli 45, Trento",
+        location: "Via Grazioli 45, Trento",
         dateTime: "Lunedì, 15:30",
+        date: "2026-05-18",
+        time: "15:30",
         requesterName: "Rosa M.",
         points: 50,
-        status: "active",
+        status: "In Attesa di Volontario", // Stato uniforme
         volunteerId: null,
         createdAt: new Date()
-      },
-
+      }
     ];
 
     const requestsResult = await requestsCol.insertMany(requests);
-    console.log(`Inserite ${requestsResult.insertedCount} richieste mock.`);
+    console.log(`Inserite ${requestsResult.insertedCount} richieste mock associate ad Angela Bianchi.`);
 
     console.log("Seeding completato con successo!");
   } catch (error) {
