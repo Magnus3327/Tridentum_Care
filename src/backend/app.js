@@ -24,7 +24,6 @@ connectDB()
 
 // Servi i file statici del frontend
 app.use(express.static(path.join(__dirname, '../frontend')));
-app.use(express.static(path.join(__dirname, '../frontend/views')));
 
 
 // Registrazione dei router API

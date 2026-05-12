@@ -76,7 +76,9 @@ const routes = {
     'vol-store': 'view-vol-store',
     'partner-dash': 'view-partner-dash',
     'partner-coupon': 'view-partner-coupon',
-    'admin-dash': 'view-admin-dash'
+    'admin-dash': 'view-admin-dash',
+    'privacy': 'view-public-privacy',
+    'tos': 'view-public-tos'
 };
 
 // Helper per fetch autenticate con JWT
@@ -839,6 +841,13 @@ function bindAuthEvents() {
     if (registerForm) {
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            const termsChecked = document.getElementById('reg-terms')?.checked;
+            if (!termsChecked) {
+                showToast('Devi accettare la Privacy Policy e i Termini di Servizio.', 'danger');
+                return;
+            }
+
             const name = document.getElementById('reg-name').value;
             const surname = document.getElementById('reg-surname').value;
             const email = document.getElementById('reg-email').value;
@@ -1415,7 +1424,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.head.appendChild(fonts);
 
     // Carica dinamicamente i template delle viste HTML nel container
-    const viewFiles = ['public.html', 'shared.html', 'requester.html', 'volunteer.html', 'partner.html', 'admin.html'];
+    const viewFiles = ['public.html', 'shared.html', 'requester.html', 'volunteer.html', 'partner.html', 'admin.html', 'privacy.html', 'tos.html'];
     const container = document.getElementById('app-container');
     
     try {
