@@ -8,6 +8,9 @@ const appState = {
     constants: null,
 };
 
+let currentRoute = 'home';
+let previousRoute = 'home';
+
 async function fetchConstants() {
     if (appState.constants) return appState.constants;
     try {
@@ -97,6 +100,12 @@ async function authorizedFetch(url, options = {}) {
 function navigateTo(routeId) {
     if (!routes[routeId]) return;
     
+    // Traccia la cronologia della navigazione per consentire il ritorno indietro
+    if (currentRoute !== 'privacy' && currentRoute !== 'tos' && currentRoute !== routeId) {
+        previousRoute = currentRoute;
+    }
+    currentRoute = routeId;
+    
     // Nasconde tutte le viste
     document.querySelectorAll('.view-section').forEach(view => {
         view.classList.remove('active');
@@ -123,6 +132,10 @@ function navigateTo(routeId) {
     } else if (routeId === 'auth') {
         toggleRegisterRoleFields();
     }
+}
+
+function navigateBack() {
+    navigateTo(previousRoute || 'home');
 }
 
 function updateNavbar(routeId) {
