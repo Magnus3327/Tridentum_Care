@@ -3,9 +3,9 @@
 ## 🛠️ Da Implementare / Migliorare
 
 ### 📄 Legale e Documentazione
-- [ ] Creare pagina e contenuti statici completi per la **Privacy Policy**.
+- [X] Creare pagina e contenuti statici completi per la **Privacy Policy**.
 - [ ] Creare pagina e contenuti statici completi per i **Termini di Servizio**.
-- [ ] Inserire i link funzionanti nel footer (attualmente puntano a `#`).
+- [X] Inserire i link funzionanti nel footer (attualmente puntano a `#`).
 
 ### 👨‍✈️ Sezione Volontario (Miglioramenti UX e Logica)
 - [ ] **Storico degli Incarichi**: Mostrare in una sezione apposita la lista dei compiti completati e archiviati (attualmente sono visibili solo quelli con stato `In Corso`).
