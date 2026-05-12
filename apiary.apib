@@ -1,0 +1,788 @@
+FORMAT: 1A
+HOST: https://api.example.com
+
+# TridentumCare API Spec (v1.0)
+
+TridentumCare è una piattaforma RESTful per facilitare il matchmaking e la gestione dell'assistenza tra cittadini fragili (Richiedenti) e cittadini attivi (Volontari) nel comune di Trento.
+
+**Convenzioni Globali**
+- Tutte le richieste ed i payload usano il tipo `application/json`.
+- Per le chiamate autenticate, è obbligatorio trasmettere l'header HTTP: `Authorization: Bearer <token_jwt>`.
+- Tutte le risposte di errore restituiscono un payload JSON standard nel formato `{"error": "Messaggio di errore"}` con il relativo codice di stato HTTP (400, 401, 403, 404, 500).
+
+
+# Group Utilità e Configurazione
+
+## Stato dell'Infrastruttura [/api/status]
+
+### Controllo Stato Operativo [GET]
+Verifica se il backend dell'applicazione è avviato e in grado di ricevere connessioni.
+
++ Response 200 (application/json)
+
+        {
+          "status": "ok",
+          "message": "API funzionante"
+        }
+
+## Costanti di Sistema [/api/constants]
+
+### Ottieni Costanti Globali [GET]
+Restituisce le costanti di configurazione centralizzate (SST - Single Source of Truth) dell'applicazione, inclusi i tipi di servizio attivi, i relativi punti di rewarding, i ruoli utente e gli stati delle richieste.
+
++ Response 200 (application/json)
+
+        {
+          "SERVICES": [
+            "Trasporto",
+            "Accompagnamento",
+            "Compagnia"
+          ],
+          "ROLES": {
+            "VOLUNTEER": "volunteer",
+            "REQUESTER": "requester",
+            "PARTNER": "partner",
+            "ADMIN": "admin"
+          },
+          "REQUEST_STATUS": {
+            "PENDING": "In Attesa di Volontario",
+            "ACCEPTED": "Presa in Carico",
+            "COMPLETED": "Completata",
+            "CANCELLED": "Annullata"
+          }
+        }
+
+
+# Group Autenticazione e Sessione
+
+## Registrazione Utente [/api/auth/register]
+
+### Registra un Nuovo Account [POST]
+Crea una nuova utenza nel sistema. Se il ruolo scelto è `"volunteer"`, il server richiede e valida parametri aggiuntivi:
+* `age` (Età minima obbligatoria: 18 anni).
+* `gender` (Genere facoltativo).
+* `license` (Possesso patente di guida, "Si" o "No").
+
+I richiedenti hanno invece solo i campi base.
+
++ Request (application/json)
+
+        {
+          "name": "Sara",
+          "surname": "Rossi",
+          "email": "sara.rossi@example.com",
+          "password": "PasswordSicura123!",
+          "role": "volunteer",
+          "age": 25,
+          "gender": "F",
+          "license": "Si"
+        }
+
++ Response 201 (application/json)
+
+        {
+          "message": "Registrazione completata con successo!",
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NDNhMWY3MmVmOWEyYjAwMTIzYzQ1NjgiLCJlbWFpbCI6InNhcmEucm9zc2lAZXhhbXBsZS5jb20iLCJyb2xlIjoidm9sdW50ZWVyIn0...",
+          "user": {
+            "id": "643a1f72ef9a2b00123c4568",
+            "name": "Sara",
+            "surname": "Rossi",
+            "email": "sara.rossi@example.com",
+            "role": "volunteer",
+            "points": 0
+          }
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Tutti i campi obbligatori devono essere compilati"
+        }
+
+
+## Accesso Utente [/api/auth/login]
+
+### Effettua il Login [POST]
+Autentica l'utente tramite email e password, restituendo un token JWT di sessione.
+
++ Request (application/json)
+
+        {
+          "email": "luca.bianchi@example.com",
+          "password": "PasswordSicura123!"
+        }
+
++ Response 200 (application/json)
+
+        {
+          "message": "Accesso effettuato con successo!",
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+          "user": {
+            "id": "643a1f72ef9a2b00123c4567",
+            "name": "Luca",
+            "surname": "Bianchi",
+            "email": "luca.bianchi@example.com",
+            "role": "requester",
+            "points": 0
+          }
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Inserisci email e password"
+        }
+
++ Response 401 (application/json)
+
+        {
+          "error": "Credenziali non valide"
+        }
+
+
+## Sessione Corrente [/api/auth/me]
+
+### Informazioni Utente Loggato [GET]
+Restituisce le informazioni del profilo associato al token JWT fornito nell'header di autorizzazione.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
++ Response 200 (application/json)
+
+        {
+          "id": "643a1f72ef9a2b00123c4567",
+          "name": "Luca",
+          "surname": "Bianchi",
+          "email": "luca.bianchi@example.com",
+          "role": "requester",
+          "points": 0
+        }
+
++ Response 401 (application/json)
+
+        {
+          "error": "Accesso negato: sessione non valida o scaduta"
+        }
+
+
+# Group Area Cittadino (Richiedente)
+
+Questo gruppo di API è riservato esclusivamente agli utenti registrati con ruolo `"requester"`.
+
+## Richieste del Cittadino [/api/requester/requests]
+
+### Crea una Nuova Richiesta d'Aiuto [POST]
+Inserisce una nuova richiesta di assistenza in bacheca. Al momento dell'inserimento, il sistema calcola in automatico i punti di ricompensa (`points`) associati all'attività in base alla tipologia di servizio scelta.
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
+    + Body
+
+            {
+              "serviceType": "Trasporto",
+              "location": "Via Belenzani 19, Trento",
+              "date": "2026-05-20",
+              "time": "14:30",
+              "notes": "Ho bisogno di un passaggio in auto per una visita medica all'Ospedale Santa Chiara."
+            }
+
++ Response 201 (application/json)
+
+        {
+          "message": "Richiesta creata con successo",
+          "requestId": "644b1501ef9a2b00123c4592"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Tutti i campi obbligatori devono essere compilati"
+        }
+
++ Response 403 (application/json)
+
+        {
+          "error": "Accesso negato: richiesto ruolo Cittadino (Richiedente)"
+        }
+
+### Elenca Richieste del Cittadino Loggato [GET]
+Recupera l'elenco di tutte le richieste inserite dal richiedente autenticato, ordinate dalle più recenti. Se una richiesta è stata accettata da un volontario, il payload conterrà i dettagli del volontario assegnato (`volunteerName`, `volunteerSurname`).
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
++ Response 200 (application/json)
+
+        [
+          {
+            "_id": "644b1501ef9a2b00123c4592",
+            "userId": "643a1f72ef9a2b00123c4567",
+            "serviceType": "Trasporto",
+            "location": "Via Belenzani 19, Trento",
+            "date": "2026-05-20",
+            "time": "14:30",
+            "notes": "Ho bisogno di un passaggio in auto per una visita medica all'Ospedale Santa Chiara.",
+            "points": 150,
+            "status": "In Corso",
+            "createdAt": "2026-05-12T10:00:00.000Z",
+            "volunteerId": "643a1f72ef9a2b00123c4568",
+            "volunteerName": "Sara",
+            "volunteerSurname": "Rossi"
+          }
+        ]
+
+
+## Richieste del Cittadino per Path [/api/requester/requests/{userId}]
+
++ Parameters
+    + userId: `643a1f72ef9a2b00123c4567` (string) - ID dell'utente cittadino richiedente.
+
+### Ottieni Richieste Tramite ID Utente [GET]
+Verifica che l'ID utente richiesto nel path coincida con quello dell'utente autenticato e ne restituisce la lista di richieste di assistenza.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
++ Response 200 (application/json)
+
+        [
+          {
+            "_id": "644b1501ef9a2b00123c4592",
+            "userId": "643a1f72ef9a2b00123c4567",
+            "serviceType": "Trasporto",
+            "location": "Via Belenzani 19, Trento",
+            "date": "2026-05-20",
+            "time": "14:30",
+            "status": "In Attesa di Volontario",
+            "points": 150,
+            "createdAt": "2026-05-12T10:00:00.000Z"
+          }
+        ]
+
++ Response 403 (application/json)
+
+        {
+          "error": "Non autorizzato a visualizzare queste richieste"
+        }
+
+
+## Singola Richiesta di Assistenza [/api/requester/requests/{requestId}]
+
++ Parameters
+    + requestId: `644b1501ef9a2b00123c4592` (string) - ID univoco della richiesta di assistenza.
+
+### Aggiorna Dettagli Richiesta [PUT]
+Consente di modificare una richiesta creata dall'utente, a patto che questa si trovi ancora nello stato `"In Attesa di Volontario"`.
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
+    + Body
+
+            {
+              "serviceType": "Trasporto",
+              "location": "Piazza Duomo 3, Trento",
+              "date": "2026-05-21",
+              "time": "09:30",
+              "notes": "Modificato: la visita medica è stata posticipata e l'indirizzo è cambiato."
+            }
+
++ Response 200 (application/json)
+
+        {
+          "message": "Richiesta aggiornata con successo"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "La richiesta non può essere modificata"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Richiesta non trovata o non autorizzata"
+        }
+
+### Elimina o Annulla Richiesta [DELETE]
+* Se lo stato è `"In Attesa di Volontario"` o `"Annullata"`, la richiesta viene marcata come `"Annullata"`.
+* Se lo stato è `"Annullata"` o `"Completata"`, la richiesta viene **eliminata definitivamente** dal database per permettere all'utente di ripulire la propria cronologia.
+* Se la richiesta è già in corso (accettata da un volontario), l'annullamento viene bloccato.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
++ Response 200 (application/json)
+
+        {
+          "message": "Richiesta eliminata definitivamente o annullata con successo"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "La richiesta non può essere annullata in quanto già in corso"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Richiesta non trovata o non autorizzata"
+        }
+
+
+## Stato Richiesta del Cittadino [/api/requester/requests/{requestId}/status]
+
++ Parameters
+    + requestId: `644b1501ef9a2b00123c4592` (string) - ID univoco della richiesta.
+
+### Cambia Stato Richiesta [PUT]
+Aggiorna lo stato di avanzamento di una richiesta. 
+Quando una richiesta viene contrassegnata come **`"Completata"`** dal richiedente, il server provvede ad accreditare istantaneamente il saldo punti di rewarding (`points`) sul profilo del volontario che ha prestato assistenza.
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
+    + Body
+
+            {
+              "status": "Completata"
+            }
+
++ Response 200 (application/json)
+
+        {
+          "message": "Stato aggiornato con successo"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Stato non valido"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Richiesta non trovata o non autorizzata"
+        }
+
+
+## Valutazione Prestazione [/api/requester/requests/{requestId}/rating]
+
++ Parameters
+    + requestId: `644b1501ef9a2b00123c4592` (string) - ID della richiesta completata.
+
+### Lascia Valutazione ed Opinione [PUT]
+Consente al richiedente di inserire una valutazione numerica (da 1 a 5) ed una recensione testuale sull'operato del volontario. È possibile valutare esclusivamente richieste che si trovano in stato `"Completata"`.
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
+    + Body
+
+            {
+              "rating": 5,
+              "review": "Sara è stata puntualissima, estremamente gentile ed educata. Mi ha aiutato moltissimo!"
+            }
+
++ Response 200 (application/json)
+
+        {
+          "message": "Valutazione salvata con successo"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Valutazione non valida. Deve essere un numero da 1 a 5."
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Richiesta non trovata o non autorizzata"
+        }
+
+
+## Profilo del Cittadino [/api/requester/profile]
+
+### Carica Profilo [GET]
+Ottiene i dati completi dell'account richiedente autenticato.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
++ Response 200 (application/json)
+
+        {
+          "_id": "643a1f72ef9a2b00123c4567",
+          "name": "Luca",
+          "surname": "Bianchi",
+          "email": "luca.bianchi@example.com",
+          "role": "requester",
+          "phone": "+39 340 1234567",
+          "address": "Via Belenzani 19, Trento",
+          "createdAt": "2026-05-12T09:00:00.000Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Profilo richiedente non trovato"
+        }
+
+### Aggiorna Profilo [PUT]
+Consente di modificare le informazioni di recapito (telefono e indirizzo residenza) e anagrafiche dell'utente.
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
+    + Body
+
+            {
+              "name": "Luca",
+              "surname": "Bianchi",
+              "phone": "+39 340 9876543",
+              "address": "Via degli Orti 12, Trento"
+            }
+
++ Response 200 (application/json)
+
+        {
+          "message": "Profilo aggiornato con successo"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Nome e cognome sono obbligatori"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Profilo richiedente non trovato o non autorizzato"
+        }
+
+### Elimina Account ed i propri Dati (GDPR) [DELETE]
+Rimuove definitivamente il profilo dell'utente dal database. Per garantire la conformità al regolamento europeo GDPR, l'azione rimuove automaticamente tutte le richieste di assistenza create dal cittadino richiedente.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
++ Response 200 (application/json)
+
+        {
+          "message": "Profilo e tutte le richieste collegate eliminati definitivamente con successo"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Profilo non trovato"
+        }
+
+
+# Group Area Volontario
+
+Questo gruppo di API è riservato agli utenti registrati con ruolo `"volunteer"`.
+
+## Profilo del Volontario [/api/volunteer/profile]
+
+### Carica Profilo Volontario [GET]
+Ottiene le informazioni del profilo del volontario, comprese le competenze attive, il saldo punti di rewarding cumulato e i coupon riscattati.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
++ Response 200 (application/json)
+
+        {
+          "_id": "643a1f72ef9a2b00123c4568",
+          "name": "Sara",
+          "surname": "Rossi",
+          "email": "sara.rossi@example.com",
+          "role": "volunteer",
+          "phone": "+39 339 1234567",
+          "address": "Via San Severino 5, Trento",
+          "age": 25,
+          "gender": "F",
+          "license": "Si",
+          "points": 350,
+          "skills": [
+            "Trasporto",
+            "Compagnia"
+          ],
+          "coupons": [
+            {
+              "name": "Buono Spesa Coop 10€",
+              "cost": 100,
+              "code": "TC-XYZ12345",
+              "acquiredAt": "2026-05-12T11:00:00.000Z"
+            }
+          ],
+          "createdAt": "2026-05-12T09:00:00.000Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Profilo volontario non trovato"
+        }
+
+### Aggiorna Profilo e Competenze [PUT]
+Consente di aggiornare le proprie informazioni anagrafiche, di contatto, e la lista di competenze/servizi (`skills`) che il volontario è disposto a svolgere.
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
+    + Body
+
+            {
+              "name": "Sara",
+              "surname": "Rossi",
+              "address": "Via Calepina 10, Trento",
+              "phone": "+39 339 9876543",
+              "skills": [
+                "Trasporto",
+                "Compagnia",
+                "Accompagnamento"
+              ],
+              "age": 25,
+              "gender": "F",
+              "license": "Si"
+            }
+
++ Response 200 (application/json)
+
+        {
+          "message": "Profilo aggiornato con successo"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Un volontario deve essere maggiorenne (Età >= 18)!"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Profilo non trovato o non autorizzato"
+        }
+
+### Elimina Profilo Volontario (GDPR) [DELETE]
+Cancella definitivamente l'account del volontario. Per ragioni di sicurezza sociale e conformità GDPR:
+* Se il volontario ha attività accettate `"In Corso"`, lo stato di tali attività viene reimpostato in automatico a `"In Attesa di Volontario"` per rimetterle a bacheca per altri volontari.
+* Per le attività storiche completate, l'identificativo del volontario viene dissociato/anonimizzato nel database.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
++ Response 200 (application/json)
+
+        {
+          "message": "Profilo eliminato definitivamente e contributi sbloccati/anonimizzati con successo"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Profilo non trovato"
+        }
+
+
+## Bacheca Volontari [/api/volunteer/requests{?category}]
+
+### Elenca Richieste Disponibili [GET]
+Restituisce tutte le richieste caricate da cittadini richiedenti in stato `"In Attesa di Volontario"`. Per garantire l'accuratezza del matchmaking, l'endpoint applica automaticamente un **filtro di sicurezza basato sulle competenze (`skills`) salvate nel profilo del volontario**: il volontario visualizzerà esclusivamente le richieste di assistenza che è abilitato a svolgere.
+
++ Parameters
+    + category: `Trasporto` (string, optional) - Consente di filtrare la bacheca per una specifica tipologia di servizio di interesse.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
++ Response 200 (application/json)
+
+        [
+          {
+            "_id": "644b1501ef9a2b00123c4592",
+            "userId": "643a1f72ef9a2b00123c4567",
+            "serviceType": "Trasporto",
+            "location": "Via Belenzani 19, Trento",
+            "date": "2026-05-20",
+            "time": "14:30",
+            "notes": "Passaggio per visita medica",
+            "points": 150,
+            "status": "In Attesa di Volontario",
+            "createdAt": "2026-05-12T10:00:00.000Z",
+            "requesterName": "Luca Bianchi"
+          }
+        ]
+
+
+## Incarichi Personali del Volontario [/api/volunteer/my-tasks]
+
+### Visualizza Incarichi Presi in Carico [GET]
+Restituisce l'elenco di tutte le richieste di assistenza accettate dal volontario loggato e attualmente in stato `"In Corso"`.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
++ Response 200 (application/json)
+
+        [
+          {
+            "_id": "644b1501ef9a2b00123c4592",
+            "userId": "643a1f72ef9a2b00123c4567",
+            "serviceType": "Trasporto",
+            "location": "Via Belenzani 19, Trento",
+            "date": "2026-05-20",
+            "time": "14:30",
+            "notes": "Passaggio per visita medica",
+            "points": 150,
+            "status": "In Corso",
+            "volunteerId": "643a1f72ef9a2b00123c4568",
+            "createdAt": "2026-05-12T10:00:00.000Z",
+            "requesterName": "Luca Bianchi"
+          }
+        ]
+
+
+## Gestione Singolo Incarico Volontario [/api/volunteer/requests/{id}/accept]
+
++ Parameters
+    + id: `644b1501ef9a2b00123c4592` (string) - ID univoco della richiesta di assistenza.
+
+### Accetta Incarico [POST]
+Permette al volontario di accettare una richiesta di assistenza in attesa. Lo stato della richiesta passerà immediatamente a `"In Corso"`, legando l'ID del volontario all'attività.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
++ Response 200 (application/json)
+
+        {
+          "message": "Richiesta presa in carico con successo!"
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Richiesta non disponibile o già assegnata"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Volontario non trovato"
+        }
+
+
+## Rilascio Incarico Volontario [/api/volunteer/requests/{id}/cancel]
+
++ Parameters
+    + id: `644b1501ef9a2b00123c4592` (string) - ID univoco della richiesta da annullare.
+
+### Rilascia Incarico Preso in Carico [POST]
+Consente al volontario di annullare la propria disponibilità per un'attività precedentemente accettata e ancora in corso. Il sistema rimuove l'ID del volontario dall'attività e ne reimposta lo stato a `"In Attesa di Volontario"`, rendendola nuovamente disponibile in bacheca per altri.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
++ Response 200 (application/json)
+
+        {
+          "message": "Presa in carico annullata con successo. La richiesta è di nuovo disponibile in bacheca."
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Incarico non trovato o non valido"
+        }
+
+
+## Store Premi e Coupon [/api/volunteer/coupons/redeem]
+
+### Riscatta Premio Store [POST]
+Consente al volontario di riscattare un premio (coupon commerciale o sconto partner) spendendo i propri punti accumulati. Il sistema scala istantaneamente il saldo punti ed aggiunge un coupon univoco (codice randomizzato con prefisso `TC-`) nel portafoglio personale dell'utente.
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer eyJhbGciOiJIUzI1Ni...
+
+    + Body
+
+            {
+              "couponName": "Sconto Spesa Coop 10€",
+              "costoPunti": 100
+            }
+
++ Response 200 (application/json)
+
+        {
+          "message": "Coupon \"Sconto Spesa Coop 10€\" riscattato con successo!",
+          "newPoints": 250
+        }
+
++ Response 400 (application/json)
+
+        {
+          "error": "Parametri couponName e costoPunti obbligatori"
+        }
+
++ Response 404 (application/json)
+
+        {
+          "error": "Volontario non trovato"
+        }
