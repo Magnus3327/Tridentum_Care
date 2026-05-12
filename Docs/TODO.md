@@ -3,9 +3,7 @@
 ## 🛠️ Da Implementare / Migliorare
 
 ### 📄 Legale e Documentazione
-- [X] Creare pagina e contenuti statici completi per la **Privacy Policy**.
-- [ ] Creare pagina e contenuti statici completi per i **Termini di Servizio**.
-- [X] Inserire i link funzionanti nel footer (attualmente puntano a `#`).
+- [ ] **Link Legali in Signup**: Linkare privacy policy e ToS durante il signup, aggiungere spunta di presa visione necessaria
 
 ### 👨‍✈️ Sezione Volontario (Miglioramenti UX e Logica)
 - [ ] **Storico degli Incarichi**: Mostrare in una sezione apposita la lista dei compiti completati e archiviati (attualmente sono visibili solo quelli con stato `In Corso`).
