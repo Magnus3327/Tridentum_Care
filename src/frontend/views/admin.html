@@ -1,0 +1,45 @@
+<!-- Backoffice / Moderazione -->
+<section id="view-admin-dash" class="view-section">
+    <h2>Console Amministratore</h2>
+
+    <div class="grid-2" style="margin-top: 2rem;">
+        <!-- Moderazione Utenti -->
+        <div class="card">
+            <h3>Ricerca e Moderazione Utenti</h3>
+            <div class="flex gap-1" style="margin: 1rem 0;">
+                <input type="text" class="form-control" placeholder="Cerca per email o nome...">
+                <button class="btn btn-primary">Cerca</button>
+            </div>
+            <hr style="margin: 1rem 0; border: 0; border-top: 1px solid var(--border-color);">
+            <div class="flex justify-between items-center" style="margin-bottom: 1rem;">
+                <div>
+                    <strong>Luigi Bianchi</strong> (Volontario)<br>
+                    <small class="text-muted">luigi@email.it</small>
+                </div>
+                <div class="flex gap-1">
+                    <button class="btn btn-outline"
+                        style="padding: 0.5rem; color: orange; border-color: orange;">Sospendi</button>
+                    <button class="btn btn-danger" style="padding: 0.5rem;">Elimina</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Genera Credenziali Partner -->
+        <div class="card">
+            <h3>Registra Nuovo Partner</h3>
+            <p class="text-muted" style="margin-bottom: 1rem;">Genera credenziali manuali per un nuovo negozio
+                convenzionato.</p>
+            <form onsubmit="event.preventDefault(); alert('Credenziali inviate all\'email del partner!');">
+                <div class="form-group">
+                    <label class="form-label">Nome Attività</label>
+                    <input type="text" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email Referente</label>
+                    <input type="email" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-secondary btn-block">Genera e Invia Accesso</button>
+            </form>
+        </div>
+    </div>
+</section>

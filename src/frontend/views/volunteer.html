@@ -1,0 +1,119 @@
+<!-- Bacheca Richieste -->
+<section id="view-vol-board" class="view-section">
+    <div class="card" style="background: linear-gradient(135deg, var(--primary-color), #2d7da6); color: white; margin-bottom: 2rem; border: none; padding: 2rem;">
+        <div class="flex justify-between items-center flex-col md-row gap-2" style="text-align: left;">
+            <div>
+                <h1 style="color: white; margin-bottom: 0.5rem; font-size: 2.25rem;">👋 Ciao, <span id="volunteer-welcome-name">Volontario</span>!</h1>
+                <p style="margin-bottom: 0; opacity: 0.9;">Pronto ad aiutare la comunità di Trento oggi? Sfoglia le richieste attive o gestisci i tuoi incarichi.</p>
+            </div>
+            <div class="card text-center" style="background: rgba(255, 255, 255, 0.15); border: none; padding: 1rem 2rem; border-radius: var(--radius-md); backdrop-filter: blur(10px); min-width: 180px;">
+                <p style="margin-bottom: 0; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 1px; color: var(--secondary-color); font-weight: bold;">I tuoi Punti</p>
+                <h2 style="color: white; margin-bottom: 0; font-size: 2rem;" id="volunteer-header-points">1250 <span style="font-size: 1rem;">pts</span></h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Layout Principale: Due Colonne per Bacheca e Incarichi Attivi -->
+    <div class="grid-2" style="grid-template-columns: 2fr 1fr; gap: 2rem; margin-top: 2rem;">
+        
+        <!-- Colonna Sinistra: Bacheca Richieste Disponibili -->
+        <div>
+            <div class="flex justify-between items-center" style="margin-bottom: 1.5rem;">
+                <h2 style="margin-bottom: 0; font-size: 1.5rem;"><i class="fa-solid fa-list-check text-primary"></i> Richieste Disponibili</h2>
+                <div>
+                    <select id="request-category-filter" class="form-control" style="width: auto; padding: 0.5rem 1rem;" onchange="loadActiveRequests()">
+                        <option value="Tutti i servizi">Tutti i servizi</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Contenitore Richieste Caricate Dinamicamente -->
+            <div id="volunteer-requests-container" class="flex flex-col gap-2">
+                <!-- Verrà popolato dinamicamente via JS -->
+                <div class="text-center text-muted" style="padding: 3rem 0;">
+                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p>Caricamento delle richieste attive...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonna Destra: I miei Incarichi In Corso -->
+        <div>
+            <div style="margin-bottom: 1.5rem;">
+                <h2 style="margin-bottom: 0; font-size: 1.5rem;"><i class="fa-solid fa-person-running text-secondary"></i> I Miei Incarichi</h2>
+            </div>
+
+            <div id="volunteer-my-tasks-container" class="flex flex-col gap-2">
+                <!-- Verrà popolato dinamicamente via JS -->
+                <div class="text-center text-muted" style="padding: 2rem 0; border: 2px dashed var(--border-color); border-radius: var(--radius-lg); background: var(--surface-color);">
+                    <i class="fa-solid fa-hands-holding" style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text-muted);"></i>
+                    <p style="font-size: 0.875rem;">Non hai ancora preso in carico nessuna richiesta.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Vol Detail Modal (Dettagli della richiesta) -->
+    <div class="modal-overlay" id="vol-req-detail-modal">
+        <div class="modal-content" style="max-width: 600px; border-radius: var(--radius-lg); position: relative;">
+            <button class="btn-close" onclick="closeModal('vol-req-detail-modal')" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            
+            <div style="margin-top: 1rem;">
+                <span class="badge" id="modal-req-badge">Spesa</span>
+            </div>
+            
+            <h2 style="margin-top: 1rem; margin-bottom: 0.5rem;" id="modal-req-title">Spesa al Supermercato</h2>
+            <p class="text-muted" style="font-size: 0.875rem;" id="modal-req-requester"><i class="fa-solid fa-user"></i> Richiedente: Mario R.</p>
+            
+            <hr style="margin: 1rem 0; border: 0; border-top: 1px solid var(--border-color);">
+            
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <p style="margin-bottom: 0;"><i class="fa-solid fa-location-dot text-primary" style="width: 20px;"></i> <strong>Indirizzo:</strong> <span id="modal-req-address">Via Roma 1, Trento</span></p>
+                <p style="margin-bottom: 0;"><i class="fa-regular fa-clock text-secondary" style="width: 20px;"></i> <strong>Data e Ora:</strong> <span id="modal-req-datetime">Oggi, 16:30</span></p>
+                <p style="margin-bottom: 0;"><i class="fa-solid fa-award text-accent" style="width: 20px; color: var(--accent-color);"></i> <strong>Ricompensa:</strong> <span id="modal-req-points" style="font-weight: bold; color: var(--accent-color);">+150 pts</span></p>
+            </div>
+
+            <div style="background: var(--background-light); padding: 1.25rem; border-radius: var(--radius-sm); margin-top: 1.5rem;">
+                <h4 style="margin-bottom: 0.5rem; font-size: 0.95rem; color: var(--text-dark); font-weight: bold;">Note e dettagli della richiesta:</h4>
+                <p id="modal-req-description" style="margin-bottom: 0; font-size: 0.95rem; color: var(--text-muted);">Comprare pane, latte e frutta fresca. Pagamento in contanti alla consegna.</p>
+            </div>
+            
+            <div class="flex gap-2" style="margin-top: 2rem;">
+                <button class="btn btn-outline" style="flex:1;" onclick="closeModal('vol-req-detail-modal')">Chiudi</button>
+                <button class="btn btn-primary" style="flex:2;" id="modal-accept-btn">Accetta Incarico</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Store Premi (Coupon) -->
+<section id="view-vol-store" class="view-section">
+    <div class="card text-center" style="margin-bottom: 3rem; background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); color: white;">
+        <h2 style="color: white; margin-bottom: 0;">Il tuo Saldo Punti</h2>
+        <div style="font-size: 4rem; font-weight: 800; color: var(--secondary-color);" id="store-points-balance">1250 <span style="font-size: 1.5rem;">pts</span></div>
+    </div>
+    
+    <h3>Coupon Disponibili</h3>
+    <div class="grid-3" style="margin-top: 1.5rem;">
+        <!-- Coupon Card 1 -->
+        <div class="card text-center">
+            <div style="background: var(--background-light); padding: 2rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
+                <i class="fa-solid fa-mug-hot" style="font-size: 3rem; color: var(--text-muted);"></i>
+            </div>
+            <h4>Caffè Gratuito</h4>
+            <p class="text-muted">Bar Pasticceria Trento</p>
+            <h3 class="text-secondary" style="margin: 1rem 0;">200 pts</h3>
+            <button class="btn btn-primary btn-block" onclick="buyCoupon('Caffè Gratuito', 200)">Acquista</button>
+        </div>
+        <!-- Coupon Card 2 -->
+        <div class="card text-center">
+            <div style="background: var(--background-light); padding: 2rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
+                <i class="fa-solid fa-cart-shopping" style="font-size: 3rem; color: var(--text-muted);"></i>
+            </div>
+            <h4>Sconto 10% Spesa</h4>
+            <p class="text-muted">Supermercati Trentini</p>
+            <h3 class="text-secondary" style="margin: 1rem 0;">800 pts</h3>
+            <button class="btn btn-primary btn-block" onclick="buyCoupon('Sconto 10% Spesa', 800)">Acquista</button>
+        </div>
+    </div>
+</section>

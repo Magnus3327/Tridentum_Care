@@ -1,0 +1,115 @@
+<!-- Profile & Settings -->
+<section id="view-shared-profile" class="view-section">
+    <div class="card" style="max-width: 800px; margin: 0 auto; padding: 2.5rem;">
+        <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
+            <h2><i class="fa-solid fa-id-card text-primary"></i> Profilo Personale</h2>
+            <span class="badge badge-success" id="profile-role-badge">Utente</span>
+        </div>
+        
+        <form id="profile-form" onsubmit="saveProfile(event)">
+            <div class="grid-2">
+                <div class="form-group">
+                    <label class="form-label">Nome</label>
+                    <input type="text" id="profile-name" class="form-control" required placeholder="Inserisci il tuo nome">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Cognome</label>
+                    <input type="text" id="profile-surname" class="form-control" required placeholder="Inserisci il tuo cognome">
+                </div>
+            </div>
+            
+            <div class="grid-2">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="profile-email" class="form-control" readonly style="background-color: #f1f3f5; cursor: not-allowed;">
+                    <small class="text-muted">L'email non può essere modificata.</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Telefono / Cellulare</label>
+                    <input type="tel" id="profile-phone" class="form-control" placeholder="es. 333 123 4567">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Indirizzo Predefinito (Per facilitare la localizzazione)</label>
+                <input type="text" id="profile-address" class="form-control" placeholder="es. Via Roma 1, Trento">
+            </div>
+
+            <!-- Campi esclusivi per il Volontario (mostrati via JS se role === 'volunteer') -->
+            <div id="profile-volunteer-fields" style="display: none; margin-top: 2rem; padding: 1.5rem; background: var(--background-light); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                <h4 style="color: var(--primary-color); margin-bottom: 1.5rem;"><i class="fa-solid fa-id-card-clip text-secondary"></i> Dettagli e Competenze del Volontario</h4>
+                
+                <!-- Dettagli aggiuntivi per-->
+                <div class="grid-3" style="gap: 1.25rem; margin-bottom: 1.5rem; border-bottom: 1px dashed var(--border-color); padding-bottom: 1.5rem;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label">Età (Minimo 18 anni)</label>
+                        <input type="number" id="profile-age" class="form-control" placeholder="es. 25" min="1" readonly style="padding: 0.5rem 0.75rem; background-color: #f1f3f5; cursor: not-allowed;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label">Possesso Patente</label>
+                        <select id="profile-license" class="form-control" style="padding: 0.5rem 0.75rem;">
+                            <option value="">Seleziona...</option>
+                            <option value="Sì (Patente B)">Sì (Patente B)</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label">Genere</label>
+                        <select id="profile-gender" class="form-control" style="padding: 0.5rem 0.75rem;">
+                            <option value="">Seleziona...</option>
+                            <option value="M">Maschile</option>
+                            <option value="F">Femminile</option>
+                            <option value="Altro">Altro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <p class="text-muted" style="font-size: 0.875rem; margin-bottom: 1rem; font-weight: 500;">Seleziona le tipologie di richieste in cui ti senti a tuo agio:</p>
+                
+                <div class="grid-2" id="profile-skills-container" style="gap: 1rem 2rem;">
+                    <!-- Popolato dinamicamente da JS basandosi sulle costanti di sistema -->
+                </div>
+            </div>
+
+            <!-- Sezione Coupon Acquistati per il Volontario -->
+            <div id="profile-volunteer-coupons" style="display: none; margin-top: 2rem; padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                <h4 style="color: var(--primary-color); margin-bottom: 1.5rem;"><i class="fa-solid fa-ticket text-secondary"></i> I Miei Coupon</h4>
+                <div id="volunteer-coupons-list" class="grid-2" style="gap: 1rem;">
+                    <!-- Popolato dinamicamente da JS -->
+                    <p class="text-muted" style="font-size: 0.875rem; grid-column: span 2;">Nessun coupon acquistato.</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-2" style="margin-top: 2.5rem;">
+                <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem;"><i class="fa-solid fa-floppy-disk" style="margin-right: 0.5rem;"></i> Salva Modifiche</button>
+                <button type="button" class="btn btn-danger" onclick="openModal('delete-account-modal')">Elimina Account</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Delete Account Modal -->
+    <div class="modal-overlay" id="delete-account-modal">
+        <div class="modal-content text-center" style="max-width: 500px; padding: 2.5rem;">
+            <i class="fa-solid fa-triangle-exclamation text-danger" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+            <h2 class="text-danger" style="margin-top: 0.5rem;">Attenzione!</h2>
+            <p>Sei sicuro di voler richiedere l'eliminazione definitiva del tuo account e di tutti i dati associati (conforme alla normativa GDPR)? Questa azione è irreversibile.</p>
+            <div class="flex gap-2 justify-center" style="margin-top: 2rem;">
+                <button class="btn btn-outline" onclick="closeModal('delete-account-modal')">Annulla</button>
+                <button id="confirm-delete-profile-btn" class="btn btn-danger" onclick="deleteUserProfile()">Conferma Eliminazione</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- QR Code Modal -->
+    <div class="modal-overlay" id="qr-code-modal">
+        <div class="modal-content text-center" style="max-width: 400px; padding: 2.5rem; border-radius: var(--radius-lg); position: relative;">
+            <button class="btn-close" type="button" onclick="closeModal('qr-code-modal')" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+            <h3 id="qr-modal-title" style="margin-bottom: 0.5rem; color: var(--primary-color);">Coupon</h3>
+            <p id="qr-modal-code" class="text-secondary" style="font-weight: bold; font-family: monospace; letter-spacing: 2px; font-size: 1.25rem; margin-bottom: 1.5rem;">TC-XXXXXX</p>
+            <div style="background: white; padding: 1rem; display: inline-block; border-radius: 10px; margin-bottom: 1.5rem;">
+                <img id="qr-modal-image" src="" alt="QR Code" style="width: 200px; height: 200px;">
+            </div>
+            <p class="text-muted" style="font-size: 0.875rem; margin-bottom: 0;">Mostra questo codice all'esercente per usufruire del premio.</p>
+        </div>
+    </div>
+</section>
