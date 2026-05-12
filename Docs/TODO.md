@@ -2,6 +2,9 @@
 
 ## 🛠️ Da Implementare / Migliorare
 
+### Readme
+- [X] **Rifare completamente il Readme** Rendere più professionale e completo.
+
 ### 📄 Legale e Documentazione
 - [X] **Link Legali in Signup**: Linkare privacy policy e ToS durante il signup, aggiungere spunta di presa visione necessaria
 
