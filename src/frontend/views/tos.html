@@ -1,97 +1,71 @@
-<!DOCTYPE html>
-<html lang="it">
+<!-- Terms of Service View -->
+<section id="view-public-tos" class="view-section">
+    <div class="card" style="max-width: 900px; margin: 0 auto; padding: 2.5rem;">
+        <header class="text-center" style="margin-bottom: 2rem;">
+            <h1>Terms of Service</h1>
+            <p class="text-muted">Ultimo aggiornamento: [12/05/2026]</p>
+        </header>
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Terms of Service - Tridentum Care</title>
-    <link rel="stylesheet" href="../style.css" />
-</head>
+        <p>Benvenuti sulla nostra piattaforma. L'utilizzo del servizio implica l'accettazione dei presenti Termini di Servizio. Vi
+        invitiamo a leggerli attentamente, poiché definiscono i diritti e le responsabilità di tutti gli utenti coinvolti.</p>
 
-<body>
-    <nav class="navbar">
-        <div class="container flex justify-between items-center">
-            <a href="/index.html" class="brand">
-                <i class="fa-solid fa-shield-heart text-secondary"></i>
-                TRIDENTUM<span>CARE</span>
-            </a>
+        <h2>1. Oggetto del Servizio</h2>
+        <p>La piattaforma ha lo scopo di facilitare l'incontro tra Richiedenti (anziani o persone in condizioni di vulnerabilità) e
+        Volontari disposti a offrire supporto quotidiano (trasporto, accompagnamento, commissioni). Il sistema agisce
+        esclusivamente come intermediario tecnologico per promuovere l'impegno civico e il supporto sociale.</p>
+        
+        <h2>2. Registrazione Account</h2>
+        <h3>Accesso:</h3>
+        <p>La registrazione è obbligatoria per accedere alle funzionalità della piattaforma.</p>
+        <h3>Verifica:</h3>
+        <p>I Volontari devono fornire informazioni veritiere sulla propria identità e, dove richiesto per i servizi di trasporto,
+        sul possesso della patente di guida.</p>
+        <h3>Tutori:</h3>
+        <p>L'utilizzo da parte di persone sotto tutela deve essere autorizzato dai tutori legali.</p>
+
+        <h2>3. Gestione delle Richieste</h2>
+        <h3>Creazione:</h3>
+        <p>Il Richiedente può creare richieste specificando itinerario, posizione e tipo di assistenza necessaria.</p>
+        <h3>Accettazione:</h3>
+        <p>Una volta che un Volontario accetta una richiesta, il servizio si considera "impegnato".</p>
+        <h3>Modifica e Cancellazione:</h3>
+        <p>La modifica o cancellazione di una richiesta è consentita solo entro i termini temporali previsti dall'applicazione.
+        Se una richiesta viene modificata dopo l'accettazione da parte di un Volontario, il sistema annullerà automaticamente
+        l'assegnazione per permettere al Volontario di rendersi nuovamente disponibile.</p>
+    
+        <h2>4. Sistema di Rewarding e Punti</h2>
+        <h3>Accumulo Punti:</h3> 
+        <p>I Volontari ricevono punti base per ogni servizio completato correttamente. Ulteriori bonus (da 1 a 5
+        punti) possono essere assegnati in base alla valutazione fornita dal Richiedente.</p>
+        <h3>Natura dei Punti: </h3>    
+        <p>I punti non costituiscono moneta legale e non hanno valore di riscatto in denaro.</p> 
+        <h3>Coupon:</h3> 
+        <p>I punti possono essere convertiti in coupon validi presso le Aziende Partner e gli Enti Comunali
+        convenzionati (es. biblioteche o servizi locali). La validità e i termini dei coupon sono definiti dai singoli partner.</p>
+    
+        <h2>5. Norme di Comportamento e Moderazione</h2>
+        <h3>Rispetto reciproco:</h3>
+        <p>Gli utenti si impegnano a mantener un comportamento rispettoso e civile. Qualsiasi forma di discriminazione, abuso o
+        comportamento inappropriato è severamente vietata.</p>
+        <h3>Segnalazioni:</h3>
+        <p>L'Amministratore di sistema si riserva il diritto di intervenire in caso di violazioni dei presenti Termini, con la
+        possibilità di sospendere o cancellare account che non rispettano le regole della piattaforma.</p>
+    
+        <h2>6. Limitazione di Responsabilità</h2>
+        <p>La piattaforma agisce esclusivamente come intermediario tecnologico e non è responsabile per eventuali danni, perdite o
+        controversie che possono sorgere tra Richiedenti e Volontari. Gli utenti sono tenuti a utilizzare il servizio in modo
+        consapevole e responsabile.</p>
+
+        <h2>7. Sicurezza Tecnica</h2>
+        <p>La piattaforma adotta misure standard di sicurezza (HTTPS, hashing delle password) come descritto nella Privacy Policy.
+        Gli utenti sono responsabili della segretezza della propria password di accesso.</p>
+        <h2>8. Modifiche ai Termini</h2>
+        <p>Ci riserviamo il diritto di aggiornare questi termini in base all'evoluzione del progetto. Gli utenti saranno informati
+        delle modifiche rilevanti tramite l'applicazione.</p>    
+
+        <div class="flex justify-between items-center" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <span class="text-muted">Versione: [v1.0]</span>
+            <button class="btn btn-outline" onclick="navigateTo('home')">Torna indietro</button>
         </div>
-    </nav>
-
-    <main id="app-container">
-        <section class="container">
-            <div class="card" style="max-width: 900px; margin: 0 auto;">
-                <header class="text-center" style="margin-bottom: 2rem;">
-                    <h1>Terms of Service</h1>
-                    <p class="text-muted">Ultimo aggiornamento: [12/05/2026]</p>
-                </header>
-
-                <p>Benvenuti sulla nostra piattaforma. L'utilizzo del servizio implica l'accettazione dei presenti Termini di Servizio. Vi
-                invitiamo a leggerli attentamente, poiché definiscono i diritti e le responsabilità di tutti gli utenti coinvolti.</p>
-
-                <h2>1. Oggetto del Servizio</h2>
-                <p>La piattaforma ha lo scopo di facilitare l'incontro tra Richiedenti (anziani o persone in condizioni di vulnerabilità) e
-                Volontari disposti a offrire supporto quotidiano (trasporto, accompagnamento, commissioni). Il sistema agisce
-                esclusivamente come intermediario tecnologico per promuovere l'impegno civico e il supporto sociale.</p>
-                
-                <h2>2. Registrazione Account</h2>
-                    <h3>Accesso:</h3>
-                    <p>La registrazione è obbligatoria per accedere alle funzionalità della piattaforma.</p>
-                    <h3>Verifica:</h3>
-                    <p>I Volontari devono fornire informazioni veritiere sulla propria identità e, dove richiesto per i servizi di trasporto,
-                    sul possesso della patente di guida.</p>
-                    <h3>Tutori:</h3>
-                    <p>L'utilizzo da parte di persone sotto tutela deve essere autorizzato dai tutori legali.</p>
-
-                <h2>3. Gestione delle Richieste</h2>
-                    <h3>Creazione:</h3>
-                    <p>Il Richiedente può creare richieste specificando itinerario, posizione e tipo di assistenza necessaria.</p>
-                    <h3>Accettazione:</h3>
-                    <p>Una volta che un Volontario accetta una richiesta, il servizio si considera "impegnato".</p>
-                    <h3>Modifica e Cancellazione:</h3>
-                    <p>La modifica o cancellazione di una richiesta è consentita solo entro i termini temporali previsti dall'applicazione.
-                    Se una richiesta viene modificata dopo l'accettazione da parte di un Volontario, il sistema annullerà automaticamente
-                    l'assegnazione per permettere al Volontario di rendersi nuovamente disponibile.</p>
-                
-                <h2>4. Sistema di Rewarding e Punti</h2>
-                    <h3>Accumulo Punti:</h3> 
-                    <p>I Volontari ricevono punti base per ogni servizio completato correttamente. Ulteriori bonus (da 1 a 5
-                    punti) possono essere assegnati in base alla valutazione fornita dal Richiedente.</p>
-                    <h3>Natura dei Punti: </h3>    
-                    <p>I punti non costituiscono moneta legale e non hanno valore di riscatto in denaro.</p> 
-                    <h3>Coupon:</h3> 
-                    <p>I punti possono essere convertiti in coupon validi presso le Aziende Partner e gli Enti Comunali
-                    convenzionati (es. biblioteche o servizi locali). La validità e i termini dei coupon sono definiti dai singoli partner.</p>
-                
-                <h2>5. Norme di Comportamento e Moderazione</h2>
-                    <h3>Rispetto reciproco:</h3>
-                    <p>Gli utenti si impegnano a mantenere un comportamento rispettoso e civile. Qualsiasi forma di discriminazione, abuso o
-                    comportamento inappropriato è severamente vietata.</p>
-                    <h3>Segnalazioni:</h3>
-                    <p>L'Amministratore di sistema si riserva il diritto di intervenire in caso di violazioni dei presenti Termini, con la
-                    possibilità di sospendere o cancellare account che non rispettano le regole della piattaforma.</p>
-                
-                <h2>6. Limitazione di Responsabilità</h2>
-                    <p>La piattaforma agisce esclusivamente come intermediario tecnologico e non è responsabile per eventuali danni, perdite o
-                    controversie che possono sorgere tra Richiedenti e Volontari. Gli utenti sono tenuti a utilizzare il servizio in modo
-                    consapevole e responsabile.</p>
-
-                <h2>7. Sicurezza Tecnica</h2>
-                   <p>La piattaforma adotta misure standard di sicurezza (HTTPS, hashing delle password) come descritto nella Privacy Policy.
-                    Gli utenti sono responsabili della segretezza della propria password di accesso.</p>
-                <h2>8. Modifiche ai Termini</h2>
-                    <p>Ci riserviamo il diritto di aggiornare questi termini in base all'evoluzione del progetto. Gli utenti saranno informati
-                    delle modifiche rilevanti tramite l'applicazione.</p>    
-
-
-                <div class="flex justify-between items-center"
-                    style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                    <span class="text-muted">Versione: [v1.0]</span>
-                    <a href="/index.html" class="btn btn-outline">Torna indietro</a>
-                </div>
-            </div>
-        </section>
-    </main>
-</body>
-
-</html>
+    </div>
+</section>
