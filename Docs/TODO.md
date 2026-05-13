@@ -3,10 +3,10 @@
 ## 🛠️ Da Implementare / Migliorare
 
 ### Readme
-- [X] **Rifare completamente il Readme** Rendere più professionale e completo.
+- [] **Rifare completamente il Readme** Rendere più professionale e completo.
 
 ### 📄 Legale e Documentazione
-- [X] **Link Legali in Signup**: Linkare privacy policy e ToS durante il signup, aggiungere spunta di presa visione necessaria
+- [x] **Link Legali in Signup**: Linkare privacy policy e ToS durante il signup, aggiungere spunta di presa visione necessaria
 
 ### 👨‍✈️ Sezione Volontario (Miglioramenti UX e Logica)
 - [ ] **Storico degli Incarichi**: Mostrare in una sezione apposita la lista dei compiti completati e archiviati (attualmente sono visibili solo quelli con stato `In Corso`).
@@ -25,3 +25,11 @@
 ### ⚡ Ottimizzazioni Generali & UX
 - [ ] **Notifiche Push / Socket**: Notificare in tempo reale il cittadino richiedente quando un volontario accetta la sua richiesta di aiuto.
 - [ ] **Gestione Avatar**: Permettere l'upload (o la selezione di una lista predefinita) di immagini del profilo per rendere l'interfaccia ancora più amichevole e personalizzata.l'interfaccia ancora più amichevole e personalizzata.
+
+### Migliorie del sito
+
+## Nuove Funzionalità
+- [] **Sezione Mappa lato volontario**: Mostrare una mappa full screen con segnaposto per ogni richiesta, consentendo di vedere dettagli e accettare richieste direttamente dalla mappa. Rendendo dinamici i segnalini, magari con un colore appostio per quelle accettate
+
+## Aggiornamenti a funzionalità esistenti
+- [] **Dashboard Volontario**: Aggiungere una sezione per visualizzare lo storico degli incarichi completati, con i relativi dettagli. Attualmente sono visibili solo gli incarichi attivi
