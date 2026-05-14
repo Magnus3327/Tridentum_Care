@@ -1,6 +1,6 @@
-# TridentumCare 🛡️❤️
+# TridentumCare
 
-**Progetto per l'esame di Ingegneria del Software - UNI2026**
+**Progetto per l'esame di Ingegneria del Software - 2026**
 
 TridentumCare è una piattaforma web innovativa nata per connettere persone anziane o fragili con volontari disponibili, specificamente pensata per il territorio di Trento. L'obiettivo del sistema è facilitare il supporto reciproco fornendo un pannello di controllo chiaro per gestire servizi essenziali come *Trasporto*, *Accompagnamento* e *Compagnia*.
 
