@@ -2,6 +2,9 @@
 
 ## 🛠️ Da Implementare / Migliorare
 
+### Fix API 
+- [] **Riscrivere in swagger** 
+
 ### Readme
 - [] **Rifare completamente il Readme** Rendere più professionale e completo.
 
