@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { ObjectId } = require("mongodb");
 const authMiddleware = require("../middleware/auth");
-const { SERVICES, ROLES } = require("../../config/constants");
+const { SERVICES, ROLES, AUTH_LVL } = require("../../config/constants");
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "tridentum_care_secret_key_123";
@@ -37,6 +37,7 @@ router.post("/register", async (req, res) => {
         age: parsedAge,
         gender: gender || "",
         license: license || "No",
+        authLvl: AUTH_LVL.UNVERIFIED,
         points: 0,
         skills: [...SERVICES], // tutte le competenze attive di default, clonate dalle costanti
         coupons: []

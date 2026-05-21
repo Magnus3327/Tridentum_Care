@@ -20,6 +20,13 @@ const ROLES = {
   ADMIN: "admin"
 };
 
+// Authorization levels for volunteers (numeric values stored on user documents)
+const AUTH_LVL = {
+  UNVERIFIED: 0,
+  VERIFIED: 1,
+  ADMIN: 2
+};
+
 const REQUEST_STATUS = {
   PENDING: "In Attesa di Volontario",
   ACCEPTED: "Presa in Carico",
@@ -31,5 +38,6 @@ module.exports = {
   SERVICE_POINTS,
   SERVICES,
   ROLES,
-  REQUEST_STATUS
+  REQUEST_STATUS,
+  AUTH_LVL
 };

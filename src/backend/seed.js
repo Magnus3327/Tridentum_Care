@@ -2,6 +2,7 @@ const { MongoClient } = require("mongodb");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 require("dotenv").config({ path: path.join(__dirname, "../../.env") });
+const { AUTH_LVL } = require("./config/constants");
 
 const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
 if (!uri) {
@@ -37,6 +38,7 @@ async function seed() {
         surname: "Rossi",
         role: "volunteer",
         address: "Via Roma 1, Trento",
+        authLvl: AUTH_LVL ? AUTH_LVL.UNVERIFIED : 0,
         points: 1250,
         phone: "333 123 4567",
         skills: ["Trasporto", "Accompagnamento", "Compagnia"],

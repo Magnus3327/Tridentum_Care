@@ -1,6 +1,7 @@
 const express = require("express");
 const { ObjectId } = require("mongodb");
 const authMiddleware = require("../middleware/auth");
+const { AUTH_LVL } = require("../../config/constants");
 const router = express.Router();
 
 // Proteggi tutte le rotte di questo router con l'authMiddleware
@@ -50,15 +51,24 @@ router.put("/profile", async (req, res) => {
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });
 
+    // Preserve existing volunteer document fields when partial update
+    const existingVolunteer = await db.collection("users").findOne({ _id: new ObjectId(userId), role: "volunteer" });
+    if (!existingVolunteer) {
+      return res.status(404).json({ error: "Profilo volontario non trovato" });
+    }
+
+    const preservedAuthLvl = (typeof existingVolunteer.authLvl === 'number') ? existingVolunteer.authLvl : AUTH_LVL.UNVERIFIED;
+
     const updateData = {
-      name,
-      surname,
-      address,
-      phone,
-      skills: Array.isArray(skills) ? skills : [],
-      license: license || "",
-      gender: gender || "",
-      updatedAt: new Date()
+      name: (name !== undefined) ? name : existingVolunteer.name,
+      surname: (surname !== undefined) ? surname : existingVolunteer.surname,
+      address: (address !== undefined) ? address : existingVolunteer.address,
+      phone: (phone !== undefined) ? phone : existingVolunteer.phone,
+      skills: Array.isArray(skills) ? skills : (existingVolunteer.skills || []),
+      license: (license !== undefined) ? license : (existingVolunteer.license || ""),
+      gender: (gender !== undefined) ? gender : (existingVolunteer.gender || ""),
+      updatedAt: new Date(),
+      authLvl: preservedAuthLvl
     };
 
     const result = await db.collection("users").updateOne(
