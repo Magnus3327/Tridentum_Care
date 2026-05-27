@@ -56,6 +56,13 @@ async function seed() {
         address: "Via Belenzani 12, Trento",
         phone: "345 678 9012",
         createdAt: new Date()
+      },
+      {
+        name: "Admin",
+        surname: "Tridentum",
+        email: "admin@tridentumcare.it",
+        password: "passwordAdmin123", // Verrà cifrata dallo script tramite bcrypt
+        role: "admin"
       }
     ];
 

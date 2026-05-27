@@ -5,6 +5,7 @@ const connectDB = require('../config/db');
 const authRouter = require('./api/auth');
 const volunteerRouter = require('./api/volunteer');
 const requesterRouter = require('./api/requester');
+const administrativeRouter = require('./api/administrative');
 
 const app = express();
 
@@ -30,6 +31,8 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 app.use('/api/auth', authRouter);
 app.use('/api/volunteer', volunteerRouter);
 app.use('/api/requester', requesterRouter);
+app.use('/api/administrative', administrativeRouter);
+app.use('/api/admin', administrativeRouter);
 
 // Configurazione base per le API
 const { SERVICES, ROLES, REQUEST_STATUS, DEFAULT_POINTS } = require('../config/constants');

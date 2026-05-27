@@ -1,9 +1,7 @@
-<!-- Backoffice / Moderazione -->
 <section id="view-admin-dash" class="view-section">
     <h2>Console Amministratore</h2>
 
     <div class="grid-2" style="margin-top: 2rem;">
-        <!-- Moderazione Utenti -->
         <div class="card">
             <h3>Ricerca e Moderazione Utenti</h3>
             <div class="flex gap-1" style="margin: 1rem 0;">
@@ -24,7 +22,6 @@
             </div>
         </div>
 
-        <!-- Genera Credenziali Partner -->
         <div class="card">
             <h3>Registra Nuovo Partner</h3>
             <p class="text-muted" style="margin-bottom: 1rem;">Genera credenziali manuali per un nuovo negozio
@@ -42,4 +39,11 @@
             </form>
         </div>
     </div>
+
+    <style>
+        /* Forza la visualizzazione SOLO quando la classe attiva viene iniettata dal router */
+        #view-admin-dash.active {
+            display: block !important;
+        }
+    </style>
 </section>

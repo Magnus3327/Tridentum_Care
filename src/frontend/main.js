@@ -8,6 +8,8 @@ const appState = {
     constants: null,
 };
 
+window.adminUsersCache = [];
+
 let currentRoute = 'home';
 let previousRoute = 'home';
 
@@ -66,6 +68,235 @@ async function renderDynamicRequestServices() {
     });
 }
 
+function getRoleLabel(role) {
+    if (role === 'volunteer') return 'Volontario';
+    if (role === 'requester') return 'Richiedente';
+    if (role === 'partner') return 'Partner';
+    if (role === 'admin') return 'Admin';
+    return 'Utente';
+}
+
+function getUserAuthLevel(user) {
+    if (!user) return -1;
+    if (user.role === 'admin') return 3;
+    if (user.role === 'volunteer') return typeof user.authLvl === 'number' ? user.authLvl : 0;
+    return 0;
+}
+
+function buildAdminSearchParams() {
+    const searchInput = document.getElementById('admin-user-search');
+    const roleFilter = document.getElementById('admin-user-role-filter');
+    const query = searchInput ? searchInput.value.trim() : '';
+    const role = roleFilter ? roleFilter.value : '';
+
+    const params = new URLSearchParams();
+    if (query) params.set('q', query);
+    if (role) params.set('role', role);
+    return params.toString();
+}
+
+function renderAdminUserCard(user) {
+    const roleLabel = getRoleLabel(user.role);
+    const authLabel = user.role === 'volunteer' && typeof user.authLvl === 'number' ? `Auth ${user.authLvl}` : null;
+    const fullName = [user.name, user.surname].filter(Boolean).join(' ').trim() || user.legalForm || 'Utente senza nome';
+    const sameUser = appState.userId && user.id === appState.userId;
+    const canPromote = user.role === 'volunteer';
+    const canDelete = user.role !== 'admin' && !sameUser;
+
+    return `
+        <div class="card" style="padding: 1rem 1.1rem; border-left: 5px solid ${user.role === 'admin' ? 'var(--accent-color)' : 'var(--primary-color)'};">
+            <div class="flex justify-between items-start" style="gap: 1rem; align-items: flex-start;">
+                <div style="min-width: 0;">
+                    <div class="flex gap-1" style="flex-wrap: wrap; margin-bottom: 0.45rem;">
+                        <span class="badge badge-primary">${roleLabel}</span>
+                        ${authLabel ? `<span class="badge badge-secondary">${authLabel}</span>` : ''}
+                        ${sameUser ? `<span class="badge badge-success">Sei tu</span>` : ''}
+                    </div>
+                    <h4 style="margin-bottom: 0.25rem; word-break: break-word;">${fullName}</h4>
+                    <p class="text-muted" style="margin-bottom: 0.25rem; word-break: break-word;">${user.email || 'Email non disponibile'}</p>
+                    <small class="text-muted" style="display: block; word-break: break-word;">ID: ${user.id || user._id}</small>
+                    ${user.legalForm ? `<small class="text-muted" style="display: block; margin-top: 0.25rem;">Attività: ${user.legalForm}</small>` : ''}
+                </div>
+                <div class="flex gap-1" style="flex-wrap: wrap; justify-content: flex-end;">
+                    ${canPromote ? `<button type="button" class="btn btn-secondary" style="padding: 0.5rem 0.75rem;" onclick="promoteAdminUser('${user.id || user._id}')">Promuovi</button>` : ''}
+                    ${canDelete ? `<button type="button" class="btn btn-danger" style="padding: 0.5rem 0.75rem;" onclick="deleteAdminUser('${user.id || user._id}')">Elimina</button>` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function loadAdminUsers() {
+    const results = document.getElementById('admin-users-results');
+    const countBadge = document.getElementById('admin-users-count');
+    const summaryBadge = document.getElementById('admin-summary-badge');
+    if (!results) return;
+
+    results.innerHTML = `
+        <div class="card text-center text-muted" style="padding: 1.5rem;">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.25rem; margin-bottom: 0.5rem;"></i>
+            <p style="margin-bottom: 0;">Caricamento utenti...</p>
+        </div>
+    `;
+
+    try {
+        const queryString = buildAdminSearchParams();
+        const response = await authorizedFetch(`/api/admin/users${queryString ? `?${queryString}` : ''}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Impossibile caricare gli utenti');
+        }
+
+        window.adminUsersCache = Array.isArray(data) ? data : [];
+
+        if (countBadge) {
+            countBadge.innerText = `${window.adminUsersCache.length} utenti`;
+        }
+        if (summaryBadge) {
+            const adminCount = window.adminUsersCache.filter(user => user.role === 'admin').length;
+            const volunteerCount = window.adminUsersCache.filter(user => user.role === 'volunteer').length;
+            summaryBadge.innerText = `${window.adminUsersCache.length} utenti, ${adminCount} admin, ${volunteerCount} volontari`;
+        }
+
+        if (window.adminUsersCache.length === 0) {
+            results.innerHTML = `
+                <div class="card text-center text-muted" style="padding: 1.5rem;">
+                    <p style="margin-bottom: 0;">Nessun utente trovato con i filtri attuali.</p>
+                </div>
+            `;
+            return;
+        }
+
+        results.innerHTML = window.adminUsersCache.map(renderAdminUserCard).join('');
+    } catch (error) {
+        console.error('Errore caricamento admin users:', error);
+        results.innerHTML = `
+            <div class="card text-center text-danger" style="padding: 1.5rem;">
+                <p style="margin-bottom: 0;">${error.message}</p>
+            </div>
+        `;
+        if (countBadge) countBadge.innerText = '0 utenti';
+    }
+}
+
+window.searchAdminUsers = async function() {
+    await loadAdminUsers();
+};
+
+window.resetAdminSearch = async function() {
+    const searchInput = document.getElementById('admin-user-search');
+    const roleFilter = document.getElementById('admin-user-role-filter');
+    if (searchInput) searchInput.value = '';
+    if (roleFilter) roleFilter.value = '';
+    await loadAdminUsers();
+};
+
+window.promoteAdminUser = async function(userId) {
+    if (!userId) return;
+    try {
+        const response = await authorizedFetch(`/api/admin/volunteers/${encodeURIComponent(userId)}/admin`, {
+            method: 'PUT'
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            showToast(data.error || 'Impossibile promuovere l\'utente.', 'danger');
+            return;
+        }
+
+        showToast(data.message || 'Utente promosso con successo.', 'success');
+        await loadAdminUsers();
+    } catch (error) {
+        console.error('Errore promozione admin:', error);
+        showToast('Si è verificato un errore durante la promozione.', 'danger');
+    }
+};
+
+window.deleteAdminUser = async function(userId) {
+    if (!userId) return;
+    const confirmed = window.confirm('Vuoi eliminare questo utente? L\'operazione è irreversibile.');
+    if (!confirmed) return;
+
+    try {
+        const response = await authorizedFetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+            method: 'DELETE'
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            showToast(data.error || 'Impossibile eliminare l\'utente.', 'danger');
+            return;
+        }
+
+        showToast(data.message || 'Utente eliminato con successo.', 'success');
+        await loadAdminUsers();
+    } catch (error) {
+        console.error('Errore eliminazione admin:', error);
+        showToast('Si è verificato un errore durante l\'eliminazione.', 'danger');
+    }
+};
+
+async function loadAdminDashboard() {
+    const partnerForm = document.getElementById('admin-partner-form');
+    if (partnerForm && !partnerForm.dataset.bound) {
+        partnerForm.dataset.bound = 'true';
+        partnerForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const payload = {
+                legalForm: document.getElementById('admin-partner-legal-form')?.value.trim(),
+                email: document.getElementById('admin-partner-email')?.value.trim(),
+                name: document.getElementById('admin-partner-name')?.value.trim(),
+                surname: document.getElementById('admin-partner-surname')?.value.trim(),
+                phone: document.getElementById('admin-partner-phone')?.value.trim(),
+                address: document.getElementById('admin-partner-address')?.value.trim()
+            };
+
+            try {
+                const response = await authorizedFetch('/api/admin/partner', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showToast(data.error || 'Impossibile creare il partner.', 'danger');
+                    return;
+                }
+
+                showToast(`Partner creato. Password temporanea: ${data.temporaryPassword}`, 'success');
+                partnerForm.reset();
+                await loadAdminUsers();
+            } catch (error) {
+                console.error('Errore creazione partner admin:', error);
+                showToast('Si è verificato un errore durante la creazione del partner.', 'danger');
+            }
+        });
+    }
+
+    const searchInput = document.getElementById('admin-user-search');
+    if (searchInput && !searchInput.dataset.bound) {
+        searchInput.dataset.bound = 'true';
+        searchInput.addEventListener('keydown', async (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                await loadAdminUsers();
+            }
+        });
+    }
+
+    const roleFilter = document.getElementById('admin-user-role-filter');
+    if (roleFilter && !roleFilter.dataset.bound) {
+        roleFilter.dataset.bound = 'true';
+        roleFilter.addEventListener('change', async () => {
+            await loadAdminUsers();
+        });
+    }
+
+    await loadAdminUsers();
+}
+
 // Mappatura della navigazione
 const routes = {
     'home': 'view-public-home',
@@ -99,6 +330,11 @@ async function authorizedFetch(url, options = {}) {
 
 function navigateTo(routeId) {
     if (!routes[routeId]) return;
+    // Protect admin route client-side: only allow if logged in as admin
+    if (routeId === 'admin-dash' && appState.userRole !== 'admin') {
+        showToast('Accesso negato: autorizzazione amministratore richiesta.', 'danger');
+        return;
+    }
     
     // Traccia la cronologia della navigazione per consentire il ritorno indietro
     if (currentRoute !== 'privacy' && currentRoute !== 'tos' && currentRoute !== routeId) {
@@ -125,6 +361,8 @@ function navigateTo(routeId) {
         loadRequesterDashboard();
     } else if (routeId === 'vol-board') {
         loadVolunteerDashboard();
+    } else if (routeId === 'admin-dash') {
+        loadAdminDashboard();
     } else if (routeId === 'profile') {
         loadProfile();
     } else if (routeId === 'vol-store') {
@@ -144,35 +382,47 @@ function updateNavbar(routeId) {
     
     let linksHTML = '';
     
-    // Mostra i link in base alla vista corrente per simulare i ruoli
-    if (routeId.startsWith('req-') || (routeId === 'profile' && appState.userRole === 'requester')) {
+    // Mostra i link corretti nel menu in alto a destra in base al ruolo dell'utente
+    if (appState.userRole === 'admin') {
         linksHTML = `
-            <a href="#" class="nav-link" onclick="navigateTo('req-dashboard')">Le mie richieste</a>
-            <a href="#" class="nav-link" onclick="navigateTo('req-form')">Nuova richiesta</a>
+            <a href="#" class="nav-link" onclick="navigateTo('admin-dash')">Console Admin</a>
             <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
             <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
         `;
-    } else if (routeId.startsWith('vol-') || (routeId === 'profile' && appState.userRole === 'volunteer')) {
+    } else if (appState.userRole === 'volunteer') {
         linksHTML = `
             <a href="#" class="nav-link" onclick="navigateTo('vol-board')">Bacheca</a>
-            <a href="#" class="nav-link" onclick="navigateTo('vol-store')">Store Premi (${appState.points} pts)</a>
+            <a href="#" class="nav-link" onclick="navigateTo('vol-store')">Store Premi</a>
             <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
             <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
         `;
-    } else if (routeId.startsWith('partner-')) {
+    } else if (appState.userRole === 'requester') {
+        linksHTML = `
+            <a href="#" class="nav-link" onclick="navigateTo('req-dashboard')">Le mie richieste</a>
+            <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
+            <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
+        `;
+    } else if (appState.userRole === 'partner') {
         linksHTML = `
             <a href="#" class="nav-link" onclick="navigateTo('partner-dash')">Dashboard</a>
-            <a href="#" class="nav-link" onclick="navigateTo('partner-coupon')">Crea Coupon</a>
+            <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
             <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
         `;
-    } else if (routeId.startsWith('admin-')) {
+    } else {
         linksHTML = `
-            <a href="#" class="nav-link" onclick="navigateTo('admin-dash')">Moderazione</a>
-            <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
+            <a href="#" class="nav-link" onclick="openAuth('login')">Accedi</a>
+            <a href="#" class="nav-link" onclick="openAuth('register')">Registrati</a>
         `;
-        }
+    }
     
     navLinks.innerHTML = linksHTML;
+}
+
+// Toggle helper for the small user dropdown
+window.toggleUserDropdown = function() {
+    const dd = document.getElementById('user-dropdown');
+    if (!dd) return;
+    dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
 }
 
 // Funzioni e logica per il requester
@@ -836,7 +1086,11 @@ function bindAuthEvents() {
                 showToast(data.message, 'success');
 
                 // Reindirizzamento basato sul ruolo
-                if (data.user.role === 'volunteer') {
+                if (data.user.role === 'admin') {
+                    appState.userRole = 'admin';
+                    updateNavbar('admin-dash');
+                    navigateTo('admin-dash');
+                } else if (data.user.role === 'volunteer') {
                     navigateTo('vol-board');
                 } else if (data.user.role === 'requester') {
                     navigateTo('req-dashboard');
@@ -907,7 +1161,9 @@ function bindAuthEvents() {
 
                 showToast(data.message, 'success');
 
-                if (data.user.role === 'volunteer') {
+                if (data.user.role === 'admin') {
+                    navigateTo('admin-dash');
+                } else if (data.user.role === 'volunteer') {
                     navigateTo('vol-board');
                 } else if (data.user.role === 'requester') {
                     navigateTo('req-dashboard');
@@ -1483,7 +1739,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 appState.points = data.points || 0;
                 
                 showToast(`Ciao, ${data.name}!`, 'success');
-                if (data.role === 'volunteer') {
+                if (data.role === 'admin') {
+                    appState.userRole = 'admin';
+                    updateNavbar('admin-dash');
+                    navigateTo('admin-dash')
+                } else if (data.role === 'volunteer') {
                     navigateTo('vol-board');
                 } else if (data.role === 'requester') {
                     navigateTo('req-dashboard');
