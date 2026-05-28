@@ -255,11 +255,23 @@ window.deleteAdminUser = async function(userId) {
 };
 
 async function loadAdminDashboard() {
+    const partnerSection = document.getElementById('admin-partner-section');
     const partnerForm = document.getElementById('admin-partner-form');
+    const isAdmin = appState.userAuthLvl === AUTH_LEVELS.ADMIN;
+
+    if (partnerSection) {
+        partnerSection.style.display = isAdmin ? 'block' : 'none';
+    }
+
     if (partnerForm && !partnerForm.dataset.bound) {
         partnerForm.dataset.bound = 'true';
         partnerForm.addEventListener('submit', async (event) => {
             event.preventDefault();
+
+            if (!isAdmin) {
+                showToast('Solo gli amministratori possono creare partner.', 'danger');
+                return;
+            }
 
             const payload = {
                 legalForm: document.getElementById('admin-partner-legal-form')?.value.trim(),
@@ -347,9 +359,9 @@ async function authorizedFetch(url, options = {}) {
 
 function navigateTo(routeId) {
     if (!routes[routeId]) return;
-    // Protect admin route client-side: only allow if logged in as admin
-    if (routeId === 'admin-dash' && appState.userAuthLvl !== AUTH_LEVELS.ADMIN) {
-        showToast('Accesso negato: autorizzazione amministratore richiesta.', 'danger');
+    // Protect admin route client-side: only allow if logged in as moderator or admin
+    if (routeId === 'admin-dash' && appState.userAuthLvl < AUTH_LEVELS.MODERATOR) {
+        showToast('Accesso negato: autorizzazione amministratore o moderatore richiesta.', 'danger');
         return;
     }
     
@@ -400,17 +412,12 @@ function updateNavbar(routeId) {
     let linksHTML = '';
     
     // Mostra i link corretti nel menu in alto a destra in base al ruolo dell'utente
-    if (appState.userRole === 'volunteer' && appState.userAuthLvl === AUTH_LEVELS.ADMIN) {
-        linksHTML = `
-            <a href="#" class="nav-link" onclick="navigateTo('admin-dash')">Console Admin</a>
-            <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
-            <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
-        `;
-    } else if (appState.userRole === 'volunteer') {
+    if (appState.userRole === 'volunteer') {
         linksHTML = `
             <a href="#" class="nav-link" onclick="navigateTo('vol-board')">Bacheca</a>
             <a href="#" class="nav-link" onclick="navigateTo('vol-store')">Store Premi</a>
             <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
+            ${appState.userAuthLvl >= AUTH_LEVELS.MODERATOR ? `<a href="#" class="nav-link" onclick="navigateTo('admin-dash')">Console Admin</a>` : ''}
             <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
         `;
     } else if (appState.userRole === 'requester') {
@@ -1105,10 +1112,7 @@ function bindAuthEvents() {
                 showToast(data.message, 'success');
 
                 // Reindirizzamento basato sul ruolo e livello di autorizzazione
-                if (data.user.role === 'volunteer' && appState.userAuthLvl === AUTH_LEVELS.ADMIN) {
-                    updateNavbar('admin-dash');
-                    navigateTo('admin-dash');
-                } else if (data.user.role === 'volunteer') {
+                if (data.user.role === 'volunteer') {
                     navigateTo('vol-board');
                 } else if (data.user.role === 'requester') {
                     navigateTo('req-dashboard');
@@ -1182,9 +1186,7 @@ function bindAuthEvents() {
 
                 showToast(data.message, 'success');
 
-                if (data.user.role === 'volunteer' && appState.userAuthLvl === AUTH_LEVELS.ADMIN) {
-                    navigateTo('admin-dash');
-                } else if (data.user.role === 'volunteer') {
+                if (data.user.role === 'volunteer') {
                     navigateTo('vol-board');
                 } else if (data.user.role === 'requester') {
                     navigateTo('req-dashboard');
@@ -1763,10 +1765,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 appState.points = data.points || 0;
                 
                 showToast(`Ciao, ${data.name}!`, 'success');
-                if (data.role === 'volunteer' && appState.userAuthLvl === AUTH_LEVELS.ADMIN) {
-                    updateNavbar('admin-dash');
-                    navigateTo('admin-dash')
-                } else if (data.role === 'volunteer') {
+                if (data.role === 'volunteer') {
                     navigateTo('vol-board');
                 } else if (data.role === 'requester') {
                     navigateTo('req-dashboard');
