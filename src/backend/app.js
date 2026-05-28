@@ -35,7 +35,7 @@ app.use('/api/administrative', administrativeRouter);
 app.use('/api/admin', administrativeRouter);
 
 // Configurazione base per le API
-const { SERVICES, ROLES, REQUEST_STATUS, DEFAULT_POINTS } = require('../config/constants');
+const { SERVICES, ROLES, REQUEST_STATUS, AUTH_LVL, DEFAULT_POINTS } = require('../config/constants');
 
 app.get('/api/status', (req, res) => {
     res.json({ status: 'ok', message: 'API funzionante' });
