@@ -42,7 +42,7 @@ app.get('/api/status', (req, res) => {
 });
 
 app.get('/api/constants', (req, res) => {
-    res.json({ SERVICES, ROLES, REQUEST_STATUS, DEFAULT_POINTS });
+    res.json({ SERVICES, ROLES, REQUEST_STATUS, AUTH_LVL, DEFAULT_POINTS });
 });
 
 module.exports = app;

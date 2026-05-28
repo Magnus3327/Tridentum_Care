@@ -37,7 +37,7 @@ router.post("/register", async (req, res) => {
         age: parsedAge,
         gender: gender || "",
         license: license || "No",
-        authLvl: AUTH_LVL.UNVERIFIED,
+        authLvl: AUTH_LVL.UNAUTHORIZED,
         points: 0,
         skills: [...SERVICES], // tutte le competenze attive di default, clonate dalle costanti
         coupons: []
@@ -77,7 +77,8 @@ router.post("/register", async (req, res) => {
         surname: newUser.surname,
         email: newUser.email,
         role: newUser.role,
-        points: newUser.points
+        points: newUser.points,
+        authLvl: typeof newUser.authLvl === 'number' ? newUser.authLvl : undefined
       }
     });
   } catch (error) {
@@ -131,7 +132,8 @@ router.post("/login", async (req, res) => {
         surname: user.surname,
         email: user.email,
         role: user.role,
-        points: user.points
+        points: user.points,
+        authLvl: typeof user.authLvl === 'number' ? user.authLvl : undefined
       }
     });
   } catch (error) {
@@ -157,7 +159,8 @@ router.get("/me", authMiddleware, async (req, res) => {
       surname: user.surname,
       email: user.email,
       role: user.role,
-      points: user.points || 0
+      points: user.points || 0,
+      authLvl: typeof user.authLvl === 'number' ? user.authLvl : undefined
     });
   } catch (error) {
     console.error("Errore recupero sessione:", error);

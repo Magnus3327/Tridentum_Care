@@ -13,10 +13,6 @@ router.use(authMiddleware);
 
 function getEffectiveAuthLevel(user) {
   if (!user) return -1;
-  if (user.role === ROLES.ADMIN) return AUTH_LVL.ADMIN + 1;
-  if (user.role === ROLES.VOLUNTEER && typeof user.authLvl === 'number') {
-    return user.authLvl;
-  }
   return typeof user.authLvl === 'number' ? user.authLvl : 0;
 }
 
@@ -46,7 +42,7 @@ async function getAdminUser(req) {
     return { error: 'Utente non trovato', statusCode: 404 };
   }
 
-  if (getEffectiveAuthLevel(user) < AUTH_LVL.ADMIN) {
+  if (getEffectiveAuthLevel(user) < AUTH_LVL.MODERATOR) {
     return { error: 'Accesso negato: permessi insufficienti', statusCode: 403 };
   }
 
@@ -71,6 +67,11 @@ async function promoteVolunteerToAdmin(req, res) {
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: 'Database non connesso' });
 
+    const actorAuthLevel = getEffectiveAuthLevel(req.adminUser);
+    if (actorAuthLevel < AUTH_LVL.ADMIN) {
+      return res.status(403).json({ error: 'Accesso negato: permessi insufficienti per promuovere un amministratore' });
+    }
+
     const targetUser = await getTargetUser(db, userId);
     if (!targetUser) {
       return res.status(404).json({ error: 'Utente non trovato' });
@@ -80,11 +81,14 @@ async function promoteVolunteerToAdmin(req, res) {
       return res.status(400).json({ error: 'Puoi promuovere solo utenti con ruolo volontario' });
     }
 
+    if (typeof targetUser.authLvl === 'number' && targetUser.authLvl >= AUTH_LVL.ADMIN) {
+      return res.status(400).json({ error: 'Questo utente è già un amministratore' });
+    }
+
     await db.collection('users').updateOne(
       { _id: targetUser._id },
       {
         $set: {
-          role: ROLES.ADMIN,
           authLvl: AUTH_LVL.ADMIN,
           promotedAt: new Date(),
           promotedBy: req.user.userId,
@@ -107,6 +111,11 @@ async function promoteVolunteerToAdmin(req, res) {
 
 async function createPartnerUser(req, res) {
   try {
+    const actorAuthLevel = getEffectiveAuthLevel(req.adminUser);
+    if (actorAuthLevel < AUTH_LVL.ADMIN) {
+      return res.status(403).json({ error: 'Accesso negato: permessi insufficienti per creare un partner' });
+    }
+
     const { legalForm, email, name, surname, phone, address } = req.body;
 
     if (!legalForm || !email) {
@@ -172,6 +181,10 @@ async function deleteLowerPrivilegeUser(req, res) {
 
     const actorAuthLevel = getEffectiveAuthLevel(req.adminUser);
     const targetAuthLevel = getEffectiveAuthLevel(targetUser);
+
+    if (targetUser.role === ROLES.PARTNER && actorAuthLevel < AUTH_LVL.ADMIN) {
+      return res.status(403).json({ error: 'Puoi eliminare partner solo se sei un amministratore' });
+    }
 
     if (targetAuthLevel >= actorAuthLevel) {
       return res.status(403).json({ error: 'Puoi eliminare solo utenti con privilegi inferiori ai tuoi' });

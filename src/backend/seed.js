@@ -2,7 +2,7 @@ const { MongoClient } = require("mongodb");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 require("dotenv").config({ path: path.join(__dirname, "../../.env") });
-const { AUTH_LVL } = require("./config/constants");
+const { AUTH_LVL } = require("../config/constants");
 
 const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
 if (!uri) {
@@ -38,7 +38,7 @@ async function seed() {
         surname: "Rossi",
         role: "volunteer",
         address: "Via Roma 1, Trento",
-        authLvl: AUTH_LVL ? AUTH_LVL.UNVERIFIED : 0,
+        authLvl: AUTH_LVL ? AUTH_LVL.UNAUTHORIZED : 0,
         points: 1250,
         phone: "333 123 4567",
         skills: ["Trasporto", "Accompagnamento", "Compagnia"],
@@ -61,8 +61,11 @@ async function seed() {
         name: "Admin",
         surname: "Tridentum",
         email: "admin@tridentumcare.it",
-        password: "passwordAdmin123", // Verrà cifrata dallo script tramite bcrypt
-        role: "admin"
+        password: hashedPassword,
+        role: "volunteer",
+        authLvl: AUTH_LVL ? AUTH_LVL.ADMIN : 2,
+        points: 0,
+        createdAt: new Date()
       }
     ];
 

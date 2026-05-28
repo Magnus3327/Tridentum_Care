@@ -1,6 +1,13 @@
 // Router semplice per Single Page App e Stato Globale
+const AUTH_LEVELS = {
+    UNAUTHORIZED: 0,
+    MODERATOR: 1,
+    ADMIN: 2
+};
+
 const appState = {
-    userRole: null, // 'requester', 'volunteer', 'partner', 'admin', null
+    userRole: null, // 'requester', 'volunteer', 'partner', null
+    userAuthLvl: AUTH_LEVELS.UNAUTHORIZED,
     userEmail: null, // email dell'utente loggato
     userId: null, // id utente reale estratto dal token
     userName: null, // nome dell'utente loggato per instant rendering
@@ -68,19 +75,24 @@ async function renderDynamicRequestServices() {
     });
 }
 
-function getRoleLabel(role) {
-    if (role === 'volunteer') return 'Volontario';
-    if (role === 'requester') return 'Richiedente';
-    if (role === 'partner') return 'Partner';
-    if (role === 'admin') return 'Admin';
+function getRoleLabel(user) {
+    if (!user) return 'Utente';
+    if (user.role === 'volunteer') {
+        if (typeof user.authLvl === 'number') {
+            if (user.authLvl === AUTH_LEVELS.ADMIN) return 'Admin';
+            if (user.authLvl === AUTH_LEVELS.MODERATOR) return 'Moderatore';
+        }
+        return 'Volontario';
+    }
+    if (user.role === 'requester') return 'Richiedente';
+    if (user.role === 'partner') return 'Partner';
     return 'Utente';
 }
 
 function getUserAuthLevel(user) {
     if (!user) return -1;
-    if (user.role === 'admin') return 3;
-    if (user.role === 'volunteer') return typeof user.authLvl === 'number' ? user.authLvl : 0;
-    return 0;
+    if (user.role === 'volunteer') return typeof user.authLvl === 'number' ? user.authLvl : AUTH_LEVELS.UNAUTHORIZED;
+    return AUTH_LEVELS.UNAUTHORIZED;
 }
 
 function buildAdminSearchParams() {
@@ -96,15 +108,19 @@ function buildAdminSearchParams() {
 }
 
 function renderAdminUserCard(user) {
-    const roleLabel = getRoleLabel(user.role);
-    const authLabel = user.role === 'volunteer' && typeof user.authLvl === 'number' ? `Auth ${user.authLvl}` : null;
+    const roleLabel = getRoleLabel(user);
+    const authLabel = user.role === 'volunteer' && typeof user.authLvl === 'number'
+        ? user.authLvl === AUTH_LEVELS.ADMIN ? 'Admin' : user.authLvl === AUTH_LEVELS.MODERATOR ? 'Moderatore' : 'Non autorizzato'
+        : null;
     const fullName = [user.name, user.surname].filter(Boolean).join(' ').trim() || user.legalForm || 'Utente senza nome';
     const sameUser = appState.userId && user.id === appState.userId;
-    const canPromote = user.role === 'volunteer';
-    const canDelete = user.role !== 'admin' && !sameUser;
+    const targetAuthLevel = getUserAuthLevel(user);
+    const actorAuthLevel = appState.userAuthLvl || AUTH_LEVELS.UNAUTHORIZED;
+    const canPromote = user.role === 'volunteer' && targetAuthLevel < AUTH_LEVELS.ADMIN;
+    const canDelete = targetAuthLevel < actorAuthLevel && !sameUser;
 
     return `
-        <div class="card" style="padding: 1rem 1.1rem; border-left: 5px solid ${user.role === 'admin' ? 'var(--accent-color)' : 'var(--primary-color)'};">
+        <div class="card" style="padding: 1rem 1.1rem; border-left: 5px solid ${targetAuthLevel === AUTH_LEVELS.ADMIN ? 'var(--accent-color)' : 'var(--primary-color)'};">
             <div class="flex justify-between items-start" style="gap: 1rem; align-items: flex-start;">
                 <div style="min-width: 0;">
                     <div class="flex gap-1" style="flex-wrap: wrap; margin-bottom: 0.45rem;">
@@ -154,9 +170,10 @@ async function loadAdminUsers() {
             countBadge.innerText = `${window.adminUsersCache.length} utenti`;
         }
         if (summaryBadge) {
-            const adminCount = window.adminUsersCache.filter(user => user.role === 'admin').length;
-            const volunteerCount = window.adminUsersCache.filter(user => user.role === 'volunteer').length;
-            summaryBadge.innerText = `${window.adminUsersCache.length} utenti, ${adminCount} admin, ${volunteerCount} volontari`;
+            const adminCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.ADMIN).length;
+            const moderatorCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.MODERATOR).length;
+            const volunteerCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.UNAUTHORIZED).length;
+            summaryBadge.innerText = `${window.adminUsersCache.length} utenti, ${adminCount} admin, ${moderatorCount} moderatori, ${volunteerCount} volontari`;
         }
 
         if (window.adminUsersCache.length === 0) {
@@ -331,7 +348,7 @@ async function authorizedFetch(url, options = {}) {
 function navigateTo(routeId) {
     if (!routes[routeId]) return;
     // Protect admin route client-side: only allow if logged in as admin
-    if (routeId === 'admin-dash' && appState.userRole !== 'admin') {
+    if (routeId === 'admin-dash' && appState.userAuthLvl !== AUTH_LEVELS.ADMIN) {
         showToast('Accesso negato: autorizzazione amministratore richiesta.', 'danger');
         return;
     }
@@ -383,7 +400,7 @@ function updateNavbar(routeId) {
     let linksHTML = '';
     
     // Mostra i link corretti nel menu in alto a destra in base al ruolo dell'utente
-    if (appState.userRole === 'admin') {
+    if (appState.userRole === 'volunteer' && appState.userAuthLvl === AUTH_LEVELS.ADMIN) {
         linksHTML = `
             <a href="#" class="nav-link" onclick="navigateTo('admin-dash')">Console Admin</a>
             <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
@@ -981,6 +998,7 @@ window.showToast = function(message, type = 'success') {
 window.logout = function() {
     localStorage.removeItem('token');
     appState.userRole = null;
+    appState.userAuthLvl = AUTH_LEVELS.UNAUTHORIZED;
     appState.userEmail = null;
     appState.userId = null;
     appState.points = 0;
@@ -1078,6 +1096,7 @@ function bindAuthEvents() {
                 // Salva token e ripristina lo stato globale
                 localStorage.setItem('token', data.token);
                 appState.userRole = data.user.role;
+                appState.userAuthLvl = typeof data.user.authLvl === 'number' ? data.user.authLvl : AUTH_LEVELS.UNAUTHORIZED;
                 appState.userEmail = data.user.email;
                 appState.userId = data.user.id;
                 appState.userName = data.user.name;
@@ -1085,15 +1104,16 @@ function bindAuthEvents() {
 
                 showToast(data.message, 'success');
 
-                // Reindirizzamento basato sul ruolo
-                if (data.user.role === 'admin') {
-                    appState.userRole = 'admin';
+                // Reindirizzamento basato sul ruolo e livello di autorizzazione
+                if (data.user.role === 'volunteer' && appState.userAuthLvl === AUTH_LEVELS.ADMIN) {
                     updateNavbar('admin-dash');
                     navigateTo('admin-dash');
                 } else if (data.user.role === 'volunteer') {
                     navigateTo('vol-board');
                 } else if (data.user.role === 'requester') {
                     navigateTo('req-dashboard');
+                } else if (data.user.role === 'partner') {
+                    navigateTo('partner-dash');
                 } else {
                     navigateTo('home');
                 }
@@ -1155,18 +1175,21 @@ function bindAuthEvents() {
                 // Salva token e aggiorna stato
                 localStorage.setItem('token', data.token);
                 appState.userRole = data.user.role;
+                appState.userAuthLvl = typeof data.user.authLvl === 'number' ? data.user.authLvl : AUTH_LEVELS.UNAUTHORIZED;
                 appState.userEmail = data.user.email;
                 appState.userId = data.user.id;
                 appState.points = data.user.points || 0;
 
                 showToast(data.message, 'success');
 
-                if (data.user.role === 'admin') {
+                if (data.user.role === 'volunteer' && appState.userAuthLvl === AUTH_LEVELS.ADMIN) {
                     navigateTo('admin-dash');
                 } else if (data.user.role === 'volunteer') {
                     navigateTo('vol-board');
                 } else if (data.user.role === 'requester') {
                     navigateTo('req-dashboard');
+                } else if (data.user.role === 'partner') {
+                    navigateTo('partner-dash');
                 } else {
                     navigateTo('home');
                 }
@@ -1733,20 +1756,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (response.ok) {
                 const data = await response.json();
                 appState.userRole = data.role;
+                appState.userAuthLvl = typeof data.authLvl === 'number' ? data.authLvl : AUTH_LEVELS.UNAUTHORIZED;
                 appState.userEmail = data.email;
                 appState.userId = data.id;
                 appState.userName = data.name;
                 appState.points = data.points || 0;
                 
                 showToast(`Ciao, ${data.name}!`, 'success');
-                if (data.role === 'admin') {
-                    appState.userRole = 'admin';
+                if (data.role === 'volunteer' && appState.userAuthLvl === AUTH_LEVELS.ADMIN) {
                     updateNavbar('admin-dash');
                     navigateTo('admin-dash')
                 } else if (data.role === 'volunteer') {
                     navigateTo('vol-board');
                 } else if (data.role === 'requester') {
                     navigateTo('req-dashboard');
+                } else if (data.role === 'partner') {
+                    navigateTo('partner-dash');
                 } else {
                     navigateTo('home');
                 }

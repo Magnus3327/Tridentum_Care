@@ -57,7 +57,7 @@ router.put("/profile", async (req, res) => {
       return res.status(404).json({ error: "Profilo volontario non trovato" });
     }
 
-    const preservedAuthLvl = (typeof existingVolunteer.authLvl === 'number') ? existingVolunteer.authLvl : AUTH_LVL.UNVERIFIED;
+    const preservedAuthLvl = (typeof existingVolunteer.authLvl === 'number') ? existingVolunteer.authLvl : AUTH_LVL.UNAUTHORIZED;
 
     const updateData = {
       name: (name !== undefined) ? name : existingVolunteer.name,

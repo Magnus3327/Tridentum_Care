@@ -16,14 +16,13 @@ const SERVICES = Object.keys(SERVICE_POINTS);
 const ROLES = {
   VOLUNTEER: "volunteer",
   REQUESTER: "requester",
-  PARTNER: "partner",
-  ADMIN: "admin"
+  PARTNER: "partner"
 };
 
-// Authorization levels for volunteers (numeric values stored on user documents)
+// Authorization levels for volunteer accounts
 const AUTH_LVL = {
-  UNVERIFIED: 0,
-  VERIFIED: 1,
+  UNAUTHORIZED: 0,
+  MODERATOR: 1,
   ADMIN: 2
 };
 
