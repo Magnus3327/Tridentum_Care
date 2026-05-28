@@ -58,6 +58,21 @@ async function seed() {
         createdAt: new Date()
       },
       {
+        name: "Luca",
+        surname: "Moderatore",
+        email: "moderatore@tridentumcare.it",
+        password: hashedPassword,
+        role: "volunteer",
+        authLvl: AUTH_LVL ? AUTH_LVL.MODERATOR : 1,
+        points: 0,
+        phone: "333 999 0000",
+        skills: ["Trasporto", "Accompagnamento", "Compagnia"],
+        age: 30,
+        license: "Sì (Patente B)",
+        gender: "M",
+        createdAt: new Date()
+      },
+      {
         name: "Admin",
         surname: "Tridentum",
         email: "admin@tridentumcare.it",
