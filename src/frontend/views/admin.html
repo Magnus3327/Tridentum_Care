@@ -59,6 +59,35 @@
         </div>
     </div>
 
+    <!-- Modale credenziali partner -->
+    <div id="partner-credentials-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 550px;">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <i class="fa-solid fa-lock text-primary" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                <h3 style="color: var(--primary-color);">Credenziali Partner Generate</h3>
+                <p class="text-muted">Fornisci queste credenziali al partner per il primo accesso. <br>Verrà richiesto loro di cambiare la password al primo login.</p>
+            </div>
+            
+            <div style="background: var(--background-light); padding: 1.5rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 1.5rem;">
+                <div style="margin-bottom: 1rem;">
+                    <label class="form-label" style="font-size: 0.9rem; color: var(--text-muted);">Email (Utente):</label>
+                    <div style="font-weight: 600; font-size: 1.1rem; user-select: all;" id="partner-cred-email"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="font-size: 0.9rem; color: var(--text-muted);">Password Temporanea:</label>
+                    <div class="flex" style="gap: 0.5rem; align-items: center;">
+                        <input type="text" id="partner-cred-password" class="form-control" readonly style="font-family: monospace; font-size: 1.2rem; font-weight: bold; background: white; flex: 1;">
+                        <button type="button" class="btn btn-primary" onclick="copyPartnerCredentials()" style="padding: 0.75rem 1rem;" title="Copia Password">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-secondary btn-block" onclick="closePartnerCredentialsModal()">Ho salvato le credenziali</button>
+        </div>
+    </div>
+
     <style>
         /* Forza la visualizzazione SOLO quando la classe attiva viene iniettata dal router */
         #view-admin-dash.active {

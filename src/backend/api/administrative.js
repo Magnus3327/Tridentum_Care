@@ -150,6 +150,7 @@ async function createPartnerUser(req, res) {
       password: hashedPassword,
       phone: phone || '',
       address: address || '',
+      mustChangePassword: true,
       createdAt: new Date(),
       updatedAt: new Date()
     };

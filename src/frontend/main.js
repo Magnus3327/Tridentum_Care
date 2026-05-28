@@ -347,7 +347,16 @@ async function loadAdminDashboard() {
                     return;
                 }
 
-                showToast(`Partner creato. Password temporanea: ${data.temporaryPassword}`, 'success');
+                const emailEl = document.getElementById('partner-cred-email');
+                const passEl = document.getElementById('partner-cred-password');
+                
+                if (emailEl && passEl) {
+                    emailEl.innerText = data.user.email || payload.email;
+                    passEl.value = data.temporaryPassword;
+                    window.openModal('partner-credentials-modal');
+                } else {
+                    showToast(`Partner creato. Password temporanea: ${data.temporaryPassword}`, 'success');
+                }
                 partnerForm.reset();
                 await loadAdminUsers();
             } catch (error) {
@@ -993,6 +1002,24 @@ window.closeModal = function(modalId) {
     const el = document.getElementById(modalId);
     if (el) el.classList.remove('active');
 }
+
+window.copyPartnerCredentials = async function() {
+    const passEl = document.getElementById('partner-cred-password');
+    if (!passEl) return;
+    
+    try {
+        await navigator.clipboard.writeText(passEl.value);
+        showToast('Password copiata negli appunti!', 'success');
+    } catch (err) {
+        passEl.select();
+        document.execCommand('copy');
+        showToast('Password copiata negli appunti!', 'success');
+    }
+};
+
+window.closePartnerCredentialsModal = function() {
+    window.closeModal('partner-credentials-modal');
+};
 
 window.showQRCode = function(name, code) {
     document.getElementById("qr-modal-title").innerText = name;
