@@ -261,6 +261,15 @@ async function loadAdminDashboard() {
 
     if (partnerSection) {
         partnerSection.style.display = isAdmin ? 'block' : 'none';
+        
+        const gridContainer = partnerSection.closest('.grid-2');
+        if (gridContainer) {
+            if (isAdmin) {
+                gridContainer.classList.remove('admin-moderator-layout');
+            } else {
+                gridContainer.classList.add('admin-moderator-layout');
+            }
+        }
     }
 
     if (partnerForm && !partnerForm.dataset.bound) {

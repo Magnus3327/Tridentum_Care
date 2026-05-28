@@ -215,6 +215,7 @@ p { margin-bottom: 1rem; }
 /* Grid systems */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+.admin-moderator-layout { grid-template-columns: 1fr !important; max-width: 800px; margin-left: auto; margin-right: auto; }
 @media (max-width: 768px) {
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
 }
