@@ -59,8 +59,8 @@ async function seed() {
       },
       {
         name: "Luca",
-        surname: "Moderatore",
-        email: "moderatore@tridentumcare.it",
+        surname: "Verdi",
+        email: "luca.verdi@email.it",
         password: hashedPassword,
         role: "volunteer",
         authLvl: AUTH_LVL ? AUTH_LVL.MODERATOR : 1,
