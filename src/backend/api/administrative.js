@@ -57,11 +57,17 @@ async function getTargetUser(db, userId) {
   return db.collection('users').findOne({ _id: new ObjectId(userId) });
 }
 
-async function promoteVolunteerToAdmin(req, res) {
+async function promoteVolunteer(req, res) {
   try {
     const userId = req.params.userId || req.body.userId || req.body.volunteerId;
     if (!userId) {
       return res.status(400).json({ error: 'userId obbligatorio' });
+    }
+
+    const targetLevel = req.body.targetLevel !== undefined ? parseInt(req.body.targetLevel, 10) : AUTH_LVL.ADMIN;
+    
+    if (targetLevel !== AUTH_LVL.ADMIN && targetLevel !== AUTH_LVL.MODERATOR) {
+      return res.status(400).json({ error: 'Livello di promozione non valido' });
     }
 
     const db = req.app.locals.db;
@@ -69,7 +75,7 @@ async function promoteVolunteerToAdmin(req, res) {
 
     const actorAuthLevel = getEffectiveAuthLevel(req.adminUser);
     if (actorAuthLevel < AUTH_LVL.ADMIN) {
-      return res.status(403).json({ error: 'Accesso negato: permessi insufficienti per promuovere un amministratore' });
+      return res.status(403).json({ error: 'Accesso negato: permessi insufficienti per promuovere un utente' });
     }
 
     const targetUser = await getTargetUser(db, userId);
@@ -81,15 +87,15 @@ async function promoteVolunteerToAdmin(req, res) {
       return res.status(400).json({ error: 'Puoi promuovere solo utenti con ruolo volontario' });
     }
 
-    if (typeof targetUser.authLvl === 'number' && targetUser.authLvl >= AUTH_LVL.ADMIN) {
-      return res.status(400).json({ error: 'Questo utente è già un amministratore' });
+    if (typeof targetUser.authLvl === 'number' && targetUser.authLvl >= targetLevel) {
+      return res.status(400).json({ error: 'Questo utente possiede già questo livello o superiore' });
     }
 
     await db.collection('users').updateOne(
       { _id: targetUser._id },
       {
         $set: {
-          authLvl: AUTH_LVL.ADMIN,
+          authLvl: targetLevel,
           promotedAt: new Date(),
           promotedBy: req.user.userId,
           updatedAt: new Date()
@@ -98,9 +104,10 @@ async function promoteVolunteerToAdmin(req, res) {
     );
 
     const promotedUser = await db.collection('users').findOne({ _id: targetUser._id });
+    const roleName = targetLevel === AUTH_LVL.ADMIN ? 'amministratore' : 'moderatore';
 
     return res.status(200).json({
-      message: 'Utente promosso ad amministratore con successo',
+      message: `Utente promosso a ${roleName} con successo`,
       user: toPublicUser(promotedUser)
     });
   } catch (error) {
@@ -280,8 +287,8 @@ router.use(async (req, res, next) => {
   }
 });
 
-router.put('/admin', promoteVolunteerToAdmin);
-router.put('/volunteers/:userId/admin', promoteVolunteerToAdmin);
+router.put('/admin', promoteVolunteer);
+router.put('/volunteers/:userId/admin', promoteVolunteer);
 
 router.post('/partner', createPartnerUser);
 router.post('/partners', createPartnerUser);

@@ -116,11 +116,33 @@ function renderAdminUserCard(user) {
     const sameUser = appState.userId && user.id === appState.userId;
     const targetAuthLevel = getUserAuthLevel(user);
     const actorAuthLevel = appState.userAuthLvl || AUTH_LEVELS.UNAUTHORIZED;
-    const canPromote = user.role === 'volunteer' && targetAuthLevel < AUTH_LEVELS.ADMIN;
+    const isAdmin = actorAuthLevel === AUTH_LEVELS.ADMIN;
+    const canPromote = isAdmin && user.role === 'volunteer' && targetAuthLevel < AUTH_LEVELS.ADMIN;
     const canDelete = targetAuthLevel < actorAuthLevel && !sameUser;
 
+    let promoteHtml = '';
+    if (canPromote) {
+        promoteHtml = `
+            <div class="dropdown-wrapper" style="position: relative; display: inline-block;">
+                <button type="button" class="btn btn-outline" style="padding: 0.5rem 0.75rem; border-color: var(--primary-color); color: var(--primary-color);" onclick="window.togglePromoteDropdown(event, '${user.id || user._id}')" title="Opzioni di Promozione">
+                    Promuovi <i class="fa-solid fa-chevron-down" style="font-size: 0.8em; margin-left: 0.2rem;"></i>
+                </button>
+                <div id="promote-dropdown-${user.id || user._id}" class="promote-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-md); z-index: 10; min-width: 220px; overflow: hidden; flex-direction: column;">
+                    ${targetAuthLevel < AUTH_LEVELS.MODERATOR ? `
+                    <button type="button" class="dropdown-item btn-block text-left" style="padding: 0.75rem 1rem; border: none; background: transparent; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: var(--transition); text-align: left;" onmouseover="this.style.backgroundColor='var(--background-light)'" onmouseout="this.style.backgroundColor='transparent'" onclick="promoteAdminUser('${user.id || user._id}', ${AUTH_LEVELS.MODERATOR})">
+                        <i class="fa-solid fa-shield-halved text-primary" style="width: 20px; text-align: center;"></i> Promuovi a Moderatore
+                    </button>
+                    ` : ''}
+                    <button type="button" class="dropdown-item btn-block text-left" style="padding: 0.75rem 1rem; border: none; background: transparent; cursor: pointer; transition: var(--transition); text-align: left;" onmouseover="this.style.backgroundColor='var(--background-light)'" onmouseout="this.style.backgroundColor='transparent'" onclick="promoteAdminUser('${user.id || user._id}', ${AUTH_LEVELS.ADMIN})">
+                        <i class="fa-solid fa-crown text-secondary" style="width: 20px; text-align: center;"></i> Promuovi ad Admin
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
     return `
-        <div class="card" style="padding: 1rem 1.1rem; border-left: 5px solid ${targetAuthLevel === AUTH_LEVELS.ADMIN ? 'var(--accent-color)' : 'var(--primary-color)'};">
+        <div class="card" style="padding: 1rem 1.1rem; border-left: 5px solid ${targetAuthLevel === AUTH_LEVELS.ADMIN ? 'var(--accent-color)' : 'var(--primary-color)'}; overflow: visible;">
             <div class="flex justify-between items-start" style="gap: 1rem; align-items: flex-start;">
                 <div style="min-width: 0;">
                     <div class="flex gap-1" style="flex-wrap: wrap; margin-bottom: 0.45rem;">
@@ -133,8 +155,8 @@ function renderAdminUserCard(user) {
                     <small class="text-muted" style="display: block; word-break: break-word;">ID: ${user.id || user._id}</small>
                     ${user.legalForm ? `<small class="text-muted" style="display: block; margin-top: 0.25rem;">Attività: ${user.legalForm}</small>` : ''}
                 </div>
-                <div class="flex gap-1" style="flex-wrap: wrap; justify-content: flex-end;">
-                    ${canPromote ? `<button type="button" class="btn btn-secondary" style="padding: 0.5rem 0.75rem;" onclick="promoteAdminUser('${user.id || user._id}')">Promuovi</button>` : ''}
+                <div class="flex gap-1" style="flex-wrap: wrap; justify-content: flex-end; position: relative;">
+                    ${promoteHtml}
                     ${canDelete ? `<button type="button" class="btn btn-danger" style="padding: 0.5rem 0.75rem;" onclick="deleteAdminUser('${user.id || user._id}')">Elimina</button>` : ''}
                 </div>
             </div>
@@ -209,11 +231,13 @@ window.resetAdminSearch = async function() {
     await loadAdminUsers();
 };
 
-window.promoteAdminUser = async function(userId) {
+window.promoteAdminUser = async function(userId, targetLevel) {
     if (!userId) return;
     try {
+        const payload = targetLevel !== undefined ? { targetLevel } : {};
         const response = await authorizedFetch(`/api/admin/volunteers/${encodeURIComponent(userId)}/admin`, {
-            method: 'PUT'
+            method: 'PUT',
+            body: JSON.stringify(payload)
         });
         const data = await response.json();
 
@@ -229,6 +253,26 @@ window.promoteAdminUser = async function(userId) {
         showToast('Si è verificato un errore durante la promozione.', 'danger');
     }
 };
+
+window.togglePromoteDropdown = function(event, userId) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    document.querySelectorAll('.promote-dropdown-menu').forEach(el => {
+        if (el.id !== `promote-dropdown-${userId}`) el.style.display = 'none';
+    });
+    const dd = document.getElementById(`promote-dropdown-${userId}`);
+    if (dd) {
+        dd.style.display = dd.style.display === 'flex' ? 'none' : 'flex';
+    }
+};
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dropdown-wrapper')) {
+        document.querySelectorAll('.promote-dropdown-menu').forEach(el => el.style.display = 'none');
+    }
+});
 
 window.deleteAdminUser = async function(userId) {
     if (!userId) return;
