@@ -23,7 +23,25 @@ async function authMiddleware(req, res, next) {
     if (db && ObjectId.isValid(req.user.userId)) {
       const user = await db.collection("users").findOne({ _id: new ObjectId(req.user.userId) });
       if (user && user.isSuspended) {
-        return res.status(403).json({ error: "Accesso negato: il tuo account è stato sospeso" });
+        if (user.suspendedUntil && new Date() > new Date(user.suspendedUntil)) {
+          await db.collection("users").updateOne(
+            { _id: user._id },
+            { $set: { isSuspended: false }, $unset: { suspendedUntil: "" } }
+          );
+        } else {
+          let msg = "Accesso negato: il tuo account è stato sospeso.";
+          if (user.suspendedUntil) {
+            const diffMs = new Date(user.suspendedUntil) - new Date();
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            if (diffDays > 0) {
+              msg = `Accesso negato: account sospeso per altri ${diffDays} giorn${diffDays === 1 ? 'o' : 'i'}.`;
+            } else {
+              const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+              msg = `Accesso negato: account sospeso per altr${diffHours === 1 ? 'a' : 'e'} ${diffHours} or${diffHours === 1 ? 'a' : 'e'}.`;
+            }
+          }
+          return res.status(403).json({ error: msg });
+        }
       }
     }
 

@@ -121,7 +121,10 @@ function renderAdminUserCard(user) {
     const actorAuthLevel = appState.userAuthLvl || AUTH_LEVELS.UNAUTHORIZED;
     const isAdmin = actorAuthLevel === AUTH_LEVELS.ADMIN;
     const canPromote = isAdmin && user.role === 'volunteer' && targetAuthLevel < AUTH_LEVELS.ADMIN;
-    const canDelete = targetAuthLevel < actorAuthLevel && !sameUser;
+    const canDelete = isAdmin && targetAuthLevel < actorAuthLevel && !sameUser;
+    const canSuspend = targetAuthLevel < actorAuthLevel && !sameUser && !user.isSuspended;
+    const canRestore = targetAuthLevel < actorAuthLevel && !sameUser && user.isSuspended;
+    const suspensionCount = user.suspensionCount || 0;
 
     let promoteHtml = '';
     if (canPromote) {
@@ -159,6 +162,8 @@ function renderAdminUserCard(user) {
                 </div>
                 <div class="flex gap-1" style="flex-wrap: wrap; justify-content: flex-end; position: relative;">
                     ${promoteHtml}
+                    ${canSuspend ? `<button type="button" class="btn btn-warning" style="padding: 0.5rem 0.75rem; color: #856404; background-color: #FFF3CD; border: 1px solid #ffeeba;" onclick="suspendAdminUser('${user.id || user._id}', ${suspensionCount})">Sospendi</button>` : ''}
+                    ${canRestore ? `<button type="button" class="btn btn-success" style="padding: 0.5rem 0.75rem;" onclick="restoreAdminUser('${user.id || user._id}')">Riattiva</button>` : ''}
                     ${canDelete ? `<button type="button" class="btn btn-danger" style="padding: 0.5rem 0.75rem;" onclick="deleteAdminUser('${user.id || user._id}')">Elimina</button>` : ''}
                 </div>
             </div>
@@ -276,6 +281,61 @@ document.addEventListener('click', function(e) {
     }
 });
 
+window.suspendAdminUser = async function(userId, currentCount) {
+    if (!userId) return;
+    const newCount = currentCount + 1;
+    let durationMsg = '';
+    if (newCount === 1) durationMsg = '12 ore';
+    else if (newCount === 2) durationMsg = '1 giorno';
+    else if (newCount === 3) durationMsg = '1 settimana';
+    else durationMsg = '1 mese';
+
+    const confirmed = window.confirm(`Vuoi sospendere questo utente?\nQuesta sarà la sua ${newCount}° sospensione, che durerà automaticamente ${durationMsg}. Confermi?`);
+    if (!confirmed) return;
+
+    try {
+        const response = await authorizedFetch(`/api/admin/users/${encodeURIComponent(userId)}/suspend`, {
+            method: 'PUT'
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            showToast(data.error || "Impossibile sospendere l'utente.", 'danger');
+            return;
+        }
+
+        showToast(data.message || 'Utente sospeso con successo.', 'success');
+        await loadAdminUsers();
+    } catch (error) {
+        console.error('Errore sospensione admin:', error);
+        showToast("Si è verificato un errore durante la sospensione.", 'danger');
+    }
+};
+
+window.restoreAdminUser = async function(userId) {
+    if (!userId) return;
+    const confirmed = window.confirm("Vuoi riattivare questo utente? L'accesso sarà sbloccato immediatamente.");
+    if (!confirmed) return;
+
+    try {
+        const response = await authorizedFetch(`/api/admin/users/${encodeURIComponent(userId)}/restore`, {
+            method: 'PUT'
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            showToast(data.error || "Impossibile riattivare l'utente.", 'danger');
+            return;
+        }
+
+        showToast(data.message || 'Utente riattivato con successo.', 'success');
+        await loadAdminUsers();
+    } catch (error) {
+        console.error('Errore riattivazione admin:', error);
+        showToast("Si è verificato un errore durante la riattivazione.", 'danger');
+    }
+};
+
 window.deleteAdminUser = async function(userId) {
     if (!userId) return;
     const confirmed = window.confirm('Vuoi eliminare questo utente? L\'operazione è irreversibile.');
@@ -375,7 +435,88 @@ async function loadAdminDashboard() {
     }
 
     await loadAdminUsers();
+    await window.loadAdminRequests();
 }
+
+window.loadAdminRequests = async function() {
+    const container = document.getElementById('admin-requests-results');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="card text-center text-muted" style="padding: 1.5rem;">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.25rem; margin-bottom: 0.5rem;"></i>
+            <p style="margin-bottom: 0;">Caricamento richieste...</p>
+        </div>
+    `;
+
+    try {
+        const response = await authorizedFetch('/api/admin/requests');
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Impossibile caricare le richieste');
+        }
+
+        if (!Array.isArray(data) || data.length === 0) {
+            container.innerHTML = `
+                <div class="card text-center text-muted" style="padding: 1.5rem;">
+                    <p style="margin-bottom: 0;">Nessuna richiesta trovata.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="grid-2" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">';
+        data.forEach(req => {
+            const badgeClass = req.status === 'Completata' ? 'badge-success' : req.status === 'Annullata' ? 'badge-danger' : 'badge-warning';
+            html += `
+                <div class="card" style="padding: 1rem;">
+                    <div class="flex justify-between items-center" style="margin-bottom: 0.5rem;">
+                        <span class="badge ${badgeClass}">${req.status}</span>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">${req.date || ''} ${req.time || ''}</span>
+                    </div>
+                    <h4 style="margin: 0 0 0.5rem;">${req.serviceType || 'Servizio'}</h4>
+                    <p style="margin: 0 0 0.5rem; font-size: 0.9rem; color: var(--text-muted);">${req.location || ''}</p>
+                    <p style="margin: 0 0 1rem; font-size: 0.85rem;">Utente ID: ${req.userId || 'N/A'}</p>
+                    <button class="btn btn-danger btn-block" onclick="deleteAdminRequest('${req._id}')">Elimina Richiesta</button>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Errore caricamento richieste admin:', error);
+        container.innerHTML = `
+            <div class="card text-center text-danger" style="padding: 1.5rem;">
+                <p style="margin-bottom: 0;">${error.message}</p>
+            </div>
+        `;
+    }
+};
+
+window.deleteAdminRequest = async function(requestId) {
+    if (!requestId) return;
+    const confirmed = window.confirm("Vuoi davvero eliminare questa richiesta? L'operazione è irreversibile.");
+    if (!confirmed) return;
+
+    try {
+        const response = await authorizedFetch(`/api/admin/requests/${encodeURIComponent(requestId)}`, {
+            method: 'DELETE'
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            showToast(data.error || 'Impossibile eliminare la richiesta.', 'danger');
+            return;
+        }
+
+        showToast(data.message || 'Richiesta eliminata con successo.', 'success');
+        await window.loadAdminRequests();
+    } catch (error) {
+        console.error('Errore eliminazione richiesta:', error);
+        showToast("Si è verificato un errore durante l'eliminazione.", 'danger');
+    }
+};
 
 // Mappatura della navigazione
 const routes = {
@@ -476,7 +617,7 @@ function updateNavbar(routeId) {
             <a href="#" class="nav-link" onclick="navigateTo('vol-map')">Mappa</a>
             <a href="#" class="nav-link" onclick="navigateTo('vol-store')">Store Premi</a>
             <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
-            ${appState.userAuthLvl >= AUTH_LEVELS.MODERATOR ? `<a href="#" class="nav-link" onclick="navigateTo('admin-dash')">Console Admin</a>` : ''}
+            ${appState.userAuthLvl >= AUTH_LEVELS.MODERATOR ? `<a href="#" class="nav-link" onclick="navigateTo('admin-dash')">Pannello di Controllo</a>` : ''}
             <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
         `;
     } else if (appState.userRole === 'requester') {

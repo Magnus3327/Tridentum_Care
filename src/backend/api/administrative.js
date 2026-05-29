@@ -238,6 +238,11 @@ async function listUsersForAdmin(req, res) {
       filter.role = role;
     }
 
+    const actorAuthLevel = getEffectiveAuthLevel(req.adminUser);
+    if (actorAuthLevel < AUTH_LVL.ADMIN) {
+      filter.authLvl = { $ne: AUTH_LVL.ADMIN };
+    }
+
     if (trimmedQuery) {
       const escapedQuery = trimmedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const searchRegex = new RegExp(escapedQuery, 'i');
@@ -267,6 +272,24 @@ async function listUsersForAdmin(req, res) {
   }
 }
 
+async function listRequestsForAdmin(req, res) {
+  try {
+    const db = req.app.locals.db;
+    if (!db) return res.status(500).json({ error: 'Database non connesso' });
+
+    const requests = await db.collection('requests')
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .toArray();
+
+    return res.json(requests);
+  } catch (error) {
+    console.error('Errore elenco richieste admin:', error);
+    return res.status(500).json({ error: 'Errore interno del server' });
+  }
+}
+
 async function suspendUser(req, res) {
   try {
     const userId = req.params.userId;
@@ -287,12 +310,30 @@ async function suspendUser(req, res) {
       return res.status(403).json({ error: 'Solo gli amministratori possono sospendere un moderatore' });
     }
 
+    const prevCount = targetUser.suspensionCount || 0;
+    const newCount = prevCount + 1;
+    
+    let hours = 0;
+    let durationMessage = '';
+    if (newCount === 1) { hours = 12; durationMessage = '12 ore'; }
+    else if (newCount === 2) { hours = 24; durationMessage = '1 giorno'; }
+    else if (newCount === 3) { hours = 168; durationMessage = '1 settimana'; }
+    else { hours = 720; durationMessage = '1 mese'; }
+
+    const suspendedUntil = new Date(Date.now() + hours * 60 * 60 * 1000);
+
     await db.collection('users').updateOne(
       { _id: targetUser._id },
-      { $set: { isSuspended: true, updatedAt: new Date() } }
+      { $set: { 
+          isSuspended: true, 
+          suspendedUntil: suspendedUntil,
+          suspensionCount: newCount,
+          updatedAt: new Date() 
+        } 
+      }
     );
 
-    return res.json({ message: 'Utente sospeso con successo' });
+    return res.json({ message: `Utente sospeso con successo per ${durationMessage}.` });
   } catch (error) {
     console.error('Errore sospensione utente:', error);
     return res.status(500).json({ error: 'Errore interno del server' });
@@ -317,7 +358,10 @@ async function restoreUser(req, res) {
 
     await db.collection('users').updateOne(
       { _id: targetUser._id },
-      { $set: { isSuspended: false, updatedAt: new Date() } }
+      { 
+        $set: { isSuspended: false, updatedAt: new Date() },
+        $unset: { suspendedUntil: "" }
+      }
     );
 
     return res.json({ message: 'Utente riattivato con successo' });
@@ -376,6 +420,7 @@ router.get('/users', listUsersForAdmin);
 router.put('/users/:userId/suspend', suspendUser);
 router.put('/users/:userId/restore', restoreUser);
 
+router.get('/requests', listRequestsForAdmin);
 router.delete('/requests/:requestId', deleteRequest);
 
 module.exports = router;

@@ -108,6 +108,29 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Credenziali non valide" });
     }
 
+    if (user.isSuspended) {
+      if (user.suspendedUntil && new Date() > new Date(user.suspendedUntil)) {
+        await db.collection("users").updateOne(
+          { _id: user._id },
+          { $set: { isSuspended: false }, $unset: { suspendedUntil: "" } }
+        );
+        user.isSuspended = false;
+      } else {
+        let msg = "Il tuo account è attualmente sospeso.";
+        if (user.suspendedUntil) {
+          const diffMs = new Date(user.suspendedUntil) - new Date();
+          const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+          if (diffDays > 0) {
+            msg = `Il tuo account è sospeso. Sarà sbloccato tra ${diffDays} giorn${diffDays === 1 ? 'o' : 'i'}.`;
+          } else {
+            const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+            msg = `Il tuo account è sospeso. Sarà sbloccato tra ${diffHours} or${diffHours === 1 ? 'a' : 'e'}.`;
+          }
+        }
+        return res.status(403).json({ error: msg });
+      }
+    }
+
     // Se l'utente non ha una password nel database (ad es. se è un utente fittizio del seed vecchio),
     // permettiamo di impostarla al primo login, o forziamo l'aggiornamento.
     // Ma con il nuovo seed, tutti avranno la password.
