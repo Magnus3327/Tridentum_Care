@@ -80,6 +80,7 @@ async function seed() {
         name: "Admin",
         surname: "Tridentum",
         email: "admin@tridentumcare.it",
+        skills: ["Trasporto", "Accompagnamento", "Compagnia"],
         password: hashedPassword,
         role: "volunteer",
         authLvl: AUTH_LVL ? AUTH_LVL.ADMIN : 2,
