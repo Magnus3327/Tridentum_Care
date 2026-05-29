@@ -1346,6 +1346,9 @@ window.loadVolunteerMapRequests = async function() {
 
         const activeRequests = activeRes.ok ? await activeRes.json() : [];
         const myTasks = myTasksRes.ok ? await myTasksRes.json() : [];
+        
+        window.activeRequestsCache = activeRequests;
+        window.myTasksCache = myTasks;
 
         // Costruiamo icone personalizzate cambiando il colore via CSS filter
         const blueIcon = new L.Icon({
@@ -1390,7 +1393,7 @@ window.loadVolunteerMapRequests = async function() {
             const marker = L.marker(coords, { icon: customIcon }).addTo(window.volunteerMap);
             
             marker.on('click', () => {
-                openVolunteerRequestDetail(req._id);
+                showRequestDetails(req._id);
             });
 
             window.volunteerMapMarkers.push(marker);
@@ -1521,7 +1524,14 @@ function getCategoryBadgeClass(cat) {
 }
 
 window.showRequestDetails = function(requestId) {
-    const req = window.activeRequestsCache.find(r => r._id === requestId);
+    let req = window.activeRequestsCache ? window.activeRequestsCache.find(r => r._id === requestId) : null;
+    let isMine = false;
+    
+    if (!req && window.myTasksCache) {
+        req = window.myTasksCache.find(r => r._id === requestId);
+        isMine = true;
+    }
+    
     if (!req) return;
 
     const modal = document.getElementById("vol-req-detail-modal");
@@ -1539,10 +1549,22 @@ window.showRequestDetails = function(requestId) {
     badge.className = `badge ${getCategoryBadgeClass(req.category)}`;
 
     const acceptBtn = document.getElementById("modal-accept-btn");
-    acceptBtn.onclick = async function() {
-        await acceptRequest(req._id);
-        closeModal("vol-req-detail-modal");
-    };
+    
+    if (isMine) {
+        acceptBtn.innerText = "Annulla Incarico";
+        acceptBtn.className = "btn btn-danger";
+        acceptBtn.onclick = async function() {
+            await cancelTask(req._id);
+            closeModal("vol-req-detail-modal");
+        };
+    } else {
+        acceptBtn.innerText = "Accetta Incarico";
+        acceptBtn.className = "btn btn-primary";
+        acceptBtn.onclick = async function() {
+            await acceptRequest(req._id);
+            closeModal("vol-req-detail-modal");
+        };
+    }
 
     openModal("vol-req-detail-modal");
 }
@@ -1583,6 +1605,7 @@ async function loadMyTasks() {
         if (!response.ok) throw new Error("Errore nel caricamento dei propri compiti");
 
         const tasks = await response.json();
+        window.myTasksCache = tasks;
 
         if (tasks.length === 0) {
             container.innerHTML = `
