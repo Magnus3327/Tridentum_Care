@@ -147,14 +147,31 @@ function renderAdminUserCard(user) {
         `;
     }
 
+    let suspensionBadge = '';
+    if (user.isSuspended) {
+        if (user.suspendedUntil) {
+            const diffMs = new Date(user.suspendedUntil) - new Date();
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            if (diffDays > 0) {
+                suspensionBadge = `<span class="badge badge-danger" style="background-color: var(--danger-color); color: white;">Sospeso (${diffDays}g rimanenti)</span>`;
+            } else {
+                const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+                suspensionBadge = `<span class="badge badge-danger" style="background-color: var(--danger-color); color: white;">Sospeso (${Math.max(1, diffHours)}h rimanenti)</span>`;
+            }
+        } else {
+            suspensionBadge = `<span class="badge badge-danger" style="background-color: var(--danger-color); color: white;">Sospeso</span>`;
+        }
+    }
+
     return `
-        <div class="card" style="padding: 1rem 1.1rem; border-left: 5px solid ${targetAuthLevel === AUTH_LEVELS.ADMIN ? 'var(--accent-color)' : 'var(--primary-color)'}; overflow: visible;">
+        <div class="card" style="padding: 1rem 1.1rem; border-left: 5px solid ${targetAuthLevel === AUTH_LEVELS.ADMIN ? 'var(--accent-color)' : 'var(--primary-color)'}; overflow: visible; opacity: ${user.isSuspended ? '0.75' : '1'};">
             <div class="flex justify-between items-start" style="gap: 1rem; align-items: flex-start;">
                 <div style="min-width: 0;">
                     <div class="flex gap-1" style="flex-wrap: wrap; margin-bottom: 0.45rem;">
                         <span class="badge badge-primary">${roleLabel}</span>
                         ${authLabel ? `<span class="badge badge-secondary">${authLabel}</span>` : ''}
                         ${sameUser ? `<span class="badge badge-success">Sei tu</span>` : ''}
+                        ${suspensionBadge}
                     </div>
                     <h4 style="margin-bottom: 0.25rem; word-break: break-word;">${fullName}</h4>
                     <p class="text-muted" style="margin-bottom: 0.25rem; word-break: break-word;">${user.email || 'Email non disponibile'}</p>
