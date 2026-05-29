@@ -99,10 +99,14 @@ router.get("/requests", async (req, res) => {
     let skillsFilter = null;
     if (userId) {
       const volunteer = await db.collection("users").findOne({ _id: new ObjectId(userId), role: "volunteer" });
-      if (volunteer && volunteer.skills) {
-        skillsFilter = volunteer.skills;
-      } else {
-        skillsFilter = [];
+      if (volunteer) {
+        if (volunteer.authLvl >= AUTH_LVL.MODERATOR) {
+          skillsFilter = null;
+        } else if (volunteer.skills && volunteer.skills.length > 0) {
+          skillsFilter = volunteer.skills;
+        } else {
+          skillsFilter = [];
+        }
       }
     }
 

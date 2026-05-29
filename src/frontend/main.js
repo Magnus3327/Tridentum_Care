@@ -112,7 +112,10 @@ function renderAdminUserCard(user) {
     const authLabel = user.role === 'volunteer' && typeof user.authLvl === 'number'
         ? user.authLvl === AUTH_LEVELS.ADMIN ? 'Admin' : user.authLvl === AUTH_LEVELS.MODERATOR ? 'Moderatore' : 'Non autorizzato'
         : null;
-    const fullName = [user.name, user.surname].filter(Boolean).join(' ').trim() || user.legalForm || 'Utente senza nome';
+    let fullName = [user.name, user.surname].filter(Boolean).join(' ').trim();
+    if (!fullName) {
+        fullName = user.role === 'partner' ? 'Account Partner' : 'Utente senza nome';
+    }
     const sameUser = appState.userId && user.id === appState.userId;
     const targetAuthLevel = getUserAuthLevel(user);
     const actorAuthLevel = appState.userAuthLvl || AUTH_LEVELS.UNAUTHORIZED;
@@ -153,7 +156,6 @@ function renderAdminUserCard(user) {
                     <h4 style="margin-bottom: 0.25rem; word-break: break-word;">${fullName}</h4>
                     <p class="text-muted" style="margin-bottom: 0.25rem; word-break: break-word;">${user.email || 'Email non disponibile'}</p>
                     <small class="text-muted" style="display: block; word-break: break-word;">ID: ${user.id || user._id}</small>
-                    ${user.legalForm ? `<small class="text-muted" style="display: block; margin-top: 0.25rem;">Attività: ${user.legalForm}</small>` : ''}
                 </div>
                 <div class="flex gap-1" style="flex-wrap: wrap; justify-content: flex-end; position: relative;">
                     ${promoteHtml}
@@ -327,12 +329,8 @@ async function loadAdminDashboard() {
             }
 
             const payload = {
-                legalForm: document.getElementById('admin-partner-legal-form')?.value.trim(),
                 email: document.getElementById('admin-partner-email')?.value.trim(),
-                name: document.getElementById('admin-partner-name')?.value.trim(),
-                surname: document.getElementById('admin-partner-surname')?.value.trim(),
-                phone: document.getElementById('admin-partner-phone')?.value.trim(),
-                address: document.getElementById('admin-partner-address')?.value.trim()
+                password: document.getElementById('admin-partner-password')?.value
             };
 
             try {
@@ -347,16 +345,7 @@ async function loadAdminDashboard() {
                     return;
                 }
 
-                const emailEl = document.getElementById('partner-cred-email');
-                const passEl = document.getElementById('partner-cred-password');
-                
-                if (emailEl && passEl) {
-                    emailEl.innerText = data.user.email || payload.email;
-                    passEl.value = data.temporaryPassword;
-                    window.openModal('partner-credentials-modal');
-                } else {
-                    showToast(`Partner creato. Password temporanea: ${data.temporaryPassword}`, 'success');
-                }
+                showToast('Partner creato con successo.', 'success');
                 partnerForm.reset();
                 await loadAdminUsers();
             } catch (error) {
@@ -1171,7 +1160,7 @@ function bindAuthEvents() {
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('login-email').value;
+            const email = document.getElementById('login-email').value.trim();
             const password = document.getElementById('login-password').value;
 
             try {

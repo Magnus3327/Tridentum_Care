@@ -79,23 +79,18 @@ async function seed() {
       {
         name: "Admin",
         surname: "Tridentum",
-        email: "admin@tridentumcare.it",
+        email: "admin@admin.com",
         skills: ["Trasporto", "Accompagnamento", "Compagnia"],
-        password: hashedPassword,
+        password: await bcrypt.hash("admin", 10),
         role: "volunteer",
         authLvl: AUTH_LVL ? AUTH_LVL.ADMIN : 2,
         points: 0,
         createdAt: new Date()
       },
       {
-        name: "Demo",
-        surname: "Partner",
-        legalForm: "Caffetteria del Centro",
         email: "partner@demo.it",
         password: hashedPassword,
         role: "partner",
-        phone: "0461 123456",
-        address: "Via Roma 10, Trento",
         createdAt: new Date()
       }
     ];

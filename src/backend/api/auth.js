@@ -13,7 +13,11 @@ router.post("/register", async (req, res) => {
   try {
     const { name, surname, email, password, role, age, gender, license } = req.body;
 
-    if (!name || !surname || !email || !password || !role) {
+    if (!email || !password || !role) {
+      return res.status(400).json({ error: "Tutti i campi obbligatori devono essere compilati" });
+    }
+    
+    if (role !== ROLES.PARTNER && (!name || !surname)) {
       return res.status(400).json({ error: "Tutti i campi obbligatori devono essere compilati" });
     }
 

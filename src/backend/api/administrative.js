@@ -123,10 +123,10 @@ async function createPartnerUser(req, res) {
       return res.status(403).json({ error: 'Accesso negato: permessi insufficienti per creare un partner' });
     }
 
-    const { legalForm, email, name, surname, phone, address } = req.body;
+    const { email, password } = req.body;
 
-    if (!legalForm || !email) {
-      return res.status(400).json({ error: 'Tutti i campi obbligatori devono essere compilati' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email e password obbligatorie' });
     }
 
     const db = req.app.locals.db;
@@ -138,18 +138,12 @@ async function createPartnerUser(req, res) {
       return res.status(400).json({ error: 'Questa email è già registrata' });
     }
 
-    const temporaryPassword = generatePassword(12);
-    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const newPartner = {
       role: ROLES.PARTNER,
-      legalForm,
-      name: name || legalForm,
-      surname: surname || '',
       email: normalizedEmail,
       password: hashedPassword,
-      phone: phone || '',
-      address: address || '',
       mustChangePassword: true,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -159,7 +153,6 @@ async function createPartnerUser(req, res) {
 
     return res.status(201).json({
       message: 'Partner creato con successo',
-      temporaryPassword,
       user: toPublicUser({ ...newPartner, _id: result.insertedId })
     });
   } catch (error) {
@@ -188,11 +181,12 @@ async function deleteLowerPrivilegeUser(req, res) {
     }
 
     const actorAuthLevel = getEffectiveAuthLevel(req.adminUser);
-    const targetAuthLevel = getEffectiveAuthLevel(targetUser);
 
-    if (targetUser.role === ROLES.PARTNER && actorAuthLevel < AUTH_LVL.ADMIN) {
-      return res.status(403).json({ error: 'Puoi eliminare partner solo se sei un amministratore' });
+    if (actorAuthLevel < AUTH_LVL.ADMIN) {
+      return res.status(403).json({ error: 'Accesso negato: solo gli amministratori possono eliminare utenti' });
     }
+
+    const targetAuthLevel = getEffectiveAuthLevel(targetUser);
 
     if (targetAuthLevel >= actorAuthLevel) {
       return res.status(403).json({ error: 'Puoi eliminare solo utenti con privilegi inferiori ai tuoi' });
@@ -273,6 +267,88 @@ async function listUsersForAdmin(req, res) {
   }
 }
 
+async function suspendUser(req, res) {
+  try {
+    const userId = req.params.userId;
+    const db = req.app.locals.db;
+    if (!db) return res.status(500).json({ error: 'Database non connesso' });
+
+    const targetUser = await getTargetUser(db, userId);
+    if (!targetUser) return res.status(404).json({ error: 'Utente non trovato' });
+
+    const actorAuthLevel = getEffectiveAuthLevel(req.adminUser);
+    const targetAuthLevel = getEffectiveAuthLevel(targetUser);
+
+    if (targetAuthLevel >= AUTH_LVL.ADMIN) {
+      return res.status(403).json({ error: 'Non puoi sospendere un amministratore' });
+    }
+
+    if (actorAuthLevel < AUTH_LVL.ADMIN && targetAuthLevel >= AUTH_LVL.MODERATOR) {
+      return res.status(403).json({ error: 'Solo gli amministratori possono sospendere un moderatore' });
+    }
+
+    await db.collection('users').updateOne(
+      { _id: targetUser._id },
+      { $set: { isSuspended: true, updatedAt: new Date() } }
+    );
+
+    return res.json({ message: 'Utente sospeso con successo' });
+  } catch (error) {
+    console.error('Errore sospensione utente:', error);
+    return res.status(500).json({ error: 'Errore interno del server' });
+  }
+}
+
+async function restoreUser(req, res) {
+  try {
+    const userId = req.params.userId;
+    const db = req.app.locals.db;
+    if (!db) return res.status(500).json({ error: 'Database non connesso' });
+
+    const targetUser = await getTargetUser(db, userId);
+    if (!targetUser) return res.status(404).json({ error: 'Utente non trovato' });
+
+    const actorAuthLevel = getEffectiveAuthLevel(req.adminUser);
+    const targetAuthLevel = getEffectiveAuthLevel(targetUser);
+
+    if (actorAuthLevel < AUTH_LVL.ADMIN && targetAuthLevel >= AUTH_LVL.MODERATOR) {
+      return res.status(403).json({ error: 'Permessi insufficienti per riattivare questo utente' });
+    }
+
+    await db.collection('users').updateOne(
+      { _id: targetUser._id },
+      { $set: { isSuspended: false, updatedAt: new Date() } }
+    );
+
+    return res.json({ message: 'Utente riattivato con successo' });
+  } catch (error) {
+    console.error('Errore riattivazione utente:', error);
+    return res.status(500).json({ error: 'Errore interno del server' });
+  }
+}
+
+async function deleteRequest(req, res) {
+  try {
+    const requestId = req.params.requestId;
+    if (!ObjectId.isValid(requestId)) {
+      return res.status(400).json({ error: 'ID richiesta non valido' });
+    }
+
+    const db = req.app.locals.db;
+    if (!db) return res.status(500).json({ error: 'Database non connesso' });
+
+    const deletionResult = await db.collection('requests').deleteOne({ _id: new ObjectId(requestId) });
+    if (deletionResult.deletedCount === 0) {
+      return res.status(404).json({ error: 'Richiesta non trovata' });
+    }
+
+    return res.json({ message: 'Richiesta eliminata con successo' });
+  } catch (error) {
+    console.error('Errore eliminazione richiesta:', error);
+    return res.status(500).json({ error: 'Errore interno del server' });
+  }
+}
+
 router.use(async (req, res, next) => {
   try {
     const context = await getAdminUser(req);
@@ -296,5 +372,10 @@ router.post('/partners', createPartnerUser);
 
 router.delete('/users/:userId', deleteLowerPrivilegeUser);
 router.get('/users', listUsersForAdmin);
+
+router.put('/users/:userId/suspend', suspendUser);
+router.put('/users/:userId/restore', restoreUser);
+
+router.delete('/requests/:requestId', deleteRequest);
 
 module.exports = router;
