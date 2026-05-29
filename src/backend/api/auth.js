@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { ObjectId } = require("mongodb");
 const authMiddleware = require("../middleware/auth");
-const { SERVICES, ROLES } = require("../../config/constants");
+const { SERVICES, ROLES, AUTH_LVL } = require("../../config/constants");
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "tridentum_care_secret_key_123";
@@ -13,8 +13,17 @@ router.post("/register", async (req, res) => {
   try {
     const { name, surname, email, password, role, age, gender, license } = req.body;
 
-    if (!name || !surname || !email || !password || !role) {
+    if (!email || !password || !role) {
       return res.status(400).json({ error: "Tutti i campi obbligatori devono essere compilati" });
+    }
+    
+    if (role !== ROLES.PARTNER && (!name || !surname)) {
+      return res.status(400).json({ error: "Tutti i campi obbligatori devono essere compilati" });
+    }
+
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({ error: "La password non soddisfa i requisiti: minimo 8 caratteri, una maiuscola, un numero e un simbolo." });
     }
 
     const db = req.app.locals.db;
@@ -37,6 +46,7 @@ router.post("/register", async (req, res) => {
         age: parsedAge,
         gender: gender || "",
         license: license || "No",
+        authLvl: AUTH_LVL.UNAUTHORIZED,
         points: 0,
         skills: [...SERVICES], // tutte le competenze attive di default, clonate dalle costanti
         coupons: []
@@ -76,7 +86,8 @@ router.post("/register", async (req, res) => {
         surname: newUser.surname,
         email: newUser.email,
         role: newUser.role,
-        points: newUser.points
+        points: newUser.points,
+        authLvl: typeof newUser.authLvl === 'number' ? newUser.authLvl : undefined
       }
     });
   } catch (error) {
@@ -100,6 +111,29 @@ router.post("/login", async (req, res) => {
     const user = await db.collection("users").findOne({ email: email.toLowerCase() });
     if (!user) {
       return res.status(401).json({ error: "Credenziali non valide" });
+    }
+
+    if (user.isSuspended) {
+      if (user.suspendedUntil && new Date() > new Date(user.suspendedUntil)) {
+        await db.collection("users").updateOne(
+          { _id: user._id },
+          { $set: { isSuspended: false }, $unset: { suspendedUntil: "" } }
+        );
+        user.isSuspended = false;
+      } else {
+        let msg = "Il tuo account è attualmente sospeso.";
+        if (user.suspendedUntil) {
+          const diffMs = new Date(user.suspendedUntil) - new Date();
+          const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+          if (diffDays > 0) {
+            msg = `Il tuo account è sospeso. Sarà sbloccato tra ${diffDays} giorn${diffDays === 1 ? 'o' : 'i'}.`;
+          } else {
+            const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+            msg = `Il tuo account è sospeso. Sarà sbloccato tra ${diffHours} or${diffHours === 1 ? 'a' : 'e'}.`;
+          }
+        }
+        return res.status(403).json({ error: msg });
+      }
     }
 
     // Se l'utente non ha una password nel database (ad es. se è un utente fittizio del seed vecchio),
@@ -130,7 +164,8 @@ router.post("/login", async (req, res) => {
         surname: user.surname,
         email: user.email,
         role: user.role,
-        points: user.points
+        points: user.points,
+        authLvl: typeof user.authLvl === 'number' ? user.authLvl : undefined
       }
     });
   } catch (error) {
@@ -156,7 +191,8 @@ router.get("/me", authMiddleware, async (req, res) => {
       surname: user.surname,
       email: user.email,
       role: user.role,
-      points: user.points || 0
+      points: user.points || 0,
+      authLvl: typeof user.authLvl === 'number' ? user.authLvl : undefined
     });
   } catch (error) {
     console.error("Errore recupero sessione:", error);

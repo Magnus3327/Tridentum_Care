@@ -1,30 +1,55 @@
 <!-- Dashboard Partner -->
 <section id="view-partner-dash" class="view-section">
-    <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
-        <h2>I Tuoi Coupon Attivi</h2>
-        <button class="btn btn-primary" onclick="navigateTo('partner-coupon')">Crea Nuovo Premio</button>
+    <div class="card" style="background: linear-gradient(135deg, var(--primary-color), #2d7da6); color: white; margin-bottom: 2rem; border: none; padding: 2rem;">
+        <div class="flex justify-between items-center flex-col md-row gap-2" style="text-align: left; flex-wrap: wrap;">
+            <div>
+                <h1 style="color: white; margin-bottom: 0.5rem; font-size: 2.25rem;">👋 Ciao, <span id="partner-welcome-name">Partner</span>!</h1>
+                <p style="margin-bottom: 0; opacity: 0.9;">Gestisci i tuoi coupon e visualizza lo storico dei riscatti dei volontari.</p>
+            </div>
+            <div>
+                <button class="btn" onclick="openPartnerCouponForm()" style="background: white; color: var(--primary-color); border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.15); font-weight: 700; padding: 0.75rem 1.5rem;">
+                    <i class="fa-solid fa-plus" style="margin-right: 0.5rem;"></i> Crea Nuovo Premio
+                </button>
+            </div>
+        </div>
     </div>
     
-    <div class="card" style="padding: 0; overflow: hidden;">
+    <div class="flex justify-between items-center" style="margin-bottom: 1.5rem;">
+        <h2 style="margin-bottom: 0; font-size: 1.5rem;"><i class="fa-solid fa-ticket text-primary" style="margin-right: 0.5rem;"></i> I Tuoi Coupon Attivi</h2>
+    </div>
+    
+    <div class="card" style="padding: 0; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);">
         <table style="width: 100%; border-collapse: collapse; text-align: left;">
             <thead>
                 <tr style="background: var(--background-light); border-bottom: 2px solid var(--border-color);">
                     <th style="padding: 1rem;">Premio</th>
                     <th style="padding: 1rem;">Costo Punti</th>
-                    <th style="padding: 1rem;">Riscattati</th>
+                    <th style="padding: 1rem;">Numero Riscatti</th>
                     <th style="padding: 1rem;">Azioni</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr style="border-bottom: 1px solid var(--border-color);">
-                    <td style="padding: 1rem;"><strong>Caffè Gratuito</strong><br><small class="text-muted">Scade: 31/12/2026</small></td>
-                    <td style="padding: 1rem;">200</td>
-                    <td style="padding: 1rem;">45 volte</td>
-                    <td style="padding: 1rem;">
-                        <button class="btn btn-outline" style="padding: 0.5rem 1rem;" onclick="navigateTo('partner-coupon')">Modifica</button>
-                        <button class="btn btn-danger" style="padding: 0.5rem 1rem;" onclick="confirm('Eliminare questo coupon?')">Elimina</button>
-                    </td>
+            <tbody id="partner-coupons-list">
+                <!-- I coupon verranno caricati qui dinamicamente -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="flex justify-between items-center" style="margin-top: 3rem; margin-bottom: 1.5rem;">
+        <h2 style="margin-bottom: 0; font-size: 1.5rem; color: var(--text-muted);"><i class="fa-solid fa-clock-rotate-left" style="margin-right: 0.5rem;"></i> I Tuoi Coupon Scaduti</h2>
+    </div>
+    
+    <div class="card" style="padding: 0; overflow: hidden; border: 1px solid var(--border-color); opacity: 0.8; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="background: var(--background-light); border-bottom: 2px solid var(--border-color);">
+                    <th style="padding: 1rem;">Premio</th>
+                    <th style="padding: 1rem;">Costo Punti</th>
+                    <th style="padding: 1rem;">Numero Riscatti</th>
+                    <th style="padding: 1rem;">Azioni</th>
                 </tr>
+            </thead>
+            <tbody id="partner-expired-coupons-list">
+                <!-- I coupon scaduti verranno caricati qui dinamicamente -->
             </tbody>
         </table>
     </div>
@@ -34,27 +59,29 @@
 <section id="view-partner-coupon" class="view-section">
     <button class="btn btn-outline" onclick="navigateTo('partner-dash')" style="margin-bottom: 2rem;"><i class="fa-solid fa-arrow-left"></i> Torna alla Dashboard</button>
     <div class="card" style="max-width: 600px; margin: 0 auto;">
-        <h2>Nuovo Premio (Coupon)</h2>
-        <form onsubmit="event.preventDefault(); alert('Premio pubblicato con successo!'); navigateTo('partner-dash');">
+        <h2 id="partner-coupon-form-title">Nuovo Premio (Coupon)</h2>
+        <form id="partner-coupon-form" onsubmit="submitPartnerCoupon(event)">
+            <input type="hidden" id="partner-coupon-id">
             <div class="form-group">
                 <label class="form-label">Titolo Premio</label>
-                <input type="text" class="form-control" placeholder="Es. Sconto 5€" required>
+                <input type="text" id="partner-coupon-title" class="form-control" placeholder="Es. Sconto 5€" required>
             </div>
             <div class="form-group">
                 <label class="form-label">Descrizione e Condizioni</label>
-                <textarea class="form-control" rows="3" placeholder="Es. Valido su spesa minima di 30€..."></textarea>
+                <textarea id="partner-coupon-description" class="form-control" rows="3" placeholder="Es. Valido su spesa minima di 30€..."></textarea>
             </div>
             <div class="grid-2">
                 <div class="form-group">
                     <label class="form-label">Costo in Punti</label>
-                    <input type="number" class="form-control" value="100" min="50" required>
+                    <input type="number" id="partner-coupon-points" class="form-control" value="100" min="50" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Data di Scadenza</label>
-                    <input type="date" class="form-control" required>
+                    <input type="date" id="partner-coupon-expiration" class="form-control" required>
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">Pubblica Premio</button>
+            <button type="submit" id="partner-coupon-submit-btn" class="btn btn-primary btn-block" style="margin-top: 1rem;">Pubblica Premio</button>
         </form>
     </div>
 </section>
+

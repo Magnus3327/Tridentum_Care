@@ -16,8 +16,14 @@ const SERVICES = Object.keys(SERVICE_POINTS);
 const ROLES = {
   VOLUNTEER: "volunteer",
   REQUESTER: "requester",
-  PARTNER: "partner",
-  ADMIN: "admin"
+  PARTNER: "partner"
+};
+
+// Authorization levels for volunteer accounts
+const AUTH_LVL = {
+  UNAUTHORIZED: 0,
+  MODERATOR: 1,
+  ADMIN: 2
 };
 
 const REQUEST_STATUS = {
@@ -31,5 +37,6 @@ module.exports = {
   SERVICE_POINTS,
   SERVICES,
   ROLES,
-  REQUEST_STATUS
+  REQUEST_STATUS,
+  AUTH_LVL
 };

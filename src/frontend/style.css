@@ -182,9 +182,24 @@ p { margin-bottom: 1rem; }
 .accessible-view .card { padding: 3rem; border-width: 3px; border-color: var(--primary-color); }
 
 /* View Container */
-#app-container { flex-grow: 1; padding: 2rem 0; }
-.view-section { display: none; animation: fadeIn 0.4s ease forwards; }
-.view-section.active { display: block; }
+#app-container {
+  flex-grow: 1;
+  padding: 2rem 0;
+}
+
+/* Nasconde rigidamente tutte le sezioni che non sono attive */
+.view-section {
+  display: none !important;
+}
+
+/* Applica il blocco e l'animazione di comparsa SOLO alla sezione che ha la classe attiva */
+.view-section.active {
+  display: block !important;
+  animation: fadeIn 0.4s ease forwards;
+}
+
+/* Quando il router assegna la classe .active, sovrascrive il display none */
+#view-admin-dash.view-section.active {display: block !important;}
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
@@ -200,6 +215,7 @@ p { margin-bottom: 1rem; }
 /* Grid systems */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+.admin-moderator-layout { grid-template-columns: 1fr !important; max-width: 800px; margin-left: auto; margin-right: auto; }
 @media (max-width: 768px) {
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
 }

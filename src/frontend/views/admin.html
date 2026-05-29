@@ -1,45 +1,128 @@
-<!-- Backoffice / Moderazione -->
 <section id="view-admin-dash" class="view-section">
-    <h2>Console Amministratore</h2>
+    <div style="text-align: center; margin-bottom: 3rem;">
+        <i class="fa-solid fa-shield-halved text-primary" style="font-size: 3.5rem; margin-bottom: 1rem;"></i>
+        <h2 style="font-size: 2.5rem; margin-bottom: 0.5rem;">Pannello di Controllo</h2>
+        <p class="text-muted" style="font-size: 1.1rem; max-width: 600px; margin: 0 auto;">
+            Gestisci utenti, richieste di supporto e partner della piattaforma da un'unica console centralizzata.
+        </p>
+    </div>
 
-    <div class="grid-2" style="margin-top: 2rem;">
-        <!-- Moderazione Utenti -->
-        <div class="card">
-            <h3>Ricerca e Moderazione Utenti</h3>
-            <div class="flex gap-1" style="margin: 1rem 0;">
-                <input type="text" class="form-control" placeholder="Cerca per email o nome...">
-                <button class="btn btn-primary">Cerca</button>
-            </div>
-            <hr style="margin: 1rem 0; border: 0; border-top: 1px solid var(--border-color);">
-            <div class="flex justify-between items-center" style="margin-bottom: 1rem;">
-                <div>
-                    <strong>Luigi Bianchi</strong> (Volontario)<br>
-                    <small class="text-muted">luigi@email.it</small>
+    <div style="margin-top: 2rem; margin-bottom: 2rem;">
+        <div class="card" id="admin-partner-section">
+            <h3 style="display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <i class="fa-solid fa-handshake text-secondary"></i> Registra Partner
+            </h3>
+            <p class="text-muted" style="margin-bottom: 1.5rem;">Crea un account per un nuovo partner affiliato (negozi, farmacie, ecc).</p>
+            <form id="admin-partner-form" class="grid-2" style="gap: 1.5rem; align-items: end;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Email Aziendale</label>
+                    <input id="admin-partner-email" type="email" class="form-control" placeholder="es. info@farmacia.it" required>
                 </div>
-                <div class="flex gap-1">
-                    <button class="btn btn-outline"
-                        style="padding: 0.5rem; color: orange; border-color: orange;">Sospendi</button>
-                    <button class="btn btn-danger" style="padding: 0.5rem;">Elimina</button>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Password</label>
+                    <input id="admin-partner-password" type="password" class="form-control" placeholder="Almeno 6 caratteri" required minlength="6">
                 </div>
-            </div>
-        </div>
-
-        <!-- Genera Credenziali Partner -->
-        <div class="card">
-            <h3>Registra Nuovo Partner</h3>
-            <p class="text-muted" style="margin-bottom: 1rem;">Genera credenziali manuali per un nuovo negozio
-                convenzionato.</p>
-            <form onsubmit="event.preventDefault(); alert('Credenziali inviate all\'email del partner!');">
-                <div class="form-group">
-                    <label class="form-label">Nome Attività</label>
-                    <input type="text" class="form-control" required>
+                <div style="grid-column: 1 / -1; margin-top: 0.5rem;">
+                    <button id="admin-partner-submit" type="submit" class="btn btn-secondary btn-block btn-large">Crea Account Partner</button>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Email Referente</label>
-                    <input type="email" class="form-control" required>
-                </div>
-                <button type="submit" class="btn btn-secondary btn-block">Genera e Invia Accesso</button>
             </form>
         </div>
     </div>
+
+    <div class="grid-2" style="gap: 2rem;">
+        <div class="card" style="display: flex; flex-direction: column; max-height: 800px;">
+            <h3 style="display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <i class="fa-solid fa-users text-primary"></i> Ricerca Utenti
+            </h3>
+            <div class="flex gap-1" style="margin-bottom: 1rem;">
+                <div style="flex: 1; position: relative;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                    <input id="admin-user-search" type="text" class="form-control" placeholder="Cerca per email o nome..." style="padding-left: 2.5rem;">
+                </div>
+            </div>
+            <div class="flex gap-1" style="margin-bottom: 1.5rem;">
+                <select id="admin-user-role-filter" class="form-control">
+                    <option value="">Tutti i ruoli</option>
+                    <option value="volunteer">Volontario</option>
+                    <option value="requester">Richiedente</option>
+                    <option value="partner">Partner</option>
+                </select>
+                <button type="button" class="btn btn-primary" onclick="searchAdminUsers()" style="white-space: nowrap;">Cerca</button>
+            </div>
+            <div class="flex justify-between items-center" style="margin-bottom: 1.5rem; padding: 1rem; background: var(--background-light); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                <div>
+                    <span id="admin-users-count" class="badge badge-primary" style="font-size: 1rem; margin-right: 0.5rem;">0</span>
+                    <span class="text-bold" style="font-weight: 600;">Utenti Trovati</span>
+                </div>
+                <small id="admin-summary-badge" class="text-muted" style="font-weight: 500;"> </small>
+            </div>
+            <div id="admin-users-results" style="display: flex; flex-direction: column; gap: 1rem; flex: 1; overflow-y: auto; padding-right: 0.5rem;"></div>
+        </div>
+        
+        <div class="card" style="display: flex; flex-direction: column; max-height: 800px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <h3 style="display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+                    <i class="fa-solid fa-list-check text-accent" style="color: var(--accent-color);"></i> Gestione Richieste
+                </h3>
+                <button class="btn btn-outline" onclick="window.loadAdminRequests()">
+                    <i class="fa-solid fa-rotate-right"></i> Aggiorna
+                </button>
+            </div>
+            <div id="admin-requests-results" style="display: flex; flex-direction: column; gap: 1rem; flex: 1; overflow-y: auto; padding-right: 0.5rem;"></div>
+        </div>
+    </div>
+
+    <!-- Modale credenziali partner -->
+    <div id="partner-credentials-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 550px;">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <i class="fa-solid fa-lock text-primary" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                <h3 style="color: var(--primary-color);">Credenziali Partner Generate</h3>
+                <p class="text-muted">La password è stata copiata negli appunti!</p>
+            </div>
+            
+            <div style="background: var(--background-light); padding: 1.5rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 1.5rem;">
+                <div style="margin-bottom: 1rem;">
+                    <label class="form-label" style="font-size: 0.9rem; color: var(--text-muted);">Email (Utente):</label>
+                    <div style="font-weight: 600; font-size: 1.1rem; user-select: all;" id="partner-cred-email"></div>
+                </div>
+                <div>
+                    <label class="form-label" style="font-size: 0.9rem; color: var(--text-muted);">Password</label>
+                    <div class="flex" style="gap: 0.5rem; align-items: center;">
+                        <input type="text" id="partner-cred-password" class="form-control" readonly style="font-family: monospace; font-size: 1.2rem; font-weight: bold; background: white; flex: 1;">
+                        <button type="button" class="btn btn-primary" onclick="copyPartnerCredentials()" style="padding: 0.75rem 1rem;" title="Copia Password">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-secondary btn-block" onclick="closePartnerCredentialsModal()">Chiudi</button>
+        </div>
+    </div>
+
+    <!-- Modale Dettagli Utente -->
+    <div id="user-details-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 600px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-address-card text-primary"></i> Dettagli Utente</h3>
+                <button type="button" class="btn btn-outline" onclick="closeUserDetailsModal()" style="border: none; padding: 0.5rem;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div id="user-details-content" style="display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Filled dynamically -->
+            </div>
+            
+            <div id="partner-password-section" style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+                <button type="button" class="btn btn-secondary btn-block" onclick="resetPartnerPassword()">Genera Nuova Password Partner</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Forza la visualizzazione SOLO quando la classe attiva viene iniettata dal router */
+        #view-admin-dash.active {
+            display: block !important;
+        }
+    </style>
 </section>

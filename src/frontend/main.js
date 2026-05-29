@@ -1,12 +1,21 @@
 // Router semplice per Single Page App e Stato Globale
+const AUTH_LEVELS = {
+    UNAUTHORIZED: 0,
+    MODERATOR: 1,
+    ADMIN: 2
+};
+
 const appState = {
-    userRole: null, // 'requester', 'volunteer', 'partner', 'admin', null
+    userRole: null, // 'requester', 'volunteer', 'partner', null
+    userAuthLvl: AUTH_LEVELS.UNAUTHORIZED,
     userEmail: null, // email dell'utente loggato
     userId: null, // id utente reale estratto dal token
     userName: null, // nome dell'utente loggato per instant rendering
     points: 0,
     constants: null,
 };
+
+window.adminUsersCache = [];
 
 let currentRoute = 'home';
 let previousRoute = 'home';
@@ -66,6 +75,551 @@ async function renderDynamicRequestServices() {
     });
 }
 
+function getRoleLabel(user) {
+    if (!user) return 'Utente';
+    if (user.role === 'volunteer') {
+        if (typeof user.authLvl === 'number') {
+            if (user.authLvl === AUTH_LEVELS.ADMIN) return 'Admin';
+            if (user.authLvl === AUTH_LEVELS.MODERATOR) return 'Moderatore';
+        }
+        return 'Volontario';
+    }
+    if (user.role === 'requester') return 'Richiedente';
+    if (user.role === 'partner') return 'Partner';
+    return 'Utente';
+}
+
+function getUserAuthLevel(user) {
+    if (!user) return -1;
+    if (user.role === 'volunteer') return typeof user.authLvl === 'number' ? user.authLvl : AUTH_LEVELS.UNAUTHORIZED;
+    return AUTH_LEVELS.UNAUTHORIZED;
+}
+
+function buildAdminSearchParams() {
+    const searchInput = document.getElementById('admin-user-search');
+    const roleFilter = document.getElementById('admin-user-role-filter');
+    const query = searchInput ? searchInput.value.trim() : '';
+    const role = roleFilter ? roleFilter.value : '';
+
+    const params = new URLSearchParams();
+    if (query) params.set('q', query);
+    if (role) params.set('role', role);
+    return params.toString();
+}
+
+function renderAdminUserCard(user) {
+    const roleLabel = getRoleLabel(user);
+    const authLabel = user.role === 'volunteer' && typeof user.authLvl === 'number' && user.authLvl > AUTH_LEVELS.UNAUTHORIZED
+        ? user.authLvl === AUTH_LEVELS.ADMIN ? 'Admin' : 'Moderatore'
+        : null;
+    let fullName = [user.name, user.surname].filter(Boolean).join(' ').trim();
+    if (!fullName) {
+        fullName = user.role === 'partner' ? 'Account Partner' : 'Utente senza nome';
+    }
+    const sameUser = appState.userId && user.id === appState.userId;
+    const targetAuthLevel = getUserAuthLevel(user);
+    const actorAuthLevel = appState.userAuthLvl || AUTH_LEVELS.UNAUTHORIZED;
+    const isAdmin = actorAuthLevel === AUTH_LEVELS.ADMIN;
+    const canPromote = isAdmin && user.role === 'volunteer' && targetAuthLevel < AUTH_LEVELS.ADMIN;
+    const canDelete = isAdmin && targetAuthLevel < actorAuthLevel && !sameUser;
+    const canSuspend = targetAuthLevel < actorAuthLevel && !sameUser && !user.isSuspended;
+    const canRestore = targetAuthLevel < actorAuthLevel && !sameUser && user.isSuspended;
+    const suspensionCount = user.suspensionCount || 0;
+
+    let promoteHtml = '';
+    if (canPromote) {
+        promoteHtml = `
+            <div class="dropdown-wrapper" style="position: relative; display: inline-block;">
+                <button type="button" class="btn btn-outline" style="padding: 0.5rem 0.75rem; border-color: var(--primary-color); color: var(--primary-color);" onclick="window.togglePromoteDropdown(event, '${user.id || user._id}')" title="Gestisci Permessi">
+                    Permessi <i class="fa-solid fa-chevron-down" style="font-size: 0.8em; margin-left: 0.2rem;"></i>
+                </button>
+                <div id="promote-dropdown-${user.id || user._id}" class="promote-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-md); z-index: 10; min-width: 230px; overflow: hidden; flex-direction: column;">
+                    ${targetAuthLevel < AUTH_LEVELS.MODERATOR ? `
+                    <button type="button" class="dropdown-item btn-block text-left" style="padding: 0.75rem 1rem; border: none; background: transparent; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: var(--transition); text-align: left;" onmouseover="this.style.backgroundColor='var(--background-light)'" onmouseout="this.style.backgroundColor='transparent'" onclick="promoteAdminUser('${user.id || user._id}', ${AUTH_LEVELS.MODERATOR})">
+                        <i class="fa-solid fa-shield-halved text-primary" style="width: 20px; text-align: center;"></i> Promuovi a Moderatore
+                    </button>
+                    ` : ''}
+                    ${targetAuthLevel > AUTH_LEVELS.UNAUTHORIZED ? `
+                    <button type="button" class="dropdown-item btn-block text-left" style="padding: 0.75rem 1rem; border: none; background: transparent; cursor: pointer; border-top: 1px solid var(--border-color); transition: var(--transition); text-align: left; color: var(--danger-color);" onmouseover="this.style.backgroundColor='var(--background-light)'" onmouseout="this.style.backgroundColor='transparent'" onclick="promoteAdminUser('${user.id || user._id}', ${AUTH_LEVELS.UNAUTHORIZED})">
+                        <i class="fa-solid fa-user-minus" style="width: 20px; text-align: center;"></i> Rimuovi Permessi
+                    </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    let suspensionBadge = '';
+    if (user.isSuspended) {
+        let totalDuration = '';
+        if (user.suspensionCount === 1) totalDuration = '12 ore';
+        else if (user.suspensionCount === 2) totalDuration = '1 giorno';
+        else if (user.suspensionCount === 3) totalDuration = '1 settimana';
+        else if (user.suspensionCount >= 4) totalDuration = '1 mese';
+
+        if (user.suspendedUntil) {
+            const diffMs = new Date(user.suspendedUntil) - new Date();
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            
+            let remainingText = '';
+            if (diffDays > 0) remainingText = `${diffDays}g rimanenti`;
+            else remainingText = `${Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60)))}h rimanenti`;
+            
+            suspensionBadge = `<span class="badge badge-danger" style="background-color: var(--danger-color); color: white;">Sospeso ${totalDuration ? 'per ' + totalDuration : ''} (${remainingText})</span>`;
+        } else {
+            suspensionBadge = `<span class="badge badge-danger" style="background-color: var(--danger-color); color: white;">Sospeso ${totalDuration ? 'per ' + totalDuration : ''}</span>`;
+        }
+    }
+
+    return `
+        <div class="card" style="padding: 1rem 1.1rem; border-left: 5px solid ${targetAuthLevel === AUTH_LEVELS.ADMIN ? 'var(--accent-color)' : 'var(--primary-color)'}; overflow: visible; opacity: ${user.isSuspended ? '0.75' : '1'};">
+            <div class="flex justify-between items-start" style="gap: 1rem; align-items: flex-start;">
+                <div style="min-width: 0;">
+                    <div class="flex gap-1" style="flex-wrap: wrap; margin-bottom: 0.45rem;">
+                        <span class="badge badge-primary">${roleLabel}</span>
+                        ${authLabel ? `<span class="badge badge-secondary">${authLabel}</span>` : ''}
+                        ${sameUser ? `<span class="badge badge-success">Sei tu</span>` : ''}
+                        ${suspensionBadge}
+                    </div>
+                    <h4 style="margin-bottom: 0.25rem; word-break: break-word;">${fullName}</h4>
+
+                </div>
+                <div class="flex gap-1" style="flex-wrap: wrap; justify-content: flex-end; position: relative;">
+                    ${promoteHtml}
+                    <button type="button" class="btn btn-info" style="padding: 0.5rem 0.75rem; color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb;" onclick="window.showUserDetailsModal('${user.id || user._id}')">Dettagli</button>
+                    ${canSuspend ? `<button type="button" class="btn btn-warning" style="padding: 0.5rem 0.75rem; color: #856404; background-color: #FFF3CD; border: 1px solid #ffeeba;" onclick="suspendAdminUser('${user.id || user._id}', ${suspensionCount})">Sospendi</button>` : ''}
+                    ${canRestore ? `<button type="button" class="btn btn-success" style="padding: 0.5rem 0.75rem;" onclick="restoreAdminUser('${user.id || user._id}')">Riattiva</button>` : ''}
+                    ${canDelete ? `<button type="button" class="btn btn-danger" style="padding: 0.5rem 0.75rem;" onclick="deleteAdminUser('${user.id || user._id}')">Elimina</button>` : ''}
+                </div>
+            </div>
+            <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color);">
+                <p class="text-muted" style="margin-bottom: 0; font-size: 0.9rem; word-break: break-word;"><i class="fa-regular fa-envelope"></i> ${user.email || 'Email non disponibile'}</p>
+            </div>
+        </div>
+    `;
+}
+
+window.selectedPartnerId = null;
+
+window.showUserDetailsModal = function(userId) {
+    const user = window.adminUsersCache?.find(u => String(u.id || u._id) === String(userId));
+    if (!user) {
+        alert("Errore: Utente non trovato nella cache locale. Ricarica la pagina.");
+        return;
+    }
+    
+    const content = document.getElementById('user-details-content');
+    const partnerSection = document.getElementById('partner-password-section');
+    
+    let html = `
+        <div><strong>Nome / Azienda:</strong> ${user.name || ''} ${user.surname || ''} ${user.companyName || ''}</div>
+        <div><strong>Email:</strong> ${user.email || 'N/A'}</div>
+        <div><strong>Ruolo:</strong> ${getRoleLabel(user)}</div>
+        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><strong>ID:</strong> <span style="font-family: monospace;">${user.id || user._id}</span></div>
+    `;
+    if (user.phone) html += `<div><strong>Telefono:</strong> ${user.phone}</div>`;
+    if (user.address || user.location) html += `<div><strong>Indirizzo/Sede:</strong> ${user.address || user.location}</div>`;
+    if (user.legalForm) html += `<div><strong>Forma Giuridica:</strong> ${user.legalForm}</div>`;
+    if (user.skills && user.skills.length > 0) html += `<div><strong>Competenze:</strong> ${user.skills.join(', ')}</div>`;
+    if (user.availability) html += `<div><strong>Disponibilità:</strong> ${user.availability}</div>`;
+    if (user.isSuspended) html += `<div><strong>Stato Account:</strong> Sospeso (Sospensioni totali: ${user.suspensionCount})</div>`;
+    
+    if (!content || !partnerSection) {
+        alert("Errore visivo: il tuo browser ha memorizzato la vecchia grafica. Premi Cmd + Shift + R per forzare l'aggiornamento!");
+        return;
+    }
+
+    content.innerHTML = html;
+    
+    if (user.role === 'partner') {
+        window.selectedPartnerId = userId;
+        partnerSection.style.display = 'block';
+    } else {
+        window.selectedPartnerId = null;
+        partnerSection.style.display = 'none';
+    }
+    
+    window.openModal('user-details-modal');
+};
+
+window.closeUserDetailsModal = function() {
+    window.closeModal('user-details-modal');
+    window.selectedPartnerId = null;
+};
+
+window.resetPartnerPassword = async function() {
+    if (!window.selectedPartnerId) return;
+    const userId = window.selectedPartnerId;
+    
+    try {
+        const response = await authorizedFetch('/api/admin/users/' + userId + '/reset-password', {
+            method: 'PUT'
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Errore durante il reset della password');
+        
+        await navigator.clipboard.writeText(data.newPassword);
+        showToast('Password generata e copiata negli appunti!', 'success');
+        
+        const user = window.adminUsersCache?.find(u => String(u.id || u._id) === String(userId));
+        if (user) {
+            document.getElementById('partner-cred-email').innerText = user.email;
+            document.getElementById('partner-cred-password').value = data.newPassword;
+            window.openModal('partner-credentials-modal');
+            window.closeUserDetailsModal();
+        }
+    } catch (error) {
+        window.showToast(error.message, 'error');
+    }
+};
+
+async function loadAdminUsers() {
+    const results = document.getElementById('admin-users-results');
+    const countBadge = document.getElementById('admin-users-count');
+    const summaryBadge = document.getElementById('admin-summary-badge');
+    if (!results) return;
+
+    results.innerHTML = `
+        <div class="card text-center text-muted" style="padding: 1.5rem;">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.25rem; margin-bottom: 0.5rem;"></i>
+            <p style="margin-bottom: 0;">Caricamento utenti...</p>
+        </div>
+    `;
+
+    try {
+        const queryString = buildAdminSearchParams();
+        const response = await authorizedFetch(`/api/admin/users${queryString ? `?${queryString}` : ''}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Impossibile caricare gli utenti');
+        }
+
+        window.adminUsersCache = Array.isArray(data) ? data : [];
+
+        if (countBadge) {
+            countBadge.innerText = `${window.adminUsersCache.length} utenti`;
+        }
+        if (summaryBadge) {
+            const adminCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.ADMIN).length;
+            const moderatorCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.MODERATOR).length;
+            const volunteerCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.UNAUTHORIZED).length;
+            summaryBadge.innerText = `${window.adminUsersCache.length} utenti, ${adminCount} admin, ${moderatorCount} moderatori, ${volunteerCount} volontari`;
+        }
+
+        if (window.adminUsersCache.length === 0) {
+            results.innerHTML = `
+                <div class="card text-center text-muted" style="padding: 1.5rem;">
+                    <p style="margin-bottom: 0;">Nessun utente trovato con i filtri attuali.</p>
+                </div>
+            `;
+            return;
+        }
+
+        results.innerHTML = window.adminUsersCache.map(renderAdminUserCard).join('');
+    } catch (error) {
+        console.error('Errore caricamento admin users:', error);
+        results.innerHTML = `
+            <div class="card text-center text-danger" style="padding: 1.5rem;">
+                <p style="margin-bottom: 0;">${error.message}</p>
+            </div>
+        `;
+        if (countBadge) countBadge.innerText = '0 utenti';
+    }
+}
+
+window.searchAdminUsers = async function() {
+    await loadAdminUsers();
+};
+
+window.resetAdminSearch = async function() {
+    const searchInput = document.getElementById('admin-user-search');
+    const roleFilter = document.getElementById('admin-user-role-filter');
+    if (searchInput) searchInput.value = '';
+    if (roleFilter) roleFilter.value = '';
+    await loadAdminUsers();
+};
+
+window.promoteAdminUser = async function(userId, targetLevel) {
+    if (!userId) return;
+    try {
+        const payload = targetLevel !== undefined ? { targetLevel } : {};
+        const response = await authorizedFetch(`/api/admin/volunteers/${encodeURIComponent(userId)}/admin`, {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            showToast(data.error || 'Impossibile promuovere l\'utente.', 'danger');
+            return;
+        }
+
+        showToast(data.message || 'Utente promosso con successo.', 'success');
+        await loadAdminUsers();
+    } catch (error) {
+        console.error('Errore promozione admin:', error);
+        showToast('Si è verificato un errore durante la promozione.', 'danger');
+    }
+};
+
+window.togglePromoteDropdown = function(event, userId) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    document.querySelectorAll('.promote-dropdown-menu').forEach(el => {
+        if (el.id !== `promote-dropdown-${userId}`) el.style.display = 'none';
+    });
+    const dd = document.getElementById(`promote-dropdown-${userId}`);
+    if (dd) {
+        dd.style.display = dd.style.display === 'flex' ? 'none' : 'flex';
+    }
+};
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dropdown-wrapper')) {
+        document.querySelectorAll('.promote-dropdown-menu').forEach(el => el.style.display = 'none');
+    }
+});
+
+window.suspendAdminUser = async function(userId, currentCount) {
+    if (!userId) return;
+    const newCount = currentCount + 1;
+    let durationMsg = '';
+    if (newCount === 1) durationMsg = '12 ore';
+    else if (newCount === 2) durationMsg = '1 giorno';
+    else if (newCount === 3) durationMsg = '1 settimana';
+    else durationMsg = '1 mese';
+
+    const confirmed = window.confirm(`Vuoi sospendere questo utente?\nQuesta sarà la sua ${newCount}° sospensione, che durerà automaticamente ${durationMsg}. Confermi?`);
+    if (!confirmed) return;
+
+    try {
+        const response = await authorizedFetch(`/api/admin/users/${encodeURIComponent(userId)}/suspend`, {
+            method: 'PUT'
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            showToast(data.error || "Impossibile sospendere l'utente.", 'danger');
+            return;
+        }
+
+        showToast(data.message || 'Utente sospeso con successo.', 'success');
+        await loadAdminUsers();
+    } catch (error) {
+        console.error('Errore sospensione admin:', error);
+        showToast("Si è verificato un errore durante la sospensione.", 'danger');
+    }
+};
+
+window.restoreAdminUser = async function(userId) {
+    if (!userId) return;
+    const confirmed = window.confirm("Vuoi riattivare questo utente? L'accesso sarà sbloccato immediatamente.");
+    if (!confirmed) return;
+
+    try {
+        const response = await authorizedFetch(`/api/admin/users/${encodeURIComponent(userId)}/restore`, {
+            method: 'PUT'
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            showToast(data.error || "Impossibile riattivare l'utente.", 'danger');
+            return;
+        }
+
+        showToast(data.message || 'Utente riattivato con successo.', 'success');
+        await loadAdminUsers();
+    } catch (error) {
+        console.error('Errore riattivazione admin:', error);
+        showToast("Si è verificato un errore durante la riattivazione.", 'danger');
+    }
+};
+
+window.deleteAdminUser = async function(userId) {
+    if (!userId) return;
+    const confirmed = window.confirm('Vuoi eliminare questo utente? L\'operazione è irreversibile.');
+    if (!confirmed) return;
+
+    try {
+        const response = await authorizedFetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+            method: 'DELETE'
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            showToast(data.error || 'Impossibile eliminare l\'utente.', 'danger');
+            return;
+        }
+
+        showToast(data.message || 'Utente eliminato con successo.', 'success');
+        await loadAdminUsers();
+    } catch (error) {
+        console.error('Errore eliminazione admin:', error);
+        showToast('Si è verificato un errore durante l\'eliminazione.', 'danger');
+    }
+};
+
+async function loadAdminDashboard() {
+    const partnerSection = document.getElementById('admin-partner-section');
+    const partnerForm = document.getElementById('admin-partner-form');
+    const isAdmin = appState.userAuthLvl === AUTH_LEVELS.ADMIN;
+
+    if (partnerSection) {
+        partnerSection.style.display = isAdmin ? 'block' : 'none';
+        
+        const gridContainer = partnerSection.closest('.grid-2');
+        if (gridContainer) {
+            if (isAdmin) {
+                gridContainer.classList.remove('admin-moderator-layout');
+            } else {
+                gridContainer.classList.add('admin-moderator-layout');
+            }
+        }
+    }
+
+    if (partnerForm && !partnerForm.dataset.bound) {
+        partnerForm.dataset.bound = 'true';
+        partnerForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            if (!isAdmin) {
+                showToast('Solo gli amministratori possono creare partner.', 'danger');
+                return;
+            }
+
+            const payload = {
+                email: document.getElementById('admin-partner-email')?.value.trim(),
+                password: document.getElementById('admin-partner-password')?.value
+            };
+
+            try {
+                const response = await authorizedFetch('/api/admin/partner', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showToast(data.error || 'Impossibile creare il partner.', 'danger');
+                    return;
+                }
+
+                showToast('Partner creato con successo.', 'success');
+                partnerForm.reset();
+                await loadAdminUsers();
+            } catch (error) {
+                console.error('Errore creazione partner admin:', error);
+                showToast('Si è verificato un errore durante la creazione del partner.', 'danger');
+            }
+        });
+    }
+
+    const searchInput = document.getElementById('admin-user-search');
+    if (searchInput && !searchInput.dataset.bound) {
+        searchInput.dataset.bound = 'true';
+        searchInput.addEventListener('keydown', async (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                await loadAdminUsers();
+            }
+        });
+    }
+
+    const roleFilter = document.getElementById('admin-user-role-filter');
+    if (roleFilter && !roleFilter.dataset.bound) {
+        roleFilter.dataset.bound = 'true';
+        roleFilter.addEventListener('change', async () => {
+            await loadAdminUsers();
+        });
+    }
+
+    await loadAdminUsers();
+    await window.loadAdminRequests();
+}
+
+window.loadAdminRequests = async function() {
+    const container = document.getElementById('admin-requests-results');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="card text-center text-muted" style="padding: 1.5rem;">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.25rem; margin-bottom: 0.5rem;"></i>
+            <p style="margin-bottom: 0;">Caricamento richieste...</p>
+        </div>
+    `;
+
+    try {
+        const response = await authorizedFetch('/api/admin/requests');
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Impossibile caricare le richieste');
+        }
+
+        if (!Array.isArray(data) || data.length === 0) {
+            container.innerHTML = `
+                <div class="card text-center text-muted" style="padding: 1.5rem;">
+                    <p style="margin-bottom: 0;">Nessuna richiesta trovata.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="grid-2" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">';
+        data.forEach(req => {
+            const badgeClass = req.status === 'Completata' ? 'badge-success' : req.status === 'Annullata' ? 'badge-danger' : 'badge-warning';
+            html += `
+                <div class="card" style="padding: 1rem;">
+                    <div class="flex justify-between items-center" style="margin-bottom: 0.5rem;">
+                        <span class="badge ${badgeClass}">${req.status}</span>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">${req.date || ''} ${req.time || ''}</span>
+                    </div>
+                    <h4 style="margin: 0 0 0.5rem;">${req.serviceType || 'Servizio'}</h4>
+                    <p style="margin: 0 0 0.5rem; font-size: 0.9rem; color: var(--text-muted);">${req.location || ''}</p>
+                    <p style="margin: 0 0 1rem; font-size: 0.85rem;">Utente ID: ${req.userId || 'N/A'}</p>
+                    <button class="btn btn-danger btn-block" onclick="deleteAdminRequest('${req._id}')">Elimina Richiesta</button>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Errore caricamento richieste admin:', error);
+        container.innerHTML = `
+            <div class="card text-center text-danger" style="padding: 1.5rem;">
+                <p style="margin-bottom: 0;">${error.message}</p>
+            </div>
+        `;
+    }
+};
+
+window.deleteAdminRequest = async function(requestId) {
+    if (!requestId) return;
+    const confirmed = window.confirm("Vuoi davvero eliminare questa richiesta? L'operazione è irreversibile.");
+    if (!confirmed) return;
+
+    try {
+        const response = await authorizedFetch(`/api/admin/requests/${encodeURIComponent(requestId)}`, {
+            method: 'DELETE'
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            showToast(data.error || 'Impossibile eliminare la richiesta.', 'danger');
+            return;
+        }
+
+        showToast(data.message || 'Richiesta eliminata con successo.', 'success');
+        await window.loadAdminRequests();
+    } catch (error) {
+        console.error('Errore eliminazione richiesta:', error);
+        showToast("Si è verificato un errore durante l'eliminazione.", 'danger');
+    }
+};
+
 // Mappatura della navigazione
 const routes = {
     'home': 'view-public-home',
@@ -77,6 +631,7 @@ const routes = {
     'req-detail': 'view-req-detail',
     'vol-board': 'view-vol-board',
     'vol-store': 'view-vol-store',
+    'vol-map': 'view-vol-map',
     'partner-dash': 'view-partner-dash',
     'partner-coupon': 'view-partner-coupon',
     'admin-dash': 'view-admin-dash',
@@ -99,6 +654,11 @@ async function authorizedFetch(url, options = {}) {
 
 function navigateTo(routeId) {
     if (!routes[routeId]) return;
+    // Protect admin route client-side: only allow if logged in as moderator or admin
+    if (routeId === 'admin-dash' && appState.userAuthLvl < AUTH_LEVELS.MODERATOR) {
+        showToast('Accesso negato: autorizzazione amministratore o moderatore richiesta.', 'danger');
+        return;
+    }
     
     // Traccia la cronologia della navigazione per consentire il ritorno indietro
     if (currentRoute !== 'privacy' && currentRoute !== 'tos' && currentRoute !== routeId) {
@@ -125,10 +685,18 @@ function navigateTo(routeId) {
         loadRequesterDashboard();
     } else if (routeId === 'vol-board') {
         loadVolunteerDashboard();
+    } else if (routeId === 'admin-dash') {
+        loadAdminDashboard();
+    } else if (routeId === 'partner-dash') {
+        loadPartnerDashboard();
     } else if (routeId === 'profile') {
         loadProfile();
     } else if (routeId === 'vol-store') {
         updateStorePoints();
+        loadStoreCoupons();
+    } else if (routeId === 'vol-map') {
+        initVolunteerMap();
+        loadVolunteerMapRequests();
     } else if (routeId === 'auth') {
         toggleRegisterRoleFields();
     }
@@ -144,35 +712,42 @@ function updateNavbar(routeId) {
     
     let linksHTML = '';
     
-    // Mostra i link in base alla vista corrente per simulare i ruoli
-    if (routeId.startsWith('req-') || (routeId === 'profile' && appState.userRole === 'requester')) {
-        linksHTML = `
-            <a href="#" class="nav-link" onclick="navigateTo('req-dashboard')">Le mie richieste</a>
-            <a href="#" class="nav-link" onclick="navigateTo('req-form')">Nuova richiesta</a>
-            <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
-            <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
-        `;
-    } else if (routeId.startsWith('vol-') || (routeId === 'profile' && appState.userRole === 'volunteer')) {
+    // Mostra i link corretti nel menu in alto a destra in base al ruolo dell'utente
+    if (appState.userRole === 'volunteer') {
         linksHTML = `
             <a href="#" class="nav-link" onclick="navigateTo('vol-board')">Bacheca</a>
-            <a href="#" class="nav-link" onclick="navigateTo('vol-store')">Store Premi (${appState.points} pts)</a>
+            <a href="#" class="nav-link" onclick="navigateTo('vol-map')">Mappa</a>
+            <a href="#" class="nav-link" onclick="navigateTo('vol-store')">Store Premi</a>
+            <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
+            ${appState.userAuthLvl >= AUTH_LEVELS.MODERATOR ? `<a href="#" class="nav-link" onclick="navigateTo('admin-dash')">Pannello di Controllo</a>` : ''}
+            <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
+        `;
+    } else if (appState.userRole === 'requester') {
+        linksHTML = `
+            <a href="#" class="nav-link" onclick="navigateTo('req-dashboard')">Le mie richieste</a>
             <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
             <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
         `;
-    } else if (routeId.startsWith('partner-')) {
+    } else if (appState.userRole === 'partner') {
         linksHTML = `
             <a href="#" class="nav-link" onclick="navigateTo('partner-dash')">Dashboard</a>
-            <a href="#" class="nav-link" onclick="navigateTo('partner-coupon')">Crea Coupon</a>
             <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
         `;
-    } else if (routeId.startsWith('admin-')) {
+    } else {
         linksHTML = `
-            <a href="#" class="nav-link" onclick="navigateTo('admin-dash')">Moderazione</a>
-            <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
+            <a href="#" class="nav-link" onclick="openAuth('login')">Accedi</a>
+            <a href="#" class="nav-link" onclick="openAuth('register')">Registrati</a>
         `;
-        }
+    }
     
     navLinks.innerHTML = linksHTML;
+}
+
+// Toggle helper for the small user dropdown
+window.toggleUserDropdown = function() {
+    const dd = document.getElementById('user-dropdown');
+    if (!dd) return;
+    dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
 }
 
 // Funzioni e logica per il requester
@@ -667,6 +1242,24 @@ window.closeModal = function(modalId) {
     if (el) el.classList.remove('active');
 }
 
+window.copyPartnerCredentials = async function() {
+    const passEl = document.getElementById('partner-cred-password');
+    if (!passEl) return;
+    
+    try {
+        await navigator.clipboard.writeText(passEl.value);
+        showToast('Password copiata negli appunti!', 'success');
+    } catch (err) {
+        passEl.select();
+        document.execCommand('copy');
+        showToast('Password copiata negli appunti!', 'success');
+    }
+};
+
+window.closePartnerCredentialsModal = function() {
+    window.closeModal('partner-credentials-modal');
+};
+
 window.showQRCode = function(name, code) {
     document.getElementById("qr-modal-title").innerText = name;
     document.getElementById("qr-modal-code").innerText = code;
@@ -731,6 +1324,7 @@ window.showToast = function(message, type = 'success') {
 window.logout = function() {
     localStorage.removeItem('token');
     appState.userRole = null;
+    appState.userAuthLvl = AUTH_LEVELS.UNAUTHORIZED;
     appState.userEmail = null;
     appState.userId = null;
     appState.points = 0;
@@ -809,7 +1403,7 @@ function bindAuthEvents() {
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('login-email').value;
+            const email = document.getElementById('login-email').value.trim();
             const password = document.getElementById('login-password').value;
 
             try {
@@ -828,6 +1422,7 @@ function bindAuthEvents() {
                 // Salva token e ripristina lo stato globale
                 localStorage.setItem('token', data.token);
                 appState.userRole = data.user.role;
+                appState.userAuthLvl = typeof data.user.authLvl === 'number' ? data.user.authLvl : AUTH_LEVELS.UNAUTHORIZED;
                 appState.userEmail = data.user.email;
                 appState.userId = data.user.id;
                 appState.userName = data.user.name;
@@ -835,11 +1430,13 @@ function bindAuthEvents() {
 
                 showToast(data.message, 'success');
 
-                // Reindirizzamento basato sul ruolo
+                // Reindirizzamento basato sul ruolo e livello di autorizzazione
                 if (data.user.role === 'volunteer') {
                     navigateTo('vol-board');
                 } else if (data.user.role === 'requester') {
                     navigateTo('req-dashboard');
+                } else if (data.user.role === 'partner') {
+                    navigateTo('partner-dash');
                 } else {
                     navigateTo('home');
                 }
@@ -866,6 +1463,13 @@ function bindAuthEvents() {
             const email = document.getElementById('reg-email').value;
             const password = document.getElementById('reg-password').value;
             const role = document.getElementById('reg-role').value;
+
+            // controllo complessità password
+            const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+            if (!passwordRegex.test(password)) {
+                showToast('La password deve contenere almeno 8 caratteri, una lettera maiuscola, un numero e un simbolo.', 'danger');
+                return;
+            }
 
             const payload = { name, surname, email, password, role };
 
@@ -901,6 +1505,7 @@ function bindAuthEvents() {
                 // Salva token e aggiorna stato
                 localStorage.setItem('token', data.token);
                 appState.userRole = data.user.role;
+                appState.userAuthLvl = typeof data.user.authLvl === 'number' ? data.user.authLvl : AUTH_LEVELS.UNAUTHORIZED;
                 appState.userEmail = data.user.email;
                 appState.userId = data.user.id;
                 appState.points = data.user.points || 0;
@@ -911,6 +1516,8 @@ function bindAuthEvents() {
                     navigateTo('vol-board');
                 } else if (data.user.role === 'requester') {
                     navigateTo('req-dashboard');
+                } else if (data.user.role === 'partner') {
+                    navigateTo('partner-dash');
                 } else {
                     navigateTo('home');
                 }
@@ -925,6 +1532,116 @@ function bindAuthEvents() {
 // ==========================================
 // AZIONI VOLONTARIO E LOGICA BACHECA
 // ==========================================
+
+window.volunteerMap = null;
+window.volunteerMapMarkers = [];
+
+// Funzione mock per coordinate di Trento
+function getMockCoordinates(address) {
+    const defaultCoords = [46.0697, 11.1211]; // Centro di Trento
+    if (!address) return defaultCoords;
+    const lowerAddress = address.toLowerCase();
+    
+    if (lowerAddress.includes('belenzani')) return [46.0682, 11.1214];
+    if (lowerAddress.includes('duomo')) return [46.0674, 11.1215];
+    if (lowerAddress.includes('grazioli')) return [46.0694, 11.1293];
+    if (lowerAddress.includes('roma')) return [46.0712, 11.1234];
+    
+    // Jitter casuale per altri indirizzi
+    const jitterLat = (Math.random() - 0.5) * 0.02;
+    const jitterLng = (Math.random() - 0.5) * 0.02;
+    return [defaultCoords[0] + jitterLat, defaultCoords[1] + jitterLng];
+}
+
+window.initVolunteerMap = function() {
+    if (window.volunteerMap) {
+        window.volunteerMap.invalidateSize();
+        return;
+    }
+    
+    const container = document.getElementById('volunteer-map-container');
+    if (!container) return;
+
+    window.volunteerMap = L.map('volunteer-map-container').setView([46.0697, 11.1211], 14);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(window.volunteerMap);
+};
+
+window.loadVolunteerMapRequests = async function() {
+    if (!window.volunteerMap) return;
+    
+    // Clear old markers
+    window.volunteerMapMarkers.forEach(m => window.volunteerMap.removeLayer(m));
+    window.volunteerMapMarkers = [];
+
+    try {
+        // Fetch sia delle richieste attive che di quelle accettate
+        const [activeRes, myTasksRes] = await Promise.all([
+            authorizedFetch('/api/volunteer/requests'),
+            authorizedFetch('/api/volunteer/my-tasks')
+        ]);
+
+        const activeRequests = activeRes.ok ? await activeRes.json() : [];
+        const myTasks = myTasksRes.ok ? await myTasksRes.json() : [];
+        
+        window.activeRequestsCache = activeRequests;
+        window.myTasksCache = myTasks;
+
+        // Costruiamo icone personalizzate cambiando il colore via CSS filter
+        const blueIcon = new L.Icon({
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        // Applichiamo un filter per farlo verde
+        const greenIcon = new L.Icon({
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41],
+            className: 'marker-green' // Lo stile verrà gestito se necessario, o usiamo un marker verde esterno
+        });
+
+        const allRequests = [
+            ...activeRequests.map(r => ({ ...r, isMine: false })),
+            ...myTasks.map(r => ({ ...r, isMine: true }))
+        ];
+
+        allRequests.forEach(req => {
+            const coords = getMockCoordinates(req.location || req.address);
+            // Usiamo hue-rotate per fare verde l'icona base di leaflet
+            const iconHTML = req.isMine 
+                ? '<div style="filter: hue-rotate(240deg) saturate(3);"><img src="https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png" style="width:25px;height:41px;"></div>' 
+                : '<img src="https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png" style="width:25px;height:41px;">';
+            
+            const customIcon = L.divIcon({
+                html: iconHTML,
+                className: '',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41]
+            });
+
+            const marker = L.marker(coords, { icon: customIcon }).addTo(window.volunteerMap);
+            
+            marker.on('click', () => {
+                showRequestDetails(req._id);
+            });
+
+            window.volunteerMapMarkers.push(marker);
+        });
+        
+    } catch (e) {
+        console.error("Errore nel caricamento dei dati mappa:", e);
+    }
+};
 
 async function loadVolunteerDashboard() {
     try {
@@ -1046,7 +1763,14 @@ function getCategoryBadgeClass(cat) {
 }
 
 window.showRequestDetails = function(requestId) {
-    const req = window.activeRequestsCache.find(r => r._id === requestId);
+    let req = window.activeRequestsCache ? window.activeRequestsCache.find(r => r._id === requestId) : null;
+    let isMine = false;
+    
+    if (!req && window.myTasksCache) {
+        req = window.myTasksCache.find(r => r._id === requestId);
+        isMine = true;
+    }
+    
     if (!req) return;
 
     const modal = document.getElementById("vol-req-detail-modal");
@@ -1064,10 +1788,22 @@ window.showRequestDetails = function(requestId) {
     badge.className = `badge ${getCategoryBadgeClass(req.category)}`;
 
     const acceptBtn = document.getElementById("modal-accept-btn");
-    acceptBtn.onclick = async function() {
-        await acceptRequest(req._id);
-        closeModal("vol-req-detail-modal");
-    };
+    
+    if (isMine) {
+        acceptBtn.innerText = "Annulla Incarico";
+        acceptBtn.className = "btn btn-danger";
+        acceptBtn.onclick = async function() {
+            await cancelTask(req._id);
+            closeModal("vol-req-detail-modal");
+        };
+    } else {
+        acceptBtn.innerText = "Accetta Incarico";
+        acceptBtn.className = "btn btn-primary";
+        acceptBtn.onclick = async function() {
+            await acceptRequest(req._id);
+            closeModal("vol-req-detail-modal");
+        };
+    }
 
     openModal("vol-req-detail-modal");
 }
@@ -1081,7 +1817,11 @@ async function acceptRequest(requestId) {
         const data = await response.json();
         if (response.ok) {
             showToast("Richiesta Accettata con successo! L'attività è stata aggiunta ai tuoi incarichi.", "success");
-            loadVolunteerDashboard();
+            if (currentRoute === 'vol-map') {
+                loadVolunteerMapRequests();
+            } else {
+                loadVolunteerDashboard();
+            }
         } else {
             showToast(`Errore: ${data.error}`, "danger");
         }
@@ -1104,6 +1844,7 @@ async function loadMyTasks() {
         if (!response.ok) throw new Error("Errore nel caricamento dei propri compiti");
 
         const tasks = await response.json();
+        window.myTasksCache = tasks;
 
         if (tasks.length === 0) {
             container.innerHTML = `
@@ -1158,7 +1899,11 @@ window.cancelTask = async function(taskId) {
         const data = await response.json();
         if (response.ok) {
             showToast("Presa in carico annullata. La richiesta è tornata in bacheca!", "success");
-            loadVolunteerDashboard();
+            if (currentRoute === 'vol-map') {
+                loadVolunteerMapRequests();
+            } else {
+                loadVolunteerDashboard();
+            }
         } else {
             showToast(`Errore: ${data.error}`, "danger");
         }
@@ -1172,6 +1917,56 @@ function updateStorePoints() {
     const pointsBal = document.getElementById("store-points-balance");
     if (pointsBal) {
         pointsBal.innerHTML = `${appState.points} <span style="font-size: 1.5rem;">pts</span>`;
+    }
+}
+
+async function loadStoreCoupons() {
+    const container = document.getElementById("volunteer-store-container");
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="text-center text-muted" style="grid-column: span 3; padding: 2rem;">
+            <i class="fa-solid fa-spinner fa-spin"></i> Caricamento coupon...
+        </div>
+    `;
+
+    try {
+        const response = await authorizedFetch('/api/volunteer/coupons');
+        if (!response.ok) throw new Error('Errore di rete');
+        
+        const coupons = await response.json();
+        
+        if (coupons.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted" style="grid-column: span 3; padding: 2rem;">
+                    Nessun coupon disponibile al momento. Torna più tardi!
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = coupons.map(c => `
+            <div class="card text-center flex flex-col justify-between">
+                <div>
+                    <div style="background: var(--background-light); padding: 2rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
+                        <i class="fa-solid fa-gift" style="font-size: 3rem; color: var(--text-muted);"></i>
+                    </div>
+                    <h4>${c.title}</h4>
+                    <p class="text-muted" style="font-size: 0.875rem;">${c.description}</p>
+                </div>
+                <div>
+                    <h3 class="text-secondary" style="margin: 1rem 0;">${c.pointsCost} pts</h3>
+                    <button class="btn btn-primary btn-block" onclick="buyCoupon('${c._id}', '${c.title.replace(/'/g, "\\'")}', ${c.pointsCost})">Acquista</button>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = `
+            <div class="text-center text-danger" style="grid-column: span 3; padding: 2rem;">
+                Errore nel caricamento dei coupon. Riprova più tardi.
+            </div>
+        `;
     }
 }
 
@@ -1384,16 +2179,18 @@ window.saveProfile = async function(event) {
     }
 }
 
-window.buyCoupon = async function(couponName, costoPunti) {
+window.buyCoupon = async function(couponId, couponName, costoPunti) {
     if ((appState.points || 0) < costoPunti) {
         showToast(`Punti insufficienti per riscattare "${couponName}" (Costo: ${costoPunti} pts, Tuo saldo: ${appState.points} pts)`, "danger");
         return;
     }
 
+    if (!confirm(`Sei sicuro di voler utilizzare ${costoPunti} punti per "${couponName}"?`)) return;
+
     try {
         const response = await authorizedFetch(`/api/volunteer/coupons/redeem`, {
             method: "POST",
-            body: JSON.stringify({ couponName, costoPunti })
+            body: JSON.stringify({ couponId })
         });
 
         const data = await response.json();
@@ -1477,6 +2274,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (response.ok) {
                 const data = await response.json();
                 appState.userRole = data.role;
+                appState.userAuthLvl = typeof data.authLvl === 'number' ? data.authLvl : AUTH_LEVELS.UNAUTHORIZED;
                 appState.userEmail = data.email;
                 appState.userId = data.id;
                 appState.userName = data.name;
@@ -1487,6 +2285,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     navigateTo('vol-board');
                 } else if (data.role === 'requester') {
                     navigateTo('req-dashboard');
+                } else if (data.role === 'partner') {
+                    navigateTo('partner-dash');
                 } else {
                     navigateTo('home');
                 }
@@ -1603,3 +2403,226 @@ function bindDatePickerEvents() {
         timeInput.addEventListener('focus', handler);
     }
 }
+
+// ==========================================
+// LOGICA PARTNER
+// ==========================================
+
+window.loadPartnerDashboard = async function() {
+    const listBody = document.getElementById('partner-coupons-list');
+    if (!listBody) return;
+
+    // Imposta il nome nel banner
+    const welcomeName = document.getElementById("partner-welcome-name");
+    if (welcomeName && appState.userName) {
+        welcomeName.innerText = appState.userName;
+    } else if (welcomeName) {
+        // Fallback or fetch from API if necessary
+        try {
+            const meRes = await authorizedFetch('/api/auth/me');
+            if (meRes.ok) {
+                const me = await meRes.json();
+                if (me.name) {
+                    appState.userName = me.name;
+                    welcomeName.innerText = me.name;
+                }
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    const listBodyExpired = document.getElementById('partner-expired-coupons-list');
+
+    if (!listBody) return;
+
+    listBody.innerHTML = `
+        <tr>
+            <td colspan="4" style="text-align: center; padding: 2rem;">
+                <i class="fa-solid fa-spinner fa-spin"></i> Caricamento...
+            </td>
+        </tr>
+    `;
+    if (listBodyExpired) {
+        listBodyExpired.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 2rem;">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Caricamento...
+                </td>
+            </tr>
+        `;
+    }
+
+    try {
+        const response = await authorizedFetch('/api/partner/coupons');
+        if (!response.ok) throw new Error('Errore nel caricamento dei coupon');
+        
+        const coupons = await response.json();
+        
+        if (coupons.length === 0) {
+            listBody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        Nessun premio attivo. Clicca su "Crea Nuovo Premio" per iniziare.
+                    </td>
+                </tr>
+            `;
+            if (listBodyExpired) {
+                listBodyExpired.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                            Nessun premio scaduto.
+                        </td>
+                    </tr>
+                `;
+            }
+            return;
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        
+        const activeCoupons = coupons.filter(c => c.expirationDate >= today);
+        const expiredCoupons = coupons.filter(c => c.expirationDate < today);
+
+        if (activeCoupons.length === 0) {
+            listBody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        Nessun premio attivo.
+                    </td>
+                </tr>
+            `;
+        } else {
+            listBody.innerHTML = activeCoupons.map(c => `
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 1rem;">
+                        <strong>${c.title}</strong><br>
+                        <small class="text-muted">Scade: ${new Date(c.expirationDate).toLocaleDateString('it-IT')}</small>
+                    </td>
+                    <td style="padding: 1rem;">${c.pointsCost}</td>
+                    <td style="padding: 1rem; font-weight: bold; color: var(--secondary-color);">${c.redemptionsCount || 0}</td>
+                    <td style="padding: 1rem;">
+                        <button class="btn btn-outline" style="padding: 0.5rem 1rem;" onclick='openPartnerCouponForm(${JSON.stringify(c).replace(/'/g, "&apos;")})'>Modifica</button>
+                        <button class="btn btn-danger" style="padding: 0.5rem 1rem;" onclick="deletePartnerCoupon('${c._id}')">Elimina</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        if (listBodyExpired) {
+            if (expiredCoupons.length === 0) {
+                listBodyExpired.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                            Nessun premio scaduto.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                listBodyExpired.innerHTML = expiredCoupons.map(c => `
+                    <tr style="border-bottom: 1px solid var(--border-color); opacity: 0.8;">
+                        <td style="padding: 1rem;">
+                            <strong>${c.title}</strong><br>
+                            <small class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Scaduto il: ${new Date(c.expirationDate).toLocaleDateString('it-IT')}</small>
+                        </td>
+                        <td style="padding: 1rem;">${c.pointsCost}</td>
+                        <td style="padding: 1rem; font-weight: bold; color: var(--secondary-color);">${c.redemptionsCount || 0}</td>
+                        <td style="padding: 1rem;">
+                            <button class="btn btn-danger" style="padding: 0.5rem 1rem;" onclick="deletePartnerCoupon('${c._id}')">Elimina</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error(error);
+        showToast('Impossibile caricare i coupon.', 'danger');
+    }
+};
+
+window.openPartnerCouponForm = function(coupon = null) {
+    const titleEl = document.getElementById('partner-coupon-title');
+    const descEl = document.getElementById('partner-coupon-description');
+    const pointsEl = document.getElementById('partner-coupon-points');
+    const expEl = document.getElementById('partner-coupon-expiration');
+    const idEl = document.getElementById('partner-coupon-id');
+    const formTitle = document.getElementById('partner-coupon-form-title');
+
+    if (coupon) {
+        formTitle.innerText = "Modifica Premio (Coupon)";
+        idEl.value = coupon._id;
+        titleEl.value = coupon.title;
+        descEl.value = coupon.description;
+        pointsEl.value = coupon.pointsCost;
+        // Format date to YYYY-MM-DD for input type="date"
+        let d = new Date(coupon.expirationDate);
+        expEl.value = d.toISOString().split('T')[0];
+    } else {
+        formTitle.innerText = "Nuovo Premio (Coupon)";
+        document.getElementById('partner-coupon-form').reset();
+        idEl.value = "";
+    }
+
+    navigateTo('partner-coupon');
+};
+
+window.submitPartnerCoupon = async function(event) {
+    event.preventDefault();
+    
+    const id = document.getElementById('partner-coupon-id').value;
+    const title = document.getElementById('partner-coupon-title').value;
+    const description = document.getElementById('partner-coupon-description').value;
+    const pointsCost = document.getElementById('partner-coupon-points').value;
+    const expirationDate = document.getElementById('partner-coupon-expiration').value;
+
+    const payload = { title, description, pointsCost, expirationDate };
+
+    try {
+        let response;
+        if (id) {
+            response = await authorizedFetch('/api/partner/coupons/' + id, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+        } else {
+            response = await authorizedFetch('/api/partner/coupons', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+        }
+
+        const data = await response.json();
+        if (!response.ok) {
+            showToast(data.error || 'Errore durante il salvataggio.', 'danger');
+            return;
+        }
+
+        showToast(id ? 'Premio aggiornato!' : 'Premio pubblicato con successo!', 'success');
+        navigateTo('partner-dash');
+    } catch (error) {
+        console.error(error);
+        showToast('Errore di connessione.', 'danger');
+    }
+};
+
+window.deletePartnerCoupon = async function(id) {
+    if (!confirm('Sei sicuro di voler eliminare questo coupon?')) return;
+    
+    try {
+        const response = await authorizedFetch('/api/partner/coupons/' + id, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            showToast('Errore durante leliminazione.', 'danger');
+            return;
+        }
+        
+        showToast('Coupon eliminato.', 'success');
+        loadPartnerDashboard();
+    } catch (error) {
+        console.error(error);
+        showToast('Errore di connessione.', 'danger');
+    }
+};
+

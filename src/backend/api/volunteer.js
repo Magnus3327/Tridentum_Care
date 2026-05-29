@@ -1,6 +1,7 @@
 const express = require("express");
 const { ObjectId } = require("mongodb");
 const authMiddleware = require("../middleware/auth");
+const { AUTH_LVL } = require("../../config/constants");
 const router = express.Router();
 
 // Proteggi tutte le rotte di questo router con l'authMiddleware
@@ -50,15 +51,24 @@ router.put("/profile", async (req, res) => {
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });
 
+    // Preserve existing volunteer document fields when partial update
+    const existingVolunteer = await db.collection("users").findOne({ _id: new ObjectId(userId), role: "volunteer" });
+    if (!existingVolunteer) {
+      return res.status(404).json({ error: "Profilo volontario non trovato" });
+    }
+
+    const preservedAuthLvl = (typeof existingVolunteer.authLvl === 'number') ? existingVolunteer.authLvl : AUTH_LVL.UNAUTHORIZED;
+
     const updateData = {
-      name,
-      surname,
-      address,
-      phone,
-      skills: Array.isArray(skills) ? skills : [],
-      license: license || "",
-      gender: gender || "",
-      updatedAt: new Date()
+      name: (name !== undefined) ? name : existingVolunteer.name,
+      surname: (surname !== undefined) ? surname : existingVolunteer.surname,
+      address: (address !== undefined) ? address : existingVolunteer.address,
+      phone: (phone !== undefined) ? phone : existingVolunteer.phone,
+      skills: Array.isArray(skills) ? skills : (existingVolunteer.skills || []),
+      license: (license !== undefined) ? license : (existingVolunteer.license || ""),
+      gender: (gender !== undefined) ? gender : (existingVolunteer.gender || ""),
+      updatedAt: new Date(),
+      authLvl: preservedAuthLvl
     };
 
     const result = await db.collection("users").updateOne(
@@ -89,10 +99,14 @@ router.get("/requests", async (req, res) => {
     let skillsFilter = null;
     if (userId) {
       const volunteer = await db.collection("users").findOne({ _id: new ObjectId(userId), role: "volunteer" });
-      if (volunteer && volunteer.skills) {
-        skillsFilter = volunteer.skills;
-      } else {
-        skillsFilter = [];
+      if (volunteer) {
+        if (volunteer.authLvl >= AUTH_LVL.MODERATOR) {
+          skillsFilter = null;
+        } else if (volunteer.skills && volunteer.skills.length > 0) {
+          skillsFilter = volunteer.skills;
+        } else {
+          skillsFilter = [];
+        }
       }
     }
 
@@ -212,19 +226,32 @@ router.post("/requests/:id/cancel", async (req, res) => {
   }
 });
 
-// 7. POST Riscatta Coupon
+// 7. GET /coupons (Store)
+router.get("/coupons", async (req, res) => {
+  try {
+    const db = req.app.locals.db;
+    if (!db) return res.status(500).json({ error: "Database non connesso" });
+    
+    // Mostra solo i coupon non scaduti
+    const today = new Date().toISOString().split('T')[0];
+    const coupons = await db.collection("coupons").find({ expirationDate: { $gte: today } }).toArray();
+    
+    // Potremmo voler recuperare il nome del partner, ma per ora ritorniamo i coupon così come sono.
+    res.json(coupons);
+  } catch (error) {
+    console.error("Errore GET /coupons:", error);
+    res.status(500).json({ error: "Errore interno del server" });
+  }
+});
+
+// 8. POST Riscatta Coupon
 router.post("/coupons/redeem", async (req, res) => {
   try {
-    const { couponName, costoPunti } = req.body;
+    const { couponId } = req.body;
     const userId = req.user.userId;
 
-    if (!couponName || !costoPunti) {
-      return res.status(400).json({ error: "Parametri couponName e costoPunti obbligatori" });
-    }
-
-    const pointsToDeduct = parseInt(costoPunti);
-    if (isNaN(pointsToDeduct) || pointsToDeduct <= 0) {
-      return res.status(400).json({ error: "Punti non validi" });
+    if (!couponId) {
+      return res.status(400).json({ error: "Parametro couponId obbligatorio" });
     }
 
     const db = req.app.locals.db;
@@ -235,6 +262,14 @@ router.post("/coupons/redeem", async (req, res) => {
       return res.status(404).json({ error: "Volontario non trovato" });
     }
 
+    // Trova il coupon nel database
+    const coupon = await db.collection("coupons").findOne({ _id: new ObjectId(couponId) });
+    if (!coupon) {
+      return res.status(404).json({ error: "Coupon non trovato" });
+    }
+
+    const pointsToDeduct = parseInt(coupon.pointsCost);
+
     // Controlla sufficienza punti
     const currentPoints = parseInt(volunteer.points || 0);
     if (currentPoints < pointsToDeduct) {
@@ -242,24 +277,37 @@ router.post("/coupons/redeem", async (req, res) => {
     }
 
     const newPoints = currentPoints - pointsToDeduct;
-    const newCoupon = {
-      name: couponName,
+    const generatedCode = "TC-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+
+    const newCouponForVolunteer = {
+      name: coupon.title,
       cost: pointsToDeduct,
-      code: "TC-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
+      code: generatedCode,
       acquiredAt: new Date()
     };
 
-    // Salva deduzione punti e aggiungi coupon nel DB
+    // Salva deduzione punti e aggiungi coupon nel DB dell'utente
     await db.collection("users").updateOne(
       { _id: volunteer._id },
       { 
         $set: { points: newPoints },
-        $push: { coupons: newCoupon }
+        $push: { coupons: newCouponForVolunteer }
       }
     );
 
+    // Registra l'acquisto nella collezione coupon_redemptions (per il partner)
+    const redemption = {
+      couponId: coupon._id,
+      volunteerId: volunteer._id,
+      volunteerName: `${volunteer.name} ${volunteer.surname}`,
+      redeemedCode: generatedCode,
+      date: new Date().toISOString(),
+      createdAt: new Date()
+    };
+    await db.collection("coupon_redemptions").insertOne(redemption);
+
     res.json({
-      message: `Coupon "${couponName}" riscattato con successo!`,
+      message: `Coupon "${coupon.title}" riscattato con successo!`,
       newPoints: newPoints
     });
   } catch (error) {

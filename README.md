@@ -1,6 +1,6 @@
-# TridentumCare 🛡️❤️
+# TridentumCare
 
-**Progetto per l'esame di Ingegneria del Software - UNI2026**
+**Progetto per l'esame di Ingegneria del Software - 2026**
 
 TridentumCare è una piattaforma web innovativa nata per connettere persone anziane o fragili con volontari disponibili, specificamente pensata per il territorio di Trento. L'obiettivo del sistema è facilitare il supporto reciproco fornendo un pannello di controllo chiaro per gestire servizi essenziali come *Trasporto*, *Accompagnamento* e *Compagnia*.
 
@@ -66,6 +66,16 @@ A questo punto, apri il tuo browser preferito e vai all'indirizzo:
 
 I vecchi pulsanti demo di bypass sono stati rimossi. Per provare le varie aree dell'applicazione, effettua l'accesso dalla pagina **Accedi** con i seguenti account:
 
+### 👑 Profilo Amministratore (Admin)
+* **Email:** `admin@admin.com`
+* **Password:** `admin`
+* **Funzionalità:** Accesso completo al Pannello di Controllo. Può sospendere/riattivare utenti con ban progressivi (12h, 1gg, 1sett, 1mese), eliminare utenti (con pulizia dati a cascata), promuovere/retrocedere volontari a Moderatori, creare nuovi account Partner generando password sicure, ed eliminare richieste inappropriate.
+
+### 🛡️ Profilo Moderatore
+* **Email:** `luca.verdi@email.it`
+* **Password:** `password123`
+* **Funzionalità:** Accesso al Pannello di Controllo con permessi limitati. Può gestire gli utenti (sospensioni, eliminazioni) e le richieste, ma NON può promuovere/retrocedere altri utenti né creare nuovi Partner.
+
 ### 👨‍✈️ Profilo Volontario
 * **Email:** `mario.rossi@email.it`
 * **Password:** `password123`
@@ -75,3 +85,8 @@ I vecchi pulsanti demo di bypass sono stati rimossi. Per provare le varie aree d
 * **Email:** `angela.bianchi@email.it`
 * **Password:** `password123`
 * **Funzionalità:** Dashboard personale dinamica per controllare le proprie richieste caricate dal DB, form per la creazione di nuove richieste e modifica o eliminazione (annullamento) in tempo reale prima della presa in carico.
+
+### 🏬 Profilo Partner Commerciale
+* **Email:** `partner@demo.it`
+* **Password:** `password123`
+* **Funzionalità:** Dashboard dedicata per validare e scansionare i Coupon generati dai volontari, decodificando i QR code tramite un'interfaccia sicura.
