@@ -66,8 +66,8 @@ async function promoteVolunteer(req, res) {
 
     const targetLevel = req.body.targetLevel !== undefined ? parseInt(req.body.targetLevel, 10) : AUTH_LVL.ADMIN;
     
-    if (targetLevel !== AUTH_LVL.ADMIN && targetLevel !== AUTH_LVL.MODERATOR) {
-      return res.status(400).json({ error: 'Livello di promozione non valido' });
+    if (targetLevel !== AUTH_LVL.ADMIN && targetLevel !== AUTH_LVL.MODERATOR && targetLevel !== AUTH_LVL.UNAUTHORIZED) {
+      return res.status(400).json({ error: 'Livello di autorizzazione non valido' });
     }
 
     const db = req.app.locals.db;
@@ -75,7 +75,7 @@ async function promoteVolunteer(req, res) {
 
     const actorAuthLevel = getEffectiveAuthLevel(req.adminUser);
     if (actorAuthLevel < AUTH_LVL.ADMIN) {
-      return res.status(403).json({ error: 'Accesso negato: permessi insufficienti per promuovere un utente' });
+      return res.status(403).json({ error: 'Accesso negato: permessi insufficienti per modificare i permessi di un utente' });
     }
 
     const targetUser = await getTargetUser(db, userId);
@@ -84,11 +84,15 @@ async function promoteVolunteer(req, res) {
     }
 
     if (targetUser.role !== ROLES.VOLUNTEER) {
-      return res.status(400).json({ error: 'Puoi promuovere solo utenti con ruolo volontario' });
+      return res.status(400).json({ error: 'Puoi modificare i permessi solo agli utenti con ruolo volontario' });
     }
 
-    if (typeof targetUser.authLvl === 'number' && targetUser.authLvl >= targetLevel) {
-      return res.status(400).json({ error: 'Questo utente possiede già questo livello o superiore' });
+    const currentLvl = typeof targetUser.authLvl === 'number' ? targetUser.authLvl : AUTH_LVL.UNAUTHORIZED;
+    if (currentLvl === targetLevel) {
+      return res.status(400).json({ error: 'Questo utente possiede già questo livello' });
+    }
+    if (currentLvl > targetLevel && actorAuthLevel <= currentLvl) {
+      return res.status(403).json({ error: 'Non puoi retrocedere un utente con privilegi pari o superiori ai tuoi' });
     }
 
     await db.collection('users').updateOne(
@@ -104,14 +108,15 @@ async function promoteVolunteer(req, res) {
     );
 
     const promotedUser = await db.collection('users').findOne({ _id: targetUser._id });
-    const roleName = targetLevel === AUTH_LVL.ADMIN ? 'amministratore' : 'moderatore';
+    const roleName = targetLevel === AUTH_LVL.ADMIN ? 'amministratore' : (targetLevel === AUTH_LVL.MODERATOR ? 'moderatore' : 'volontario base');
+    const actionName = targetLevel < currentLvl ? 'retrocesso' : 'promosso';
 
     return res.status(200).json({
-      message: `Utente promosso a ${roleName} con successo`,
+      message: `Utente ${actionName} a ${roleName} con successo`,
       user: toPublicUser(promotedUser)
     });
   } catch (error) {
-    console.error('Errore promozione admin:', error);
+    console.error('Errore modifica permessi:', error);
     return res.status(500).json({ error: 'Errore interno del server' });
   }
 }

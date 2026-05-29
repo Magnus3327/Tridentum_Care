@@ -109,8 +109,8 @@ function buildAdminSearchParams() {
 
 function renderAdminUserCard(user) {
     const roleLabel = getRoleLabel(user);
-    const authLabel = user.role === 'volunteer' && typeof user.authLvl === 'number'
-        ? user.authLvl === AUTH_LEVELS.ADMIN ? 'Admin' : user.authLvl === AUTH_LEVELS.MODERATOR ? 'Moderatore' : 'Non autorizzato'
+    const authLabel = user.role === 'volunteer' && typeof user.authLvl === 'number' && user.authLvl > AUTH_LEVELS.UNAUTHORIZED
+        ? user.authLvl === AUTH_LEVELS.ADMIN ? 'Admin' : 'Moderatore'
         : null;
     let fullName = [user.name, user.surname].filter(Boolean).join(' ').trim();
     if (!fullName) {
@@ -130,18 +130,20 @@ function renderAdminUserCard(user) {
     if (canPromote) {
         promoteHtml = `
             <div class="dropdown-wrapper" style="position: relative; display: inline-block;">
-                <button type="button" class="btn btn-outline" style="padding: 0.5rem 0.75rem; border-color: var(--primary-color); color: var(--primary-color);" onclick="window.togglePromoteDropdown(event, '${user.id || user._id}')" title="Opzioni di Promozione">
-                    Promuovi <i class="fa-solid fa-chevron-down" style="font-size: 0.8em; margin-left: 0.2rem;"></i>
+                <button type="button" class="btn btn-outline" style="padding: 0.5rem 0.75rem; border-color: var(--primary-color); color: var(--primary-color);" onclick="window.togglePromoteDropdown(event, '${user.id || user._id}')" title="Gestisci Permessi">
+                    Permessi <i class="fa-solid fa-chevron-down" style="font-size: 0.8em; margin-left: 0.2rem;"></i>
                 </button>
-                <div id="promote-dropdown-${user.id || user._id}" class="promote-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-md); z-index: 10; min-width: 220px; overflow: hidden; flex-direction: column;">
+                <div id="promote-dropdown-${user.id || user._id}" class="promote-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-md); z-index: 10; min-width: 230px; overflow: hidden; flex-direction: column;">
                     ${targetAuthLevel < AUTH_LEVELS.MODERATOR ? `
                     <button type="button" class="dropdown-item btn-block text-left" style="padding: 0.75rem 1rem; border: none; background: transparent; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: var(--transition); text-align: left;" onmouseover="this.style.backgroundColor='var(--background-light)'" onmouseout="this.style.backgroundColor='transparent'" onclick="promoteAdminUser('${user.id || user._id}', ${AUTH_LEVELS.MODERATOR})">
                         <i class="fa-solid fa-shield-halved text-primary" style="width: 20px; text-align: center;"></i> Promuovi a Moderatore
                     </button>
                     ` : ''}
-                    <button type="button" class="dropdown-item btn-block text-left" style="padding: 0.75rem 1rem; border: none; background: transparent; cursor: pointer; transition: var(--transition); text-align: left;" onmouseover="this.style.backgroundColor='var(--background-light)'" onmouseout="this.style.backgroundColor='transparent'" onclick="promoteAdminUser('${user.id || user._id}', ${AUTH_LEVELS.ADMIN})">
-                        <i class="fa-solid fa-crown text-secondary" style="width: 20px; text-align: center;"></i> Promuovi ad Admin
+                    ${targetAuthLevel > AUTH_LEVELS.UNAUTHORIZED ? `
+                    <button type="button" class="dropdown-item btn-block text-left" style="padding: 0.75rem 1rem; border: none; background: transparent; cursor: pointer; border-top: 1px solid var(--border-color); transition: var(--transition); text-align: left; color: var(--danger-color);" onmouseover="this.style.backgroundColor='var(--background-light)'" onmouseout="this.style.backgroundColor='transparent'" onclick="promoteAdminUser('${user.id || user._id}', ${AUTH_LEVELS.UNAUTHORIZED})">
+                        <i class="fa-solid fa-user-minus" style="width: 20px; text-align: center;"></i> Rimuovi Permessi
                     </button>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -149,17 +151,23 @@ function renderAdminUserCard(user) {
 
     let suspensionBadge = '';
     if (user.isSuspended) {
+        let totalDuration = '';
+        if (user.suspensionCount === 1) totalDuration = '12 ore';
+        else if (user.suspensionCount === 2) totalDuration = '1 giorno';
+        else if (user.suspensionCount === 3) totalDuration = '1 settimana';
+        else if (user.suspensionCount >= 4) totalDuration = '1 mese';
+
         if (user.suspendedUntil) {
             const diffMs = new Date(user.suspendedUntil) - new Date();
             const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-            if (diffDays > 0) {
-                suspensionBadge = `<span class="badge badge-danger" style="background-color: var(--danger-color); color: white;">Sospeso (${diffDays}g rimanenti)</span>`;
-            } else {
-                const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
-                suspensionBadge = `<span class="badge badge-danger" style="background-color: var(--danger-color); color: white;">Sospeso (${Math.max(1, diffHours)}h rimanenti)</span>`;
-            }
+            
+            let remainingText = '';
+            if (diffDays > 0) remainingText = `${diffDays}g rimanenti`;
+            else remainingText = `${Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60)))}h rimanenti`;
+            
+            suspensionBadge = `<span class="badge badge-danger" style="background-color: var(--danger-color); color: white;">Sospeso ${totalDuration ? 'per ' + totalDuration : ''} (${remainingText})</span>`;
         } else {
-            suspensionBadge = `<span class="badge badge-danger" style="background-color: var(--danger-color); color: white;">Sospeso</span>`;
+            suspensionBadge = `<span class="badge badge-danger" style="background-color: var(--danger-color); color: white;">Sospeso ${totalDuration ? 'per ' + totalDuration : ''}</span>`;
         }
     }
 
