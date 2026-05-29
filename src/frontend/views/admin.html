@@ -78,7 +78,7 @@
             <div style="text-align: center; margin-bottom: 1.5rem;">
                 <i class="fa-solid fa-lock text-primary" style="font-size: 3rem; margin-bottom: 1rem;"></i>
                 <h3 style="color: var(--primary-color);">Credenziali Partner Generate</h3>
-                <p class="text-muted">Fornisci queste credenziali al partner per il primo accesso. <br>Verrà richiesto loro di cambiare la password al primo login.</p>
+                <p class="text-muted">La password è stata copiata negli appunti!</p>
             </div>
             
             <div style="background: var(--background-light); padding: 1.5rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 1.5rem;">
@@ -97,7 +97,25 @@
                 </div>
             </div>
             
-            <button type="button" class="btn btn-secondary btn-block" onclick="closePartnerCredentialsModal()">Ho salvato le credenziali</button>
+            <button type="button" class="btn btn-secondary btn-block" onclick="closePartnerCredentialsModal()">Chiudi</button>
+        </div>
+    </div>
+
+    <!-- Modale Dettagli Utente -->
+    <div id="user-details-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 600px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-address-card text-primary"></i> Dettagli Utente</h3>
+                <button type="button" class="btn btn-outline" onclick="closeUserDetailsModal()" style="border: none; padding: 0.5rem;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div id="user-details-content" style="display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Filled dynamically -->
+            </div>
+            
+            <div id="partner-password-section" style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+                <button type="button" class="btn btn-secondary btn-block" onclick="resetPartnerPassword()">Genera Nuova Password Partner</button>
+            </div>
         </div>
     </div>
 

@@ -166,6 +166,39 @@ async function createPartnerUser(req, res) {
   }
 }
 
+async function resetPartnerPassword(req, res) {
+  try {
+    const userId = req.params.userId;
+    const db = req.app.locals.db;
+    if (!db) return res.status(500).json({ error: 'Database non connesso' });
+
+    const actorAuthLevel = getEffectiveAuthLevel(req.adminUser);
+    if (actorAuthLevel < AUTH_LVL.ADMIN) {
+      return res.status(403).json({ error: 'Accesso negato: permessi insufficienti per reimpostare la password' });
+    }
+
+    const targetUser = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+    if (!targetUser) return res.status(404).json({ error: 'Utente non trovato' });
+
+    if (targetUser.role !== ROLES.PARTNER) {
+      return res.status(400).json({ error: 'Puoi reimpostare la password solo dei Partner' });
+    }
+
+    const newPlainPassword = Math.random().toString(36).slice(-8);
+    const hashedPassword = await bcrypt.hash(newPlainPassword, 10);
+
+    await db.collection('users').updateOne(
+      { _id: targetUser._id },
+      { $set: { password: hashedPassword, mustChangePassword: false, updatedAt: new Date() } }
+    );
+
+    return res.json({ message: 'Password resettata con successo', newPassword: newPlainPassword });
+  } catch (error) {
+    console.error('Errore reset password partner:', error);
+    return res.status(500).json({ error: 'Errore interno del server' });
+  }
+}
+
 async function deleteLowerPrivilegeUser(req, res) {
   try {
     const userId = req.params.userId || req.body.userId;
@@ -418,6 +451,8 @@ router.put('/volunteers/:userId/admin', promoteVolunteer);
 
 router.post('/partner', createPartnerUser);
 router.post('/partners', createPartnerUser);
+
+router.put('/users/:userId/reset-password', resetPartnerPassword);
 
 router.delete('/users/:userId', deleteLowerPrivilegeUser);
 router.get('/users', listUsersForAdmin);

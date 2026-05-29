@@ -182,19 +182,96 @@ function renderAdminUserCard(user) {
                         ${suspensionBadge}
                     </div>
                     <h4 style="margin-bottom: 0.25rem; word-break: break-word;">${fullName}</h4>
-                    <p class="text-muted" style="margin-bottom: 0.25rem; word-break: break-word;">${user.email || 'Email non disponibile'}</p>
-                    <small class="text-muted" style="display: block; word-break: break-word;">ID: ${user.id || user._id}</small>
+
                 </div>
                 <div class="flex gap-1" style="flex-wrap: wrap; justify-content: flex-end; position: relative;">
                     ${promoteHtml}
+                    <button type="button" class="btn btn-info" style="padding: 0.5rem 0.75rem; color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb;" onclick="window.showUserDetailsModal('${user.id || user._id}')">Dettagli</button>
                     ${canSuspend ? `<button type="button" class="btn btn-warning" style="padding: 0.5rem 0.75rem; color: #856404; background-color: #FFF3CD; border: 1px solid #ffeeba;" onclick="suspendAdminUser('${user.id || user._id}', ${suspensionCount})">Sospendi</button>` : ''}
                     ${canRestore ? `<button type="button" class="btn btn-success" style="padding: 0.5rem 0.75rem;" onclick="restoreAdminUser('${user.id || user._id}')">Riattiva</button>` : ''}
                     ${canDelete ? `<button type="button" class="btn btn-danger" style="padding: 0.5rem 0.75rem;" onclick="deleteAdminUser('${user.id || user._id}')">Elimina</button>` : ''}
                 </div>
             </div>
+            <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color);">
+                <p class="text-muted" style="margin-bottom: 0; font-size: 0.9rem; word-break: break-word;"><i class="fa-regular fa-envelope"></i> ${user.email || 'Email non disponibile'}</p>
+            </div>
         </div>
     `;
 }
+
+window.selectedPartnerId = null;
+
+window.showUserDetailsModal = function(userId) {
+    const user = window.adminUsersCache?.find(u => String(u.id || u._id) === String(userId));
+    if (!user) {
+        alert("Errore: Utente non trovato nella cache locale. Ricarica la pagina.");
+        return;
+    }
+    
+    const content = document.getElementById('user-details-content');
+    const partnerSection = document.getElementById('partner-password-section');
+    
+    let html = `
+        <div><strong>Nome / Azienda:</strong> ${user.name || ''} ${user.surname || ''} ${user.companyName || ''}</div>
+        <div><strong>Email:</strong> ${user.email || 'N/A'}</div>
+        <div><strong>Ruolo:</strong> ${getRoleLabel(user)}</div>
+        <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><strong>ID:</strong> <span style="font-family: monospace;">${user.id || user._id}</span></div>
+    `;
+    if (user.phone) html += `<div><strong>Telefono:</strong> ${user.phone}</div>`;
+    if (user.address || user.location) html += `<div><strong>Indirizzo/Sede:</strong> ${user.address || user.location}</div>`;
+    if (user.legalForm) html += `<div><strong>Forma Giuridica:</strong> ${user.legalForm}</div>`;
+    if (user.skills && user.skills.length > 0) html += `<div><strong>Competenze:</strong> ${user.skills.join(', ')}</div>`;
+    if (user.availability) html += `<div><strong>Disponibilità:</strong> ${user.availability}</div>`;
+    if (user.isSuspended) html += `<div><strong>Stato Account:</strong> Sospeso (Sospensioni totali: ${user.suspensionCount})</div>`;
+    
+    if (!content || !partnerSection) {
+        alert("Errore visivo: il tuo browser ha memorizzato la vecchia grafica. Premi Cmd + Shift + R per forzare l'aggiornamento!");
+        return;
+    }
+
+    content.innerHTML = html;
+    
+    if (user.role === 'partner') {
+        window.selectedPartnerId = userId;
+        partnerSection.style.display = 'block';
+    } else {
+        window.selectedPartnerId = null;
+        partnerSection.style.display = 'none';
+    }
+    
+    window.openModal('user-details-modal');
+};
+
+window.closeUserDetailsModal = function() {
+    window.closeModal('user-details-modal');
+    window.selectedPartnerId = null;
+};
+
+window.resetPartnerPassword = async function() {
+    if (!window.selectedPartnerId) return;
+    const userId = window.selectedPartnerId;
+    
+    try {
+        const response = await authorizedFetch('/api/admin/users/' + userId + '/reset-password', {
+            method: 'PUT'
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Errore durante il reset della password');
+        
+        await navigator.clipboard.writeText(data.newPassword);
+        showToast('Password generata e copiata negli appunti!', 'success');
+        
+        const user = window.adminUsersCache?.find(u => String(u.id || u._id) === String(userId));
+        if (user) {
+            document.getElementById('partner-cred-email').innerText = user.email;
+            document.getElementById('partner-cred-password').value = data.newPassword;
+            window.openModal('partner-credentials-modal');
+            window.closeUserDetailsModal();
+        }
+    } catch (error) {
+        window.showToast(error.message, 'error');
+    }
+};
 
 async function loadAdminUsers() {
     const results = document.getElementById('admin-users-results');
