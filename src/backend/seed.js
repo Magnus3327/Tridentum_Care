@@ -20,11 +20,15 @@ async function seed() {
 
     const usersCol = db.collection("users");
     const requestsCol = db.collection("requests");
+    const couponsCol = db.collection("coupons");
+    const redemptionsCol = db.collection("coupon_redemptions");
 
     // Pulisci i dati esistenti
     await usersCol.deleteMany({});
     await requestsCol.deleteMany({});
-    console.log("Collezioni 'users' e 'requests' ripulite.");
+    await couponsCol.deleteMany({});
+    await redemptionsCol.deleteMany({});
+    console.log("Collezioni 'users', 'requests', 'coupons' e 'coupon_redemptions' ripulite.");
 
     // Hash della password fissa per entrambi gli utenti di test
     const hashedPassword = await bcrypt.hash("password123", 10);
@@ -80,6 +84,17 @@ async function seed() {
         role: "volunteer",
         authLvl: AUTH_LVL ? AUTH_LVL.ADMIN : 2,
         points: 0,
+        createdAt: new Date()
+      },
+      {
+        name: "Demo",
+        surname: "Partner",
+        legalForm: "Caffetteria del Centro",
+        email: "partner@demo.it",
+        password: hashedPassword,
+        role: "partner",
+        phone: "0461 123456",
+        address: "Via Roma 10, Trento",
         createdAt: new Date()
       }
     ];
@@ -151,6 +166,59 @@ async function seed() {
 
     const requestsResult = await requestsCol.insertMany(requests);
     console.log(`Inserite ${requestsResult.insertedCount} richieste mock associate ad Angela Bianchi.`);
+
+    // Seeding Coupons (Partner)
+    const partner = await usersCol.findOne({ email: "partner@demo.it" });
+    const partnerId = partner._id;
+
+    const mario = await usersCol.findOne({ email: "mario.rossi@email.it" });
+    const marioId = mario._id;
+
+    const coupons = [
+      {
+        partnerId: partnerId,
+        title: "Caffè e Brioche",
+        description: "Colazione offerta (Caffè + Brioche) presso la Caffetteria del Centro.",
+        pointsCost: 200,
+        expirationDate: "2026-12-31",
+        createdAt: new Date()
+      },
+      {
+        partnerId: partnerId,
+        title: "Sconto 5€ su spesa",
+        description: "Sconto di 5€ su una spesa minima di 20€.",
+        pointsCost: 400,
+        expirationDate: "2026-10-31",
+        createdAt: new Date()
+      }
+    ];
+
+    const couponsResult = await couponsCol.insertMany(coupons);
+    console.log(`Inseriti ${couponsResult.insertedCount} coupon mock per il partner.`);
+
+    const firstCoupon = await couponsCol.findOne({ title: "Caffè e Brioche" });
+
+    const redemptions = [
+      {
+        couponId: firstCoupon._id,
+        volunteerId: marioId,
+        volunteerName: "Mario Rossi",
+        redeemedCode: "TRIDENTUM-CAFFE-X1Y2",
+        date: new Date(Date.now() - 86400000).toISOString(), // Ieri
+        createdAt: new Date()
+      },
+      {
+        couponId: firstCoupon._id,
+        volunteerId: marioId,
+        volunteerName: "Mario Rossi",
+        redeemedCode: "TRIDENTUM-CAFFE-A9B8",
+        date: new Date(Date.now() - 172800000).toISOString(), // L'altro ieri
+        createdAt: new Date()
+      }
+    ];
+
+    const redemptionsResult = await redemptionsCol.insertMany(redemptions);
+    console.log(`Inseriti ${redemptionsResult.insertedCount} riscatti mock.`);
 
     console.log("Seeding completato con successo!");
   } catch (error) {
