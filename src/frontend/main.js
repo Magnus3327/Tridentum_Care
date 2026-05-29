@@ -399,6 +399,7 @@ const routes = {
     'req-detail': 'view-req-detail',
     'vol-board': 'view-vol-board',
     'vol-store': 'view-vol-store',
+    'vol-map': 'view-vol-map',
     'partner-dash': 'view-partner-dash',
     'partner-coupon': 'view-partner-coupon',
     'admin-dash': 'view-admin-dash',
@@ -461,6 +462,9 @@ function navigateTo(routeId) {
     } else if (routeId === 'vol-store') {
         updateStorePoints();
         loadStoreCoupons();
+    } else if (routeId === 'vol-map') {
+        initVolunteerMap();
+        loadVolunteerMapRequests();
     } else if (routeId === 'auth') {
         toggleRegisterRoleFields();
     }
@@ -480,6 +484,7 @@ function updateNavbar(routeId) {
     if (appState.userRole === 'volunteer') {
         linksHTML = `
             <a href="#" class="nav-link" onclick="navigateTo('vol-board')">Bacheca</a>
+            <a href="#" class="nav-link" onclick="navigateTo('vol-map')">Mappa</a>
             <a href="#" class="nav-link" onclick="navigateTo('vol-store')">Store Premi</a>
             <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
             ${appState.userAuthLvl >= AUTH_LEVELS.MODERATOR ? `<a href="#" class="nav-link" onclick="navigateTo('admin-dash')">Console Admin</a>` : ''}
@@ -1289,6 +1294,113 @@ function bindAuthEvents() {
 // AZIONI VOLONTARIO E LOGICA BACHECA
 // ==========================================
 
+window.volunteerMap = null;
+window.volunteerMapMarkers = [];
+
+// Funzione mock per coordinate di Trento
+function getMockCoordinates(address) {
+    const defaultCoords = [46.0697, 11.1211]; // Centro di Trento
+    if (!address) return defaultCoords;
+    const lowerAddress = address.toLowerCase();
+    
+    if (lowerAddress.includes('belenzani')) return [46.0682, 11.1214];
+    if (lowerAddress.includes('duomo')) return [46.0674, 11.1215];
+    if (lowerAddress.includes('grazioli')) return [46.0694, 11.1293];
+    if (lowerAddress.includes('roma')) return [46.0712, 11.1234];
+    
+    // Jitter casuale per altri indirizzi
+    const jitterLat = (Math.random() - 0.5) * 0.02;
+    const jitterLng = (Math.random() - 0.5) * 0.02;
+    return [defaultCoords[0] + jitterLat, defaultCoords[1] + jitterLng];
+}
+
+window.initVolunteerMap = function() {
+    if (window.volunteerMap) {
+        window.volunteerMap.invalidateSize();
+        return;
+    }
+    
+    const container = document.getElementById('volunteer-map-container');
+    if (!container) return;
+
+    window.volunteerMap = L.map('volunteer-map-container').setView([46.0697, 11.1211], 14);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(window.volunteerMap);
+};
+
+window.loadVolunteerMapRequests = async function() {
+    if (!window.volunteerMap) return;
+    
+    // Clear old markers
+    window.volunteerMapMarkers.forEach(m => window.volunteerMap.removeLayer(m));
+    window.volunteerMapMarkers = [];
+
+    try {
+        // Fetch sia delle richieste attive che di quelle accettate
+        const [activeRes, myTasksRes] = await Promise.all([
+            authorizedFetch('/api/volunteer/requests'),
+            authorizedFetch('/api/volunteer/my-tasks')
+        ]);
+
+        const activeRequests = activeRes.ok ? await activeRes.json() : [];
+        const myTasks = myTasksRes.ok ? await myTasksRes.json() : [];
+
+        // Costruiamo icone personalizzate cambiando il colore via CSS filter
+        const blueIcon = new L.Icon({
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        // Applichiamo un filter per farlo verde
+        const greenIcon = new L.Icon({
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41],
+            className: 'marker-green' // Lo stile verrà gestito se necessario, o usiamo un marker verde esterno
+        });
+
+        const allRequests = [
+            ...activeRequests.map(r => ({ ...r, isMine: false })),
+            ...myTasks.map(r => ({ ...r, isMine: true }))
+        ];
+
+        allRequests.forEach(req => {
+            const coords = getMockCoordinates(req.location || req.address);
+            // Usiamo hue-rotate per fare verde l'icona base di leaflet
+            const iconHTML = req.isMine 
+                ? '<div style="filter: hue-rotate(240deg) saturate(3);"><img src="https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png" style="width:25px;height:41px;"></div>' 
+                : '<img src="https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png" style="width:25px;height:41px;">';
+            
+            const customIcon = L.divIcon({
+                html: iconHTML,
+                className: '',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41]
+            });
+
+            const marker = L.marker(coords, { icon: customIcon }).addTo(window.volunteerMap);
+            
+            marker.on('click', () => {
+                openVolunteerRequestDetail(req._id);
+            });
+
+            window.volunteerMapMarkers.push(marker);
+        });
+        
+    } catch (e) {
+        console.error("Errore nel caricamento dei dati mappa:", e);
+    }
+};
+
 async function loadVolunteerDashboard() {
     try {
         const response = await authorizedFetch('/api/volunteer/profile');
@@ -1444,7 +1556,11 @@ async function acceptRequest(requestId) {
         const data = await response.json();
         if (response.ok) {
             showToast("Richiesta Accettata con successo! L'attività è stata aggiunta ai tuoi incarichi.", "success");
-            loadVolunteerDashboard();
+            if (currentRoute === 'vol-map') {
+                loadVolunteerMapRequests();
+            } else {
+                loadVolunteerDashboard();
+            }
         } else {
             showToast(`Errore: ${data.error}`, "danger");
         }
@@ -1521,7 +1637,11 @@ window.cancelTask = async function(taskId) {
         const data = await response.json();
         if (response.ok) {
             showToast("Presa in carico annullata. La richiesta è tornata in bacheca!", "success");
-            loadVolunteerDashboard();
+            if (currentRoute === 'vol-map') {
+                loadVolunteerMapRequests();
+            } else {
+                loadVolunteerDashboard();
+            }
         } else {
             showToast(`Errore: ${data.error}`, "danger");
         }
