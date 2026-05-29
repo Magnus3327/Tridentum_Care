@@ -94,26 +94,9 @@
     </div>
     
     <h3>Coupon Disponibili</h3>
-    <div class="grid-3" style="margin-top: 1.5rem;">
-        <!-- Coupon Card 1 -->
-        <div class="card text-center">
-            <div style="background: var(--background-light); padding: 2rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
-                <i class="fa-solid fa-mug-hot" style="font-size: 3rem; color: var(--text-muted);"></i>
-            </div>
-            <h4>Caffè Gratuito</h4>
-            <p class="text-muted">Bar Pasticceria Trento</p>
-            <h3 class="text-secondary" style="margin: 1rem 0;">200 pts</h3>
-            <button class="btn btn-primary btn-block" onclick="buyCoupon('Caffè Gratuito', 200)">Acquista</button>
-        </div>
-        <!-- Coupon Card 2 -->
-        <div class="card text-center">
-            <div style="background: var(--background-light); padding: 2rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
-                <i class="fa-solid fa-cart-shopping" style="font-size: 3rem; color: var(--text-muted);"></i>
-            </div>
-            <h4>Sconto 10% Spesa</h4>
-            <p class="text-muted">Supermercati Trentini</p>
-            <h3 class="text-secondary" style="margin: 1rem 0;">800 pts</h3>
-            <button class="btn btn-primary btn-block" onclick="buyCoupon('Sconto 10% Spesa', 800)">Acquista</button>
+    <div id="volunteer-store-container" class="grid-3" style="margin-top: 1.5rem;">
+        <div class="text-center text-muted" style="grid-column: span 3; padding: 2rem;">
+            <i class="fa-solid fa-spinner fa-spin"></i> Caricamento coupon...
         </div>
     </div>
 </section>

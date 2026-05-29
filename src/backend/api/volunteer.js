@@ -222,19 +222,32 @@ router.post("/requests/:id/cancel", async (req, res) => {
   }
 });
 
-// 7. POST Riscatta Coupon
+// 7. GET /coupons (Store)
+router.get("/coupons", async (req, res) => {
+  try {
+    const db = req.app.locals.db;
+    if (!db) return res.status(500).json({ error: "Database non connesso" });
+    
+    // Mostra solo i coupon non scaduti
+    const today = new Date().toISOString().split('T')[0];
+    const coupons = await db.collection("coupons").find({ expirationDate: { $gte: today } }).toArray();
+    
+    // Potremmo voler recuperare il nome del partner, ma per ora ritorniamo i coupon così come sono.
+    res.json(coupons);
+  } catch (error) {
+    console.error("Errore GET /coupons:", error);
+    res.status(500).json({ error: "Errore interno del server" });
+  }
+});
+
+// 8. POST Riscatta Coupon
 router.post("/coupons/redeem", async (req, res) => {
   try {
-    const { couponName, costoPunti } = req.body;
+    const { couponId } = req.body;
     const userId = req.user.userId;
 
-    if (!couponName || !costoPunti) {
-      return res.status(400).json({ error: "Parametri couponName e costoPunti obbligatori" });
-    }
-
-    const pointsToDeduct = parseInt(costoPunti);
-    if (isNaN(pointsToDeduct) || pointsToDeduct <= 0) {
-      return res.status(400).json({ error: "Punti non validi" });
+    if (!couponId) {
+      return res.status(400).json({ error: "Parametro couponId obbligatorio" });
     }
 
     const db = req.app.locals.db;
@@ -245,6 +258,14 @@ router.post("/coupons/redeem", async (req, res) => {
       return res.status(404).json({ error: "Volontario non trovato" });
     }
 
+    // Trova il coupon nel database
+    const coupon = await db.collection("coupons").findOne({ _id: new ObjectId(couponId) });
+    if (!coupon) {
+      return res.status(404).json({ error: "Coupon non trovato" });
+    }
+
+    const pointsToDeduct = parseInt(coupon.pointsCost);
+
     // Controlla sufficienza punti
     const currentPoints = parseInt(volunteer.points || 0);
     if (currentPoints < pointsToDeduct) {
@@ -252,24 +273,37 @@ router.post("/coupons/redeem", async (req, res) => {
     }
 
     const newPoints = currentPoints - pointsToDeduct;
-    const newCoupon = {
-      name: couponName,
+    const generatedCode = "TC-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+
+    const newCouponForVolunteer = {
+      name: coupon.title,
       cost: pointsToDeduct,
-      code: "TC-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
+      code: generatedCode,
       acquiredAt: new Date()
     };
 
-    // Salva deduzione punti e aggiungi coupon nel DB
+    // Salva deduzione punti e aggiungi coupon nel DB dell'utente
     await db.collection("users").updateOne(
       { _id: volunteer._id },
       { 
         $set: { points: newPoints },
-        $push: { coupons: newCoupon }
+        $push: { coupons: newCouponForVolunteer }
       }
     );
 
+    // Registra l'acquisto nella collezione coupon_redemptions (per il partner)
+    const redemption = {
+      couponId: coupon._id,
+      volunteerId: volunteer._id,
+      volunteerName: `${volunteer.name} ${volunteer.surname}`,
+      redeemedCode: generatedCode,
+      date: new Date().toISOString(),
+      createdAt: new Date()
+    };
+    await db.collection("coupon_redemptions").insertOne(redemption);
+
     res.json({
-      message: `Coupon "${couponName}" riscattato con successo!`,
+      message: `Coupon "${coupon.title}" riscattato con successo!`,
       newPoints: newPoints
     });
   } catch (error) {
