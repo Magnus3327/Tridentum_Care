@@ -100,3 +100,26 @@
         </div>
     </div>
 </section>
+
+<!-- Mappa Richieste -->
+<section id="view-vol-map" class="view-section">
+    <div class="card" style="margin-bottom: 2rem; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white;">
+        <h2 style="color: white; margin-bottom: 0;"><i class="fa-solid fa-map-location-dot"></i> Mappa delle Richieste</h2>
+        <p style="margin-bottom: 0; opacity: 0.9;">Visualizza le richieste attive sul territorio di Trento e accetta gli incarichi direttamente dalla mappa.</p>
+    </div>
+    
+    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="width: 20px; height: 20px; background: #2A81CB; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>
+            <span style="font-size: 0.9rem; font-weight: bold; color: var(--text-dark);">Richiesta Disponibile</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="width: 20px; height: 20px; background: #2AAD27; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>
+            <span style="font-size: 0.9rem; font-weight: bold; color: var(--text-dark);">Accettata da Te</span>
+        </div>
+    </div>
+
+    <div class="card" style="padding: 0; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);">
+        <div id="volunteer-map-container" style="height: 600px; width: 100%; z-index: 1;"></div>
+    </div>
+</section>
