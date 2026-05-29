@@ -1232,6 +1232,13 @@ function bindAuthEvents() {
             const password = document.getElementById('reg-password').value;
             const role = document.getElementById('reg-role').value;
 
+            // controllo complessità password
+            const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+            if (!passwordRegex.test(password)) {
+                showToast('La password deve contenere almeno 8 caratteri, una lettera maiuscola, un numero e un simbolo.', 'danger');
+                return;
+            }
+
             const payload = { name, surname, email, password, role };
 
             if (role === 'volunteer') {

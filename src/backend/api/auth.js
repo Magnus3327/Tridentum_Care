@@ -17,6 +17,11 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: "Tutti i campi obbligatori devono essere compilati" });
     }
 
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({ error: "La password non soddisfa i requisiti: minimo 8 caratteri, una maiuscola, un numero e un simbolo." });
+    }
+
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });
 
