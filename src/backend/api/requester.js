@@ -125,48 +125,7 @@ router.get('/requests', async (req, res) => {
   }
 });
 
-// Compatibilità con path param (assicurando l'autorizzazione)
-router.get('/:userId/requests', async (req, res) => {
-  try {
-    const db = await getDatabase(req);
-    const { userId } = req.params;
 
-    if (userId !== req.user.userId) {
-      return res.status(403).json({ error: 'Non autorizzato a visualizzare queste richieste' });
-    }
-
-    const requests = await db
-      .collection('requests')
-      .find({ userId: new ObjectId(userId) })
-      .sort({ createdAt: -1 })
-      .toArray();
-
-    const enrichedRequests = await Promise.all(requests.map(async (request) => {
-      if (request.volunteerId) {
-        try {
-          const volunteer = await db.collection('users').findOne(
-            { _id: new ObjectId(request.volunteerId) },
-            { projection: { name: 1, surname: 1 } }
-          );
-          if (volunteer) {
-            return {
-              ...request,
-              volunteerName: volunteer.name,
-              volunteerSurname: volunteer.surname
-            };
-          }
-        } catch (e) {
-          console.error("Errore recupero volontario:", e);
-        }
-      }
-      return request;
-    }));
-
-    res.json(enrichedRequests);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // API per aggiornare una richiesta esistente dell'utente loggato
 router.put('/requests/:requestId', async (req, res) => {
@@ -222,7 +181,7 @@ router.put('/requests/:requestId', async (req, res) => {
 });
 
 // API per aggiornare lo stato di una richiesta (es. completata o annullata)
-router.put('/requests/:requestId/status', async (req, res) => {
+router.patch('/requests/:requestId', async (req, res) => {
   try {
     const db = await getDatabase(req);
     const { requestId } = req.params;

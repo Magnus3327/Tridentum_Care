@@ -87,49 +87,7 @@ router.put("/me", async (req, res) => {
   }
 });
 
-// 3. GET Richieste attive (Bacheca)
-router.get("/requests", async (req, res) => {
-  try {
-    const { category } = req.query;
-    const userId = req.user.userId;
 
-    const db = req.app.locals.db;
-    if (!db) return res.status(500).json({ error: "Database non connesso" });
-
-    let skillsFilter = null;
-    if (userId) {
-      const volunteer = await db.collection("users").findOne({ _id: new ObjectId(userId), role: "volunteer" });
-      if (volunteer) {
-        if (volunteer.authLvl >= AUTH_LVL.MODERATOR) {
-          skillsFilter = null;
-        } else if (volunteer.skills && volunteer.skills.length > 0) {
-          skillsFilter = volunteer.skills;
-        } else {
-          skillsFilter = [];
-        }
-      }
-    }
-
-    // Cerchiamo le richieste nello stato "In Attesa di Volontario"
-    const query = { status: "In Attesa di Volontario" };
-
-    if (skillsFilter) {
-      query.category = { $in: skillsFilter };
-    }
-
-    if (category && category !== "Tutti i servizi") {
-      if (!skillsFilter || skillsFilter.includes(category)) {
-        query.category = category;
-      }
-    }
-
-    const requests = await db.collection("requests").find(query).sort({ createdAt: -1 }).toArray();
-    res.json(requests);
-  } catch (error) {
-    console.error("Errore GET /requests:", error);
-    res.status(500).json({ error: "Errore interno del server" });
-  }
-});
 
 // 4. GET Incarichi Assegnati
 router.get("/me/tasks", async (req, res) => {
@@ -157,74 +115,7 @@ router.get("/me/tasks", async (req, res) => {
   }
 });
 
-// 5. POST Accetta Richiesta
-router.post("/requests/:id/assignments", async (req, res) => {
-  try {
-    const requestId = req.params.id;
-    const userId = req.user.userId;
 
-    const db = req.app.locals.db;
-    if (!db) return res.status(500).json({ error: "Database non connesso" });
-
-    const volunteer = await db.collection("users").findOne({ _id: new ObjectId(userId), role: "volunteer" });
-    if (!volunteer) {
-      return res.status(404).json({ error: "Volontario non trovato" });
-    }
-
-    const result = await db.collection("requests").updateOne(
-      { _id: new ObjectId(requestId), status: "In Attesa di Volontario" },
-      { $set: { status: "In Corso", volunteerId: volunteer._id.toString() } }
-    );
-
-    if (result.modifiedCount === 0) {
-      return res.status(400).json({ error: "Richiesta non disponibile o già assegnata" });
-    }
-
-    res.json({ message: "Richiesta presa in carico con successo!" });
-  } catch (error) {
-    console.error("Errore POST /requests/:id/accept:", error);
-    res.status(500).json({ error: "Errore interno del server" });
-  }
-});
-
-// 6. POST Annulla Presa in Carico
-router.delete("/requests/:id/assignments", async (req, res) => {
-  try {
-    const requestId = req.params.id;
-    const userId = req.user.userId;
-
-    const db = req.app.locals.db;
-    if (!db) return res.status(500).json({ error: "Database non connesso" });
-
-    const volunteer = await db.collection("users").findOne({ _id: new ObjectId(userId), role: "volunteer" });
-    if (!volunteer) {
-      return res.status(404).json({ error: "Volontario non trovato" });
-    }
-
-    const request = await db.collection("requests").findOne({
-      _id: new ObjectId(requestId),
-      volunteerId: volunteer._id.toString(),
-      status: "In Corso"
-    });
-
-    if (!request) {
-      return res.status(404).json({ error: "Incarico non trovato o non valido" });
-    }
-
-    // Resetta lo status e rimuovi il volunteerId
-    await db.collection("requests").updateOne(
-      { _id: new ObjectId(requestId) },
-      { $set: { status: "In Attesa di Volontario", volunteerId: null } }
-    );
-
-    res.json({
-      message: "Presa in carico annullata con successo. La richiesta è di nuovo disponibile in bacheca."
-    });
-  } catch (error) {
-    console.error("Errore POST /requests/:id/cancel:", error);
-    res.status(500).json({ error: "Errore interno del server" });
-  }
-});
 
 // 7. GET /coupons (Store)
 router.get("/coupons", async (req, res) => {

@@ -175,7 +175,7 @@ router.post("/sessions", async (req, res) => {
 });
 
 // 3. RECUPERO INFORMAZIONI SESSIONE CORRENTE
-router.get("/current-user", authMiddleware, async (req, res) => {
+router.get("/me", authMiddleware, async (req, res) => {
   try {
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });

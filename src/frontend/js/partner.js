@@ -12,7 +12,7 @@ window.loadPartnerDashboard = async function() {
     } else if (welcomeName) {
         // Fallback or fetch from API if necessary
         try {
-            const meRes = await authorizedFetch('/api/v1/auth/current-user');
+            const meRes = await authorizedFetch('/api/v1/auth/me');
             if (meRes.ok) {
                 const me = await meRes.json();
                 if (me.name) {

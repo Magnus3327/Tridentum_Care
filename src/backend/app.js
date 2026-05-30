@@ -7,6 +7,7 @@ const volunteerRouter = require('./api/volunteer');
 const requesterRouter = require('./api/requester');
 const administrativeRouter = require('./api/administrative');
 const partnerRouter = require('./api/partner');
+const requestsRouter = require('./api/requests');
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/api/v1/volunteers', volunteerRouter);
 app.use('/api/v1/requesters', requesterRouter);
 app.use('/api/v1/administrators', administrativeRouter);
 app.use('/api/v1/partners', partnerRouter);
+app.use('/api/v1/requests', requestsRouter);
 
 // Configurazione base per le API
 const { SERVICES, ROLES, REQUEST_STATUS, AUTH_LVL, DEFAULT_POINTS } = require('../config/constants');

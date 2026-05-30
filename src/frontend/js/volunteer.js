@@ -44,7 +44,7 @@ window.loadVolunteerMapRequests = async function() {
     try {
         // Fetch sia delle richieste attive che di quelle accettate
         const [activeRes, myTasksRes] = await Promise.all([
-            authorizedFetch('/api/v1/volunteers/requests'),
+            authorizedFetch('/api/v1/requests'),
             authorizedFetch('/api/v1/volunteers/me/tasks')
         ]);
 
@@ -158,7 +158,7 @@ window.loadActiveRequests = async function() {
     const category = filterSelect ? filterSelect.value : "Tutti i servizi";
 
     try {
-        const url = `/api/v1/volunteers/requests?category=${encodeURIComponent(category)}`;
+        const url = `/api/v1/requests?category=${encodeURIComponent(category)}`;
         const response = await authorizedFetch(url);
         if (!response.ok) throw new Error("Errore nel caricamento richieste");
 
@@ -275,7 +275,7 @@ window.showRequestDetails = function(requestId) {
 
 async function acceptRequest(requestId) {
     try {
-        const response = await authorizedFetch(`/api/v1/volunteers/requests/${requestId}/assignments`, {
+        const response = await authorizedFetch(`/api/v1/requests/${requestId}/assignments`, {
             method: "POST"
         });
         
@@ -357,7 +357,7 @@ async function loadMyTasks() {
 
 window.cancelTask = async function(taskId) {
     try {
-        const response = await authorizedFetch(`/api/v1/volunteers/requests/${taskId}/assignments`, {
+        const response = await authorizedFetch(`/api/v1/requests/${taskId}/assignments`, {
             method: "DELETE"
         });
 
