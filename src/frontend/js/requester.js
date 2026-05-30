@@ -47,7 +47,7 @@ window.createRequesterRequest = async function() {
     }
 
     try {
-        const response = await authorizedFetch('/api/requester/requests', {
+        const response = await authorizedFetch('/api/v1/requesters/requests', {
             method: 'POST',
             body: JSON.stringify(payload)
         });
@@ -167,7 +167,7 @@ window.submitRequesterRating = async function(requestId) {
     }
 
     try {
-        const response = await authorizedFetch(`/api/requester/requests/${encodeURIComponent(requestId)}/rating`, {
+        const response = await authorizedFetch(`/api/v1/requesters/requests/${encodeURIComponent(requestId)}/ratings`, {
             method: 'PUT',
             body: JSON.stringify({ rating: ratingValue, review })
         });
@@ -201,7 +201,7 @@ window.updateRequesterRequest = async function(requestId) {
     }
 
     try {
-        const response = await authorizedFetch(`/api/requester/requests/${encodeURIComponent(requestId)}`, {
+        const response = await authorizedFetch(`/api/v1/requesters/requests/${encodeURIComponent(requestId)}`, {
             method: 'PUT',
             body: JSON.stringify(payload)
         });
@@ -232,7 +232,7 @@ window.loadRequesterDashboard = async function() {
 
     // Carica/Aggiorna il nome reale del richiedente per il banner di benvenuto
     try {
-        const profileRes = await authorizedFetch('/api/requester/profile');
+        const profileRes = await authorizedFetch('/api/v1/requesters/me');
         if (profileRes.ok) {
             const profile = await profileRes.json();
             if (profile.name) {
@@ -247,7 +247,7 @@ window.loadRequesterDashboard = async function() {
     }
 
     try {
-        const response = await authorizedFetch('/api/requester/requests');
+        const response = await authorizedFetch('/api/v1/requesters/requests');
         if (!response.ok) {
             const errorData = await response.json().catch(() => null);
             const message = errorData?.error || 'Impossibile caricare le richieste.';
@@ -387,7 +387,7 @@ window.deleteRequesterRequest = async function(requestId) {
             deleteBtn.disabled = true;
             deleteBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right: 0.5rem;"></i> Eliminazione in corso...';
             
-            const response = await authorizedFetch(`/api/requester/requests/${requestId}`, {
+            const response = await authorizedFetch(`/api/v1/requesters/requests/${requestId}`, {
                 method: 'DELETE'
             });
             
@@ -437,8 +437,8 @@ window.updateRequesterStatus = async function(requestId, status) {
     if (!requestId) return;
 
     try {
-        const response = await authorizedFetch(`/api/requester/requests/${encodeURIComponent(requestId)}/status`, {
-            method: 'PUT',
+        const response = await authorizedFetch(`/api/v1/requesters/requests/${encodeURIComponent(requestId)}`, {
+            method: 'PATCH',
             body: JSON.stringify({ status })
         });
         const data = await response.json();
@@ -462,7 +462,7 @@ window.cancelRequesterRequest = async function(requestId) {
     if (!requestId) return;
 
     try {
-        const response = await authorizedFetch(`/api/requester/requests/${encodeURIComponent(requestId)}`, {
+        const response = await authorizedFetch(`/api/v1/requesters/requests/${encodeURIComponent(requestId)}`, {
             method: 'DELETE'
         });
         const data = await response.json();

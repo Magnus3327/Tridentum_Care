@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
     if (token) {
         try {
-            const response = await fetch('/api/auth/me', {
+            const response = await fetch('/api/v1/auth/current-user', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -94,7 +94,7 @@ window.deleteUserProfile = async function() {
             confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right: 0.5rem;"></i> Eliminazione in corso...';
             
             const role = appState.userRole; // 'requester' o 'volunteer'
-            const endpoint = `/api/${role}/profile`;
+            const endpoint = role === 'volunteer' ? '/api/v1/volunteers/me' : '/api/v1/requesters/me';
             
             const response = await authorizedFetch(endpoint, {
                 method: 'DELETE'

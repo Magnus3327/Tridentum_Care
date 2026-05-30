@@ -16,7 +16,7 @@ router.use((req, res, next) => {
 });
 
 // 1. GET Profilo
-router.get("/profile", async (req, res) => {
+router.get("/me", async (req, res) => {
   try {
     const userId = req.user.userId;
     
@@ -35,7 +35,7 @@ router.get("/profile", async (req, res) => {
 });
 
 // 2. PUT Profilo
-router.put("/profile", async (req, res) => {
+router.put("/me", async (req, res) => {
   try {
     const userId = req.user.userId;
     const { name, surname, address, phone, skills, age, license, gender } = req.body;
@@ -132,7 +132,7 @@ router.get("/requests", async (req, res) => {
 });
 
 // 4. GET Incarichi Assegnati
-router.get("/my-tasks", async (req, res) => {
+router.get("/me/tasks", async (req, res) => {
   try {
     const userId = req.user.userId;
 
@@ -158,7 +158,7 @@ router.get("/my-tasks", async (req, res) => {
 });
 
 // 5. POST Accetta Richiesta
-router.post("/requests/:id/accept", async (req, res) => {
+router.post("/requests/:id/assignments", async (req, res) => {
   try {
     const requestId = req.params.id;
     const userId = req.user.userId;
@@ -188,7 +188,7 @@ router.post("/requests/:id/accept", async (req, res) => {
 });
 
 // 6. POST Annulla Presa in Carico
-router.post("/requests/:id/cancel", async (req, res) => {
+router.delete("/requests/:id/assignments", async (req, res) => {
   try {
     const requestId = req.params.id;
     const userId = req.user.userId;
@@ -245,7 +245,7 @@ router.get("/coupons", async (req, res) => {
 });
 
 // 8. POST Riscatta Coupon
-router.post("/coupons/redeem", async (req, res) => {
+router.post("/coupons/redemptions", async (req, res) => {
   try {
     const { couponId } = req.body;
     const userId = req.user.userId;
@@ -317,7 +317,7 @@ router.post("/coupons/redeem", async (req, res) => {
 });
 
 // API per eliminare definitivamente il profilo del volontario.
-router.delete('/profile', async (req, res) => {
+router.delete('/me', async (req, res) => {
   try {
     const db = req.app.locals.db;
     if (!db) return res.status(500).json({ error: "Database non connesso" });

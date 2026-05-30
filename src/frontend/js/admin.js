@@ -155,8 +155,8 @@ window.resetPartnerPassword = async function() {
     const userId = window.selectedPartnerId;
     
     try {
-        const response = await authorizedFetch('/api/admin/users/' + userId + '/reset-password', {
-            method: 'PUT'
+        const response = await authorizedFetch('/api/v1/administrators/users/' + userId + '/password-resets', {
+            method: 'POST'
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Errore durante il reset della password');
@@ -191,7 +191,7 @@ async function loadAdminUsers() {
 
     try {
         const queryString = buildAdminSearchParams();
-        const response = await authorizedFetch(`/api/admin/users${queryString ? `?${queryString}` : ''}`);
+        const response = await authorizedFetch(`/api/v1/administrators/users${queryString ? `?${queryString}` : ''}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -247,7 +247,7 @@ window.promoteAdminUser = async function(userId, targetLevel) {
     if (!userId) return;
     try {
         const payload = targetLevel !== undefined ? { targetLevel } : {};
-        const response = await authorizedFetch(`/api/admin/volunteers/${encodeURIComponent(userId)}/admin`, {
+        const response = await authorizedFetch(`/api/v1/administrators/users/${encodeURIComponent(userId)}/roles/administrator`, {
             method: 'PUT',
             body: JSON.stringify(payload)
         });
@@ -299,7 +299,7 @@ window.suspendAdminUser = async function(userId, currentCount) {
     if (!confirmed) return;
 
     try {
-        const response = await authorizedFetch(`/api/admin/users/${encodeURIComponent(userId)}/suspend`, {
+        const response = await authorizedFetch(`/api/v1/administrators/users/${encodeURIComponent(userId)}/suspensions`, {
             method: 'PUT'
         });
         const data = await response.json();
@@ -323,8 +323,8 @@ window.restoreAdminUser = async function(userId) {
     if (!confirmed) return;
 
     try {
-        const response = await authorizedFetch(`/api/admin/users/${encodeURIComponent(userId)}/restore`, {
-            method: 'PUT'
+        const response = await authorizedFetch(`/api/v1/administrators/users/${encodeURIComponent(userId)}/suspensions`, {
+            method: 'DELETE'
         });
         const data = await response.json();
 
@@ -347,7 +347,7 @@ window.deleteAdminUser = async function(userId) {
     if (!confirmed) return;
 
     try {
-        const response = await authorizedFetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+        const response = await authorizedFetch(`/api/v1/administrators/users/${encodeURIComponent(userId)}`, {
             method: 'DELETE'
         });
         const data = await response.json();
@@ -399,7 +399,7 @@ async function loadAdminDashboard() {
             };
 
             try {
-                const response = await authorizedFetch('/api/admin/partner', {
+                const response = await authorizedFetch('/api/v1/administrators/partners', {
                     method: 'POST',
                     body: JSON.stringify(payload)
                 });
@@ -455,7 +455,7 @@ window.loadAdminRequests = async function() {
     `;
 
     try {
-        const response = await authorizedFetch('/api/admin/requests');
+        const response = await authorizedFetch('/api/v1/administrators/requests');
         const data = await response.json();
 
         if (!response.ok) {
@@ -505,7 +505,7 @@ window.deleteAdminRequest = async function(requestId) {
     if (!confirmed) return;
 
     try {
-        const response = await authorizedFetch(`/api/admin/requests/${encodeURIComponent(requestId)}`, {
+        const response = await authorizedFetch(`/api/v1/administrators/requests/${encodeURIComponent(requestId)}`, {
             method: 'DELETE'
         });
         const data = await response.json();

@@ -446,19 +446,17 @@ router.use(async (req, res, next) => {
   }
 });
 
-router.put('/admin', promoteVolunteer);
-router.put('/volunteers/:userId/admin', promoteVolunteer);
+router.put('/users/:userId/roles/administrator', promoteVolunteer);
 
-router.post('/partner', createPartnerUser);
 router.post('/partners', createPartnerUser);
 
-router.put('/users/:userId/reset-password', resetPartnerPassword);
+router.post('/users/:userId/password-resets', resetPartnerPassword);
 
 router.delete('/users/:userId', deleteLowerPrivilegeUser);
 router.get('/users', listUsersForAdmin);
 
-router.put('/users/:userId/suspend', suspendUser);
-router.put('/users/:userId/restore', restoreUser);
+router.put('/users/:userId/suspensions', suspendUser);
+router.delete('/users/:userId/suspensions', restoreUser);
 
 router.get('/requests', listRequestsForAdmin);
 router.delete('/requests/:requestId', deleteRequest);

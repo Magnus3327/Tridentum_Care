@@ -126,7 +126,7 @@ router.get('/requests', async (req, res) => {
 });
 
 // Compatibilità con path param (assicurando l'autorizzazione)
-router.get('/requests/:userId', async (req, res) => {
+router.get('/:userId/requests', async (req, res) => {
   try {
     const db = await getDatabase(req);
     const { userId } = req.params;
@@ -274,7 +274,7 @@ router.put('/requests/:requestId/status', async (req, res) => {
 });
 
 // API per aggiungere valutazione alla richiesta completata
-router.put('/requests/:requestId/rating', async (req, res) => {
+router.put('/requests/:requestId/ratings', async (req, res) => {
   try {
     const db = await getDatabase(req);
     const { requestId } = req.params;
@@ -353,7 +353,7 @@ router.delete('/requests/:requestId', async (req, res) => {
 });
 
 // API per caricare il profilo del richiedente.
-router.get('/profile', async (req, res) => {
+router.get('/me', async (req, res) => {
   try {
     const db = await getDatabase(req);
     const userId = req.user.userId;
@@ -371,7 +371,7 @@ router.get('/profile', async (req, res) => {
 });
 
 // API per aggiornare il profilo del richiedente.
-router.put('/profile', async (req, res) => {
+router.put('/me', async (req, res) => {
   try {
     const db = await getDatabase(req);
     const userId = req.user.userId;
@@ -397,7 +397,7 @@ router.put('/profile', async (req, res) => {
 });
 
 // API per eliminare definitivamente il profilo del richiedente.
-router.delete('/profile', async (req, res) => {
+router.delete('/me', async (req, res) => {
   try {
     const db = await getDatabase(req);
     const userId = req.user.userId;
