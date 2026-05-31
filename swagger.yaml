@@ -1,120 +1,2084 @@
-swagger: '2.0'
+openapi: 3.0.3
 info:
-  version: '1.0'
-  title: "TridentumCare"
-  description: Polls is a simple API allowing consumers to view polls and vote in them.
-  license:
-    name: MIT
-    url: https://github.com/apiaryio/polls-api/blob/master/LICENSE
-host: polls.apiblueprint.org
-basePath: /
-schemes:
-- https
-consumes:
-- application/json
-produces:
-- application/json
+  title: Tridentum Care API
+  description: "Documentazione API per Tridentum Care, piattaforma di coordinamento dei volontari della città di Trento."
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api/v1
+    description: "Sviluppo locale"
+tags:
+  - name: Authentication
+    description: "Registrazione utenti e gestione sessioni"
+  - name: Volunteers
+    description: "Profili dei volontari, attività e buoni negozio"
+  - name: Requests
+    description: "Scheda richieste globali e incarichi"
+  - name: Requesters
+    description: "Creazione profili cittadini e richieste di servizi"
+  - name: Administrators
+    description: "Gestione degli utenti e moderazione del sistema"
+  - name: Partners
+    description: "Profili dei partner e creazione di coupon"
+  - name: System
+    description: "Stato e configurazioni del sistema"
 paths:
-  /questions:
-    x-summary: Questions Collection
-    get:
-      summary: List All Questions
-      responses:
-        200:
-          description: Successful Response
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/Question'
-          examples:
-            application/json:
-              - question: Favourite programming language?
-                published_at: '2015-08-05T08:40:51.620Z'
-                choices:
-                  - choice: Swift
-                    votes: 2048
-                  - choice: Python
-                    votes: 1024
-                  - choice: Objective-C
-                    votes: 512
-                  - choice: Ruby
-                    votes: 256
+  /auth/registrations:
     post:
-      description: >-
-        You may create your own question using this action. It takes a JSON
-        object containing a question and a collection of answers in the
-        form of choices.
-      summary: Create a New Question
+      tags:
+        - Authentication
+      summary: "Registra un nuovo utente"
+      description: "Crea un nuovo account utente. I ruoli di volontario richiedono un'età >= 18 anni."
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrationRequest'
+      responses:
+        '201':
+          description: "Registrazione riuscita"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: "Convalida non riuscita o e-mail già registrata"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/sessions:
+    post:
+      tags:
+        - Authentication
+      summary: "Accedi per ottenere un token di sessione JWT"
+      description: "Autentica un utente utilizzando email e password, restituendo un token JWT valido per 24 ore."
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: "Accesso riuscito"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: "Email o password mancanti"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Credenziali non valide"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Conto sospeso"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: "Ottieni l'utente autenticato corrente"
+      description: "Restituisce il profilo dell'utente attualmente connesso indipendentemente dal ruolo."
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "Profilo utente recuperato correttamente"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Utente non trovato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /volunteers/me:
+    get:
+      tags:
+        - Volunteers
+      summary: "Ottieni il profilo del volontario"
+      description: "Restituisce il profilo completo del volontario autenticato, inclusi competenze, punti e coupon acquisiti."
+      security:
+        - bearerAuth: []
+      x-role-required: volunteer
+      responses:
+        '200':
+          description: "Profilo del volontario recuperato con successo"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Proibito (ruolo sbagliato)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Volontario non trovato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Volunteers
+      summary: "Aggiorna il profilo del volontario"
+      description: "Aggiorna informazioni e competenze personali. authLvl non può essere modificato qui."
+      security:
+        - bearerAuth: []
+      x-role-required: volunteer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VolunteerProfileUpdate'
+      responses:
+        '200':
+          description: "Profilo aggiornato con successo"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: "Errore di convalida (ad esempio, età < 18)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Utente non trovato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Volunteers
+      summary: "Elimina il profilo del volontario"
+      description: "Cancellazione conforme al GDPR. Reimposta le richieste \"In Corso\", anonimizza gli altri ed elimina il documento utente."
+      security:
+        - bearerAuth: []
+      x-role-required: volunteer
+      responses:
+        '200':
+          description: "Profilo eliminato con successo"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Utente non trovato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /volunteers/coupons:
+    get:
+      tags:
+        - Volunteers
+      summary: "Ottieni i coupon del negozio disponibili"
+      description: "Restituisce tutti i coupon che non sono ancora scaduti."
+      security:
+        - bearerAuth: []
+      x-role-required: volunteer
+      responses:
+        '200':
+          description: "Elenco dei coupon attivi"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Coupon'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /volunteers/coupons/redemptions:
+    post:
+      tags:
+        - Volunteers
+      summary: "Riscatta un buono"
+      description: "Detrae punti dal volontario e garantisce un codice coupon univoco."
+      security:
+        - bearerAuth: []
+      x-role-required: volunteer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - couponId
+              properties:
+                couponId:
+                  type: string
+                  description: "L'ID del coupon da riscattare"
+      responses:
+        '200':
+          description: "Coupon riscattato con successo"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  newPoints:
+                    type: integer
+        '400':
+          description: "Punti insufficienti o couponId mancante"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Coupon o utente non trovato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /volunteers/me/tasks:
+    get:
+      tags:
+        - Volunteers
+      summary: "Ottieni i compiti assegnati al volontario"
+      description: "Restituisce tutte le richieste attualmente assegnate al volontario autenticato con stato \"In Corso\", ordinate per data di creazione decrescente."
+      security:
+        - bearerAuth: []
+      x-role-required: volunteer
+      responses:
+        '200':
+          description: "Elenco delle attività assegnate recuperate correttamente"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Request'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Proibito (ruolo sbagliato)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Volontario non trovato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /requests:
+    get:
+      tags:
+        - Requests
+      summary: "Ottieni la bacheca delle richieste attive"
+      description: "Restituisce le richieste disponibili (\"In Attesa di Volontario\"), filtrate per competenze del volontario a meno che authLvl >= MODERATORE."
+      security:
+        - bearerAuth: []
+      x-role-required: volunteer
       parameters:
-        - name: body
-          in: body
+        - in: query
+          name: category
+          schema:
+            type: string
+          required: false
+          description: "Filtra le richieste per categoria di servizio specifica"
+      responses:
+        '200':
+          description: "Elenco delle richieste attive"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Request'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /requests/{id}/assignments:
+    post:
+      tags:
+        - Requests
+      summary: "Accetta una richiesta"
+      description: "Assegna la richiesta specificata al volontario autenticato."
+      security:
+        - bearerAuth: []
+      x-role-required: volunteer
+      parameters:
+        - in: path
+          name: id
           required: true
           schema:
-            $ref: '#/definitions/QuestionRequest'
+            type: string
+          description: "ID della richiesta da accettare"
       responses:
-        201:
-          description: ''
-          schema:
-            $ref: '#/definitions/Question'
-          examples:
+        '200':
+          description: "Richiesta accettata con successo"
+          content:
             application/json:
-                question: Favourite programming language?
-                published_at: '2015-08-05T08:40:51.620Z'
-                choices:
-                  - choice: Swift
-                    votes: 0
-                  - choice: Python
-                    votes: 0
-                  - choice: Objective-C
-                    votes: 0
-                  - choice: Ruby
-                    votes: 0
-definitions:
-  Question:
-    title: Question
-    type: object
-    properties:
-      question:
-        type: string
-      published_at:
-        type: string
-      choices:
-        type: array
-        items:
-          $ref: '#/definitions/Choice'
-    required:
-      - question
-      - published_at
-      - choices
-  Choice:
-    title: Choice
-    type: object
-    properties:
-      votes:
-        type: integer
-        format: int32
-      choice:
-        type: string
-    required:
-      - votes
-      - choice
-  QuestionRequest:
-    title: Question Request
-    type: object
-    properties:
-      question:
-        type: string
-      choices:
-        type: array
-        items:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: "Richiesta non disponibile o già assegnata"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Volontario non trovato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Requests
+      summary: "Annullare l'assegnazione di una richiesta"
+      description: "Il volontario rilascia alla lavagna una richiesta accettata."
+      security:
+        - bearerAuth: []
+      x-role-required: volunteer
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: "ID della richiesta di rilascio"
+      responses:
+        '200':
+          description: "Compito annullato correttamente"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Compito non trovato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /requesters/me:
+    get:
+      tags:
+        - Requesters
+      summary: "Ottieni il profilo del richiedente"
+      description: "Restituisce i dati del profilo del richiedente autenticato."
+      security:
+        - bearerAuth: []
+      x-role-required: requester
+      responses:
+        '200':
+          description: "Profilo recuperato con successo"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Utente non trovato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Requesters
+      summary: "Aggiorna il profilo del richiedente"
+      description: "Modifica i dati personali."
+      security:
+        - bearerAuth: []
+      x-role-required: requester
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - surname
+              properties:
+                name:
+                  type: string
+                surname:
+                  type: string
+                phone:
+                  type: string
+                address:
+                  type: string
+      responses:
+        '200':
+          description: "Profilo aggiornato con successo"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: "Errore di convalida"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Utente non trovato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Requesters
+      summary: "Elimina il profilo del richiedente"
+      description: "Cancellazione conforme al GDPR. Elimina permanentemente il profilo del richiedente e tutte le relative richieste di servizio."
+      security:
+        - bearerAuth: []
+      x-role-required: requester
+      responses:
+        '200':
+          description: "Profilo e richieste eliminati correttamente"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Utente non trovato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /requesters/requests:
+    get:
+      tags:
+        - Requesters
+      summary: "Ricevi le tue richieste di servizio"
+      description: "Restituisce tutte le richieste create dal richiedente autenticato."
+      security:
+        - bearerAuth: []
+      x-role-required: requester
+      responses:
+        '200':
+          description: "Elenco delle richieste di servizio del richiedente"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Request'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Requesters
+      summary: "Crea una nuova richiesta di servizio"
+      description: "Crea una nuova richiesta di servizio che verrà pubblicata per i volontari."
+      security:
+        - bearerAuth: []
+      x-role-required: requester
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - serviceType
+                - location
+                - date
+                - time
+              properties:
+                serviceType:
+                  type: string
+                location:
+                  type: string
+                date:
+                  type: string
+                  example: "2024-12-31"
+                time:
+                  type: string
+                  example: "14:30"
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: "Richiesta creata con successo"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  requestId:
+                    type: string
+        '400':
+          description: "Errore di convalida"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /requesters/requests/{requestId}:
+    put:
+      tags:
+        - Requesters
+      summary: "Aggiorna una richiesta di servizio"
+      description: "Aggiorna completamente una richiesta di servizio, solo se è ancora pendente (\"In Attesa di Volontario\")."
+      security:
+        - bearerAuth: []
+      x-role-required: requester
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - serviceType
+                - location
+                - date
+                - time
+              properties:
+                serviceType:
+                  type: string
+                location:
+                  type: string
+                date:
+                  type: string
+                time:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: "Richiesta aggiornata con successo"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: "Impossibile modificare la richiesta"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Richiesta non trovata o non posseduta"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - Requesters
+      summary: "Aggiorna parzialmente lo stato di una richiesta di servizio"
+      description: "Aggiorna solo il campo stato. Se contrassegnato come \"Completata\", i punti vengono assegnati al volontario."
+      security:
+        - bearerAuth: []
+      x-role-required: requester
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - In Attesa di Volontario
+                    - In Corso
+                    - Completata
+                    - Annullata
+      responses:
+        '200':
+          description: "Stato aggiornato con successo"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: "Stato non valido"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Richiesta non trovata"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Requesters
+      summary: "Elimina o annulla una richiesta di servizio"
+      description: "Eliminazione definitiva se già annullata o completata, altrimenti esegue una cancellazione temporanea modificando lo stato in \"Annullata\"."
+      security:
+        - bearerAuth: []
+      x-role-required: requester
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Richiesta eliminata o annullata con successo"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: "La richiesta non può essere annullata (ad esempio, già in corso)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Richiesta non trovata"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /requesters/requests/{requestId}/ratings:
+    put:
+      tags:
+        - Requesters
+      summary: "Valuta una richiesta completata"
+      description: "Consente al richiedente di valutare una richiesta una volta completata."
+      security:
+        - bearerAuth: []
+      x-role-required: requester
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - rating
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+      responses:
+        '200':
+          description: "Valutazione aggiunta con successo"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: "Valutazione non valida o richiesta non completata"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Richiesta non trovata"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /administrators/users:
+    get:
+      tags:
+        - Administrators
+      summary: "Cerca utenti"
+      description: "Cerca gli utenti per nome, cognome, email o ruolo. I moderatori non possono vedere gli utenti amministratori."
+      security:
+        - bearerAuth: []
+      x-role-required: administrator
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: "Termine di ricerca per nome, cognome o email"
+        - in: query
+          name: role
+          schema:
+            type: string
+          description: "Filtra per ruolo utente"
+      responses:
+        '200':
+          description: "Elenco degli utenti recuperati correttamente"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Proibito (authLvl insufficiente)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /administrators/users/{userId}:
+    delete:
+      tags:
+        - Administrators
+      summary: "Elimina un utente"
+      description: "Eliminazione definitiva di un account utente e pulizia a cascata (ad esempio, richieste, assegnazioni). Richiede ADMIN authLvl (2)."
+      security:
+        - bearerAuth: []
+      x-role-required: administrator
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Utente eliminato con successo"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  deletedUserId:
+                    type: string
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Proibito (richiede l'ADMIN o il tentativo di eliminare authLvl superiore/uguale)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Utente non trovato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /administrators/users/{userId}/roles/administrator:
+    put:
+      tags:
+        - Administrators
+      summary: "Promuovere o declassare il livello di autorizzazione del volontario"
+      description: "Modifica il livello di autorizzazione di un volontario (0=Utente, 1=Moderatore, 2=Amministratore). Richiede ADMIN authLvl."
+      security:
+        - bearerAuth: []
+      x-role-required: administrator
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - targetLevel
+              properties:
+                targetLevel:
+                  type: integer
+                  enum: [0, 1, 2]
+      responses:
+        '200':
+          description: "Livello aggiornato con successo"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: "L'utente target non è un volontario"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Utente non trovato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /administrators/users/{userId}/password-resets:
+    post:
+      tags:
+        - Administrators
+      summary: "Reimposta la password del partner"
+      description: "Genera una nuova password casuale per un account partner e la contrassegna come pronta."
+      security:
+        - bearerAuth: []
+      x-role-required: administrator
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Reimpostazione della password riuscita"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  newPassword:
+                    type: string
+        '400':
+          description: "È possibile reimpostare solo le password dei partner"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Utente non trovato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /administrators/users/{userId}/suspensions:
+    put:
+      tags:
+        - Administrators
+      summary: "Sospendere un utente"
+      description: "Impone all'utente una sospensione progressiva. Impossibile sospendere l'amministratore o i peer."
+      security:
+        - bearerAuth: []
+      x-role-required: administrator
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Utente sospeso con successo"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato (ad esempio, tentativo di sospendere un peer o un amministratore)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Utente non trovato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Administrators
+      summary: "Ripristina un utente sospeso"
+      description: "Rimuove anticipatamente la sospensione dall'account utente."
+      security:
+        - bearerAuth: []
+      x-role-required: administrator
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Utente ripristinato correttamente"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Utente non trovato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /administrators/partners:
+    post:
+      tags:
+        - Administrators
+      summary: "Crea un nuovo account partner"
+      description: "Consente all'ADMIN di effettuare il provisioning di un nuovo account business partner."
+      security:
+        - bearerAuth: []
+      x-role-required: administrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '201':
+          description: "Partner creato con successo"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: "Esiste un errore di convalida o un'e-mail"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato (è richiesto il livello ADMIN)"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /administrators/requests:
+    get:
+      tags:
+        - Administrators
+      summary: "Ricevi tutte le richieste di sistema"
+      description: "Recupera un elenco globale di tutte le richieste senza filtraggio, limitato a 100 risultati."
+      security:
+        - bearerAuth: []
+      x-role-required: administrator
+      responses:
+        '200':
+          description: "Elenco di tutte le richieste"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Request'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /administrators/requests/{requestId}:
+    delete:
+      tags:
+        - Administrators
+      summary: "Elimina definitivamente una richiesta"
+      description: "Gli amministratori possono eliminare forzatamente qualsiasi richiesta tramite ID."
+      security:
+        - bearerAuth: []
+      x-role-required: administrator
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Richiesta eliminata con successo"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Richiesta non trovata"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /partners/coupons:
+    get:
+      tags:
+        - Partners
+      summary: "Ottieni tutti i coupon dei partner"
+      description: "Restituisce un elenco di coupon creati dal partner autenticato."
+      security:
+        - bearerAuth: []
+      x-role-required: partner
+      responses:
+        '200':
+          description: "Elenco dei coupon del partner"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Coupon'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Partners
+      summary: "Crea un nuovo buono"
+      description: "Definisce un nuovo coupon di ricompensa da rendere visibile nel negozio dei volontari."
+      security:
+        - bearerAuth: []
+      x-role-required: partner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - description
+                - pointsCost
+                - expirationDate
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                pointsCost:
+                  type: integer
+                expirationDate:
+                  type: string
+                  example: "2025-12-31"
+      responses:
+        '201':
+          description: "Coupon creato con successo"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  couponId:
+                    type: string
+        '400':
+          description: "Errore di convalida"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /partners/coupons/{id}:
+    put:
+      tags:
+        - Partners
+      summary: "Aggiorna un coupon"
+      description: "Modifica i dettagli del coupon (deve essere di proprietà del partner chiamante)."
+      security:
+        - bearerAuth: []
+      x-role-required: partner
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                pointsCost:
+                  type: integer
+                expirationDate:
+                  type: string
+      responses:
+        '200':
+          description: "Coupon aggiornato con successo"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: "Errore di convalida"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Coupon non trovato o non posseduto"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Partners
+      summary: "Elimina un coupon"
+      description: "Rimuove un coupon dal sistema."
+      security:
+        - bearerAuth: []
+      x-role-required: partner
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Coupon eliminato con successo"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Coupon non trovato o non posseduto"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /partners/coupons/{id}/purchases:
+    get:
+      tags:
+        - Partners
+      summary: "Ottieni il riscatto dei coupon"
+      description: "Recupera l'elenco di tutti i riscatti/acquisti effettuati dai volontari per un coupon specifico."
+      security:
+        - bearerAuth: []
+      x-role-required: partner
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Elenco dei rimborsi"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    volunteerName:
+                      type: string
+                    redeemedCode:
+                      type: string
+                    date:
+                      type: string
+                      format: date-time
+        '401':
+          description: "Non autorizzato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: "Vietato"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: "Coupon non trovato o non posseduto"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "Errore interno del server"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /system-status:
+    get:
+      tags:
+        - System
+      summary: "Controllo sanitario"
+      description: "Restituisce lo stato di integrità dell'API."
+      security: []
+      responses:
+        '200':
+          description: "Il sistema è in esecuzione"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+
+  /constants:
+    get:
+      tags:
+        - System
+      summary: "Ottieni costanti di sistema"
+      description: "Restituisce enumerazioni e variabili di configurazione utilizzate dal frontend."
+      security: []
+      responses:
+        '200':
+          description: "Costanti di sistema restituite"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  SERVICES:
+                    type: array
+                    items:
+                      type: string
+                  ROLES:
+                    type: object
+                  REQUEST_STATUS:
+                    type: object
+                  AUTH_LVL:
+                    type: object
+                  DEFAULT_POINTS:
+                    type: integer
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        _id:
           type: string
-    required:
-      - question
-      - choices
-    example:
-      question: Favourite programming language?
-      choices:
-        - Swift
-        - Python
-        - Objective-C
-        - Ruby
+        id:
+          type: string
+        name:
+          type: string
+        surname:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [requester, volunteer, partner]
+        phone:
+          type: string
+        address:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        authLvl:
+          type: integer
+          enum: [0, 1, 2]
+        points:
+          type: integer
+        skills:
+          type: array
+          items:
+            type: string
+        coupons:
+          type: array
+          items:
+            $ref: '#/components/schemas/OwnedCoupon'
+        age:
+          type: integer
+        gender:
+          type: string
+        license:
+          type: string
+        isSuspended:
+          type: boolean
+        suspendedUntil:
+          type: string
+          format: date-time
+
+    Request:
+      type: object
+      properties:
+        _id:
+          type: string
+        userId:
+          type: string
+        serviceType:
+          type: string
+        category:
+          type: string
+        title:
+          type: string
+        location:
+          type: string
+        address:
+          type: string
+        date:
+          type: string
+        time:
+          type: string
+        dateTime:
+          type: string
+        notes:
+          type: string
+        description:
+          type: string
+        points:
+          type: integer
+        status:
+          type: string
+          enum:
+            - In Attesa di Volontario
+            - In Corso
+            - Completata
+            - Annullata
+        volunteerId:
+          type: string
+          nullable: true
+        requesterName:
+          type: string
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    Coupon:
+      type: object
+      properties:
+        _id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        pointsCost:
+          type: integer
+        expirationDate:
+          type: string
+        partnerId:
+          type: string
+
+    OwnedCoupon:
+      type: object
+      properties:
+        name:
+          type: string
+        cost:
+          type: integer
+        code:
+          type: string
+        acquiredAt:
+          type: string
+          format: date-time
+
+    AuthResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserPublic'
+
+    UserPublic:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        surname:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        points:
+          type: integer
+        authLvl:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+    RegistrationRequest:
+      type: object
+      required:
+        - email
+        - password
+        - role
+      properties:
+        name:
+          type: string
+        surname:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [requester, volunteer]
+        age:
+          type: integer
+          minimum: 18
+        gender:
+          type: string
+        license:
+          type: string
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    VolunteerProfileUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        surname:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        age:
+          type: integer
+          minimum: 18
+        license:
+          type: string
+        gender:
+          type: string
