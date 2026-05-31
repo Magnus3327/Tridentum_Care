@@ -112,4 +112,52 @@ window.toggleUserDropdown = function() {
     dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
 }
 
+window.customConfirm = function(message, title = 'Conferma') {
+    return new Promise((resolve) => {
+        let overlay = document.getElementById('custom-confirm-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'custom-confirm-overlay';
+            overlay.className = 'modal-overlay';
+            // Usa gli stili per far sembrare il popup moderno
+            overlay.innerHTML = `
+                <div class="modal-content" style="max-width: 450px; text-align: center; border-radius: 12px;">
+                    <h3 id="custom-confirm-title" style="margin-bottom: 1rem; color: var(--text-color);"></h3>
+                    <p id="custom-confirm-message" style="color: var(--text-muted); margin-bottom: 1.5rem; white-space: pre-wrap; font-size: 1.05rem;"></p>
+                    <div class="grid-2" style="gap: 1rem;">
+                        <button id="custom-confirm-cancel" class="btn btn-outline btn-block">Annulla</button>
+                        <button id="custom-confirm-ok" class="btn btn-primary btn-block">Conferma</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        document.getElementById('custom-confirm-title').innerText = title;
+        document.getElementById('custom-confirm-message').innerText = message;
+        
+        const btnCancel = document.getElementById('custom-confirm-cancel');
+        const btnOk = document.getElementById('custom-confirm-ok');
+
+        const cleanup = () => {
+            overlay.classList.remove('active');
+            btnCancel.onclick = null;
+            btnOk.onclick = null;
+        };
+
+        btnCancel.onclick = () => {
+            cleanup();
+            resolve(false);
+        };
+
+        btnOk.onclick = () => {
+            cleanup();
+            resolve(true);
+        };
+
+        // Usa setTimeout per permettere al display:flex di fare effetto prima della transizione opacity
+        setTimeout(() => overlay.classList.add('active'), 10);
+    });
+};
+
 // Funzioni e logica per il requester

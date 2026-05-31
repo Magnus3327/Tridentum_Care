@@ -107,7 +107,7 @@ window.selectedPartnerId = null;
 window.showUserDetailsModal = function(userId) {
     const user = window.adminUsersCache?.find(u => String(u.id || u._id) === String(userId));
     if (!user) {
-        alert("Errore: Utente non trovato nella cache locale. Ricarica la pagina.");
+        showToast("Errore: Utente non trovato nella cache locale. Ricarica la pagina.", 'danger');
         return;
     }
     
@@ -128,7 +128,7 @@ window.showUserDetailsModal = function(userId) {
     if (user.isSuspended) html += `<div><strong>Stato Account:</strong> Sospeso (Sospensioni totali: ${user.suspensionCount})</div>`;
     
     if (!content || !partnerSection) {
-        alert("Errore visivo: il tuo browser ha memorizzato la vecchia grafica. Premi Cmd + Shift + R per forzare l'aggiornamento!");
+        showToast("Errore visivo: il tuo browser ha memorizzato la vecchia grafica. Premi Cmd + Shift + R per forzare l'aggiornamento!", 'danger');
         return;
     }
 
@@ -295,7 +295,7 @@ window.suspendAdminUser = async function(userId, currentCount) {
     else if (newCount === 3) durationMsg = '1 settimana';
     else durationMsg = '1 mese';
 
-    const confirmed = window.confirm(`Vuoi sospendere questo utente?\nQuesta sarà la sua ${newCount}° sospensione, che durerà automaticamente ${durationMsg}. Confermi?`);
+    const confirmed = await window.customConfirm(`Vuoi sospendere questo utente?\nQuesta sarà la sua ${newCount}° sospensione, che durerà automaticamente ${durationMsg}. Confermi?`);
     if (!confirmed) return;
 
     try {
@@ -319,7 +319,7 @@ window.suspendAdminUser = async function(userId, currentCount) {
 
 window.restoreAdminUser = async function(userId) {
     if (!userId) return;
-    const confirmed = window.confirm("Vuoi riattivare questo utente? L'accesso sarà sbloccato immediatamente.");
+    const confirmed = await window.customConfirm("Vuoi riattivare questo utente? L'accesso sarà sbloccato immediatamente.");
     if (!confirmed) return;
 
     try {
@@ -343,7 +343,7 @@ window.restoreAdminUser = async function(userId) {
 
 window.deleteAdminUser = async function(userId) {
     if (!userId) return;
-    const confirmed = window.confirm('Vuoi eliminare questo utente? L\'operazione è irreversibile.');
+    const confirmed = await window.customConfirm("Vuoi eliminare questo utente? L'operazione è irreversibile.");
     if (!confirmed) return;
 
     try {
@@ -394,8 +394,7 @@ async function loadAdminDashboard() {
             }
 
             const payload = {
-                email: document.getElementById('admin-partner-email')?.value.trim(),
-                password: document.getElementById('admin-partner-password')?.value
+                email: document.getElementById('admin-partner-email')?.value.trim()
             };
 
             try {
@@ -412,6 +411,13 @@ async function loadAdminDashboard() {
 
                 showToast('Partner creato con successo.', 'success');
                 partnerForm.reset();
+                
+                if (data.newPassword) {
+                    document.getElementById('partner-cred-email').innerText = payload.email;
+                    document.getElementById('partner-cred-password').value = data.newPassword;
+                    window.openModal('partner-credentials-modal');
+                }
+                
                 await loadAdminUsers();
             } catch (error) {
                 console.error('Errore creazione partner admin:', error);
@@ -501,7 +507,7 @@ window.loadAdminRequests = async function() {
 
 window.deleteAdminRequest = async function(requestId) {
     if (!requestId) return;
-    const confirmed = window.confirm("Vuoi davvero eliminare questa richiesta? L'operazione è irreversibile.");
+    const confirmed = await window.customConfirm("Vuoi davvero eliminare questa richiesta? L'operazione è irreversibile.");
     if (!confirmed) return;
 
     try {

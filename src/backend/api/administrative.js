@@ -128,10 +128,10 @@ async function createPartnerUser(req, res) {
       return res.status(403).json({ error: 'Accesso negato: permessi insufficienti per creare un partner' });
     }
 
-    const { email, password } = req.body;
+    const { email } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email e password obbligatorie' });
+    if (!email) {
+      return res.status(400).json({ error: 'Email obbligatoria' });
     }
 
     const db = req.app.locals.db;
@@ -143,7 +143,8 @@ async function createPartnerUser(req, res) {
       return res.status(400).json({ error: 'Questa email è già registrata' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const newPlainPassword = Math.random().toString(36).slice(-8);
+    const hashedPassword = await bcrypt.hash(newPlainPassword, 10);
 
     const newPartner = {
       role: ROLES.PARTNER,
@@ -158,7 +159,8 @@ async function createPartnerUser(req, res) {
 
     return res.status(201).json({
       message: 'Partner creato con successo',
-      user: toPublicUser({ ...newPartner, _id: result.insertedId })
+      user: toPublicUser({ ...newPartner, _id: result.insertedId }),
+      newPassword: newPlainPassword
     });
   } catch (error) {
     console.error('Errore creazione partner:', error);
