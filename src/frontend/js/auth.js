@@ -84,7 +84,7 @@ function bindAuthEvents() {
             const password = document.getElementById('login-password').value;
 
             try {
-                const response = await fetch('/api/auth/login', {
+                const response = await fetch('/api/v1/auth/sessions', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -167,7 +167,7 @@ function bindAuthEvents() {
             }
 
             try {
-                const response = await fetch('/api/auth/register', {
+                const response = await fetch('/api/v1/auth/registrations', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)

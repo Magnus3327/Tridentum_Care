@@ -34,9 +34,9 @@ window.loadProfile = async function() {
     try {
         let profileEndpoint;
         if (role === 'volunteer') {
-            profileEndpoint = '/api/volunteer/profile';
+            profileEndpoint = '/api/v1/volunteers/me';
         } else if (role === 'requester') {
-            profileEndpoint = '/api/requester/profile';
+            profileEndpoint = '/api/v1/requesters/me';
         } else {
             showToast("Ruolo utente non valido. Effettua nuovamente il login.", "danger");
             navigateTo('auth');
@@ -173,9 +173,9 @@ window.saveProfile = async function(event) {
     try {
         let profileEndpoint;
         if (role === 'volunteer') {
-            profileEndpoint = '/api/volunteer/profile';
+            profileEndpoint = '/api/v1/volunteers/me';
         } else if (role === 'requester') {
-            profileEndpoint = '/api/requester/profile';
+            profileEndpoint = '/api/v1/requesters/me';
         } else {
             showToast("Ruolo utente non valido. Effettua nuovamente il login.", "danger");
             navigateTo('auth');
@@ -212,7 +212,7 @@ window.buyCoupon = async function(couponId, couponName, costoPunti) {
     if (!confirm(`Sei sicuro di voler utilizzare ${costoPunti} punti per "${couponName}"?`)) return;
 
     try {
-        const response = await authorizedFetch(`/api/volunteer/coupons/redeem`, {
+        const response = await authorizedFetch(`/api/v1/volunteers/coupons/redemptions`, {
             method: "POST",
             body: JSON.stringify({ couponId })
         });
@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
     if (token) {
         try {
-            const response = await fetch('/api/auth/me', {
+            const response = await fetch('/api/v1/auth/me', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -339,7 +339,7 @@ window.deleteUserProfile = async function() {
             confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right: 0.5rem;"></i> Eliminazione in corso...';
             
             const role = appState.userRole; // 'requester' o 'volunteer'
-            const endpoint = `/api/${role}/profile`;
+            const endpoint = role === 'volunteer' ? '/api/v1/volunteers/me' : '/api/v1/requesters/me';
             
             const response = await authorizedFetch(endpoint, {
                 method: 'DELETE'

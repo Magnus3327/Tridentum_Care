@@ -70,7 +70,6 @@ router.post('/requests', async (req, res) => {
       volunteerId: null,
       completedAt: null,
       rating: null,
-      review: null,
       requesterName
     };
 
@@ -125,48 +124,7 @@ router.get('/requests', async (req, res) => {
   }
 });
 
-// Compatibilità con path param (assicurando l'autorizzazione)
-router.get('/requests/:userId', async (req, res) => {
-  try {
-    const db = await getDatabase(req);
-    const { userId } = req.params;
 
-    if (userId !== req.user.userId) {
-      return res.status(403).json({ error: 'Non autorizzato a visualizzare queste richieste' });
-    }
-
-    const requests = await db
-      .collection('requests')
-      .find({ userId: new ObjectId(userId) })
-      .sort({ createdAt: -1 })
-      .toArray();
-
-    const enrichedRequests = await Promise.all(requests.map(async (request) => {
-      if (request.volunteerId) {
-        try {
-          const volunteer = await db.collection('users').findOne(
-            { _id: new ObjectId(request.volunteerId) },
-            { projection: { name: 1, surname: 1 } }
-          );
-          if (volunteer) {
-            return {
-              ...request,
-              volunteerName: volunteer.name,
-              volunteerSurname: volunteer.surname
-            };
-          }
-        } catch (e) {
-          console.error("Errore recupero volontario:", e);
-        }
-      }
-      return request;
-    }));
-
-    res.json(enrichedRequests);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // API per aggiornare una richiesta esistente dell'utente loggato
 router.put('/requests/:requestId', async (req, res) => {
@@ -222,7 +180,7 @@ router.put('/requests/:requestId', async (req, res) => {
 });
 
 // API per aggiornare lo stato di una richiesta (es. completata o annullata)
-router.put('/requests/:requestId/status', async (req, res) => {
+router.patch('/requests/:requestId', async (req, res) => {
   try {
     const db = await getDatabase(req);
     const { requestId } = req.params;
@@ -274,12 +232,12 @@ router.put('/requests/:requestId/status', async (req, res) => {
 });
 
 // API per aggiungere valutazione alla richiesta completata
-router.put('/requests/:requestId/rating', async (req, res) => {
+router.put('/requests/:requestId/ratings', async (req, res) => {
   try {
     const db = await getDatabase(req);
     const { requestId } = req.params;
     const userId = req.user.userId;
-    const { rating, review } = req.body;
+    const { rating } = req.body;
 
     if (typeof rating !== 'number' || rating < 1 || rating > 5) {
       return res.status(400).json({ error: 'Valutazione non valida. Deve essere un numero da 1 a 5.' });
@@ -298,13 +256,25 @@ router.put('/requests/:requestId/rating', async (req, res) => {
       return res.status(400).json({ error: 'È possibile valutare solo richieste completate.' });
     }
 
+    if (request.rating) {
+      return res.status(400).json({ error: 'La richiesta è già stata valutata.' });
+    }
+
     const result = await db.collection('requests').updateOne(
       { _id: new ObjectId(requestId) },
-      { $set: { rating, review: review || '' } }
+      { $set: { rating } }
     );
 
     if (result.matchedCount === 0) {
       return res.status(404).json({ error: 'Richiesta non trovata' });
+    }
+
+    // Aumenta il punteggio del volontario in base alla recensione
+    if (request.volunteerId) {
+      await db.collection('users').updateOne(
+        { _id: new ObjectId(request.volunteerId) },
+        { $inc: { points: rating } }
+      );
     }
 
     res.json({ message: 'Valutazione salvata con successo' });
@@ -353,7 +323,7 @@ router.delete('/requests/:requestId', async (req, res) => {
 });
 
 // API per caricare il profilo del richiedente.
-router.get('/profile', async (req, res) => {
+router.get('/me', async (req, res) => {
   try {
     const db = await getDatabase(req);
     const userId = req.user.userId;
@@ -371,7 +341,7 @@ router.get('/profile', async (req, res) => {
 });
 
 // API per aggiornare il profilo del richiedente.
-router.put('/profile', async (req, res) => {
+router.put('/me', async (req, res) => {
   try {
     const db = await getDatabase(req);
     const userId = req.user.userId;
@@ -397,7 +367,7 @@ router.put('/profile', async (req, res) => {
 });
 
 // API per eliminare definitivamente il profilo del richiedente.
-router.delete('/profile', async (req, res) => {
+router.delete('/me', async (req, res) => {
   try {
     const db = await getDatabase(req);
     const userId = req.user.userId;

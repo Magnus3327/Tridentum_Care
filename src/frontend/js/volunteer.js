@@ -44,8 +44,8 @@ window.loadVolunteerMapRequests = async function() {
     try {
         // Fetch sia delle richieste attive che di quelle accettate
         const [activeRes, myTasksRes] = await Promise.all([
-            authorizedFetch('/api/volunteer/requests'),
-            authorizedFetch('/api/volunteer/my-tasks')
+            authorizedFetch('/api/v1/requests'),
+            authorizedFetch('/api/v1/volunteers/me/tasks')
         ]);
 
         const activeRequests = activeRes.ok ? await activeRes.json() : [];
@@ -110,7 +110,7 @@ window.loadVolunteerMapRequests = async function() {
 
 async function loadVolunteerDashboard() {
     try {
-        const response = await authorizedFetch('/api/volunteer/profile');
+        const response = await authorizedFetch('/api/v1/volunteers/me');
         if (response.ok) {
             const profile = await response.json();
             appState.points = profile.points || 0;
@@ -125,13 +125,22 @@ async function loadVolunteerDashboard() {
             // Aggiorna il filtro categorie basato sulle competenze
             const filterSelect = document.getElementById("request-category-filter");
             if (filterSelect) {
-                let optionsHtml = '<option value="Tutti i servizi">Tutti i servizi</option>';
+                let optionsHtml = '';
+                
+                if (appState.skills.length !== 1) {
+                    optionsHtml += '<option value="Tutti i servizi">Tutti i servizi</option>';
+                }
+                
                 appState.skills.forEach(skill => {
                     optionsHtml += `<option value="${skill}">${skill}</option>`;
                 });
+                
                 const currentVal = filterSelect.value;
                 filterSelect.innerHTML = optionsHtml;
-                if (appState.skills.includes(currentVal) || currentVal === "Tutti i servizi") {
+                
+                if (appState.skills.length === 1) {
+                    filterSelect.value = appState.skills[0];
+                } else if (appState.skills.includes(currentVal) || currentVal === "Tutti i servizi") {
                     filterSelect.value = currentVal;
                 } else {
                     filterSelect.value = "Tutti i servizi";
@@ -158,7 +167,7 @@ window.loadActiveRequests = async function() {
     const category = filterSelect ? filterSelect.value : "Tutti i servizi";
 
     try {
-        const url = `/api/volunteer/requests?category=${encodeURIComponent(category)}`;
+        const url = `/api/v1/requests?category=${encodeURIComponent(category)}`;
         const response = await authorizedFetch(url);
         if (!response.ok) throw new Error("Errore nel caricamento richieste");
 
@@ -275,7 +284,7 @@ window.showRequestDetails = function(requestId) {
 
 async function acceptRequest(requestId) {
     try {
-        const response = await authorizedFetch(`/api/volunteer/requests/${requestId}/accept`, {
+        const response = await authorizedFetch(`/api/v1/requests/${requestId}/assignments`, {
             method: "POST"
         });
         
@@ -305,7 +314,7 @@ async function loadMyTasks() {
     if (!container) return;
 
     try {
-        const response = await authorizedFetch('/api/volunteer/my-tasks');
+        const response = await authorizedFetch('/api/v1/volunteers/me/tasks');
         if (!response.ok) throw new Error("Errore nel caricamento dei propri compiti");
 
         const tasks = await response.json();
@@ -357,8 +366,8 @@ async function loadMyTasks() {
 
 window.cancelTask = async function(taskId) {
     try {
-        const response = await authorizedFetch(`/api/volunteer/requests/${taskId}/cancel`, {
-            method: "POST"
+        const response = await authorizedFetch(`/api/v1/requests/${taskId}/assignments`, {
+            method: "DELETE"
         });
 
         const data = await response.json();
@@ -396,7 +405,7 @@ async function loadStoreCoupons() {
     `;
 
     try {
-        const response = await authorizedFetch('/api/volunteer/coupons');
+        const response = await authorizedFetch('/api/v1/volunteers/coupons');
         if (!response.ok) throw new Error('Errore di rete');
         
         const coupons = await response.json();

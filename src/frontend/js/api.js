@@ -2,7 +2,7 @@ window.adminUsersCache = [];
 async function fetchConstants() {
     if (appState.constants) return appState.constants;
     try {
-        const response = await fetch('/api/constants');
+        const response = await fetch('/api/v1/constants');
         if (response.ok) {
             appState.constants = await response.json();
             return appState.constants;

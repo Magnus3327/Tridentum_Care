@@ -12,7 +12,7 @@ window.loadPartnerDashboard = async function() {
     } else if (welcomeName) {
         // Fallback or fetch from API if necessary
         try {
-            const meRes = await authorizedFetch('/api/auth/me');
+            const meRes = await authorizedFetch('/api/v1/auth/me');
             if (meRes.ok) {
                 const me = await meRes.json();
                 if (me.name) {
@@ -47,7 +47,7 @@ window.loadPartnerDashboard = async function() {
     }
 
     try {
-        const response = await authorizedFetch('/api/partner/coupons');
+        const response = await authorizedFetch('/api/v1/partners/coupons');
         if (!response.ok) throw new Error('Errore nel caricamento dei coupon');
         
         const coupons = await response.json();
@@ -173,12 +173,12 @@ window.submitPartnerCoupon = async function(event) {
     try {
         let response;
         if (id) {
-            response = await authorizedFetch('/api/partner/coupons/' + id, {
+            response = await authorizedFetch('/api/v1/partners/coupons/' + id, {
                 method: 'PUT',
                 body: JSON.stringify(payload)
             });
         } else {
-            response = await authorizedFetch('/api/partner/coupons', {
+            response = await authorizedFetch('/api/v1/partners/coupons', {
                 method: 'POST',
                 body: JSON.stringify(payload)
             });
@@ -202,7 +202,7 @@ window.deletePartnerCoupon = async function(id) {
     if (!confirm('Sei sicuro di voler eliminare questo coupon?')) return;
     
     try {
-        const response = await authorizedFetch('/api/partner/coupons/' + id, {
+        const response = await authorizedFetch('/api/v1/partners/coupons/' + id, {
             method: 'DELETE'
         });
         

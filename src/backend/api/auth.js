@@ -9,7 +9,7 @@ const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "tridentum_care_secret_key_123";
 
 // 1. REGISTRAZIONE
-router.post("/register", async (req, res) => {
+router.post("/registrations", async (req, res) => {
   try {
     const { name, surname, email, password, role, age, gender, license } = req.body;
 
@@ -97,7 +97,7 @@ router.post("/register", async (req, res) => {
 });
 
 // 2. LOGIN
-router.post("/login", async (req, res) => {
+router.post("/sessions", async (req, res) => {
   try {
     const { email, password } = req.body;
 
