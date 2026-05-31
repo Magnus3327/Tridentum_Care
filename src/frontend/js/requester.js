@@ -262,7 +262,12 @@ window.loadRequesterDashboard = async function() {
 
         let html = '<div class="grid-2" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; width: 100%;">';
         requests.forEach(req => {
-            const badgeClass = req.status === 'Completata' ? 'badge-success' : req.status === 'Annullata' ? 'badge-danger' : 'badge-warning';
+            let badgeClass = req.status === 'Completata' ? 'badge-success' : req.status === 'Annullata' ? 'badge-danger' : 'badge-warning';
+            let displayStatus = req.status;
+            if (req.status === 'Completata' && (!req.rating || req.rating === 0)) {
+                displayStatus = 'Da Valutare';
+                badgeClass = 'badge-primary';
+            }
             let volunteerHtml = '';
             if (req.volunteerName) {
                 volunteerHtml = `
@@ -275,7 +280,7 @@ window.loadRequesterDashboard = async function() {
                 <div class="card" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; min-height: 260px;">
                     <div>
                         <div class="flex justify-between items-center" style="margin-bottom: 1rem; gap: 1rem; flex-wrap: wrap;">
-                            <span class="badge ${badgeClass}">${req.status}</span>
+                            <span class="badge ${badgeClass}">${displayStatus}</span>
                             <span style="font-size: 0.9rem; color: var(--text-muted);">${req.date} ${req.time}</span>
                         </div>
                         <h3 style="margin: 0 0 0.75rem;">${req.serviceType}</h3>
@@ -305,7 +310,19 @@ window.openRequesterDetail = function(requestId) {
     if (!req) return;
 
     window.currentRequesterRequestId = requestId;
-    document.getElementById('req-detail-status').innerText = req.status;
+    
+    let displayStatus = req.status;
+    let badgeClass = req.status === 'Completata' ? 'badge-success' : req.status === 'Annullata' ? 'badge-danger' : 'badge-warning';
+    if (req.status === 'Completata' && (!req.rating || req.rating === 0)) {
+        displayStatus = 'Da Valutare';
+        badgeClass = 'badge-primary';
+    }
+    
+    const statusBadge = document.getElementById('req-detail-status');
+    if (statusBadge) {
+        statusBadge.innerText = displayStatus;
+        statusBadge.className = `badge ${badgeClass}`;
+    }
     document.getElementById('req-detail-title').innerText = req.serviceType;
     document.getElementById('req-detail-date').innerText = req.date;
     document.getElementById('req-detail-time').innerText = req.time;
