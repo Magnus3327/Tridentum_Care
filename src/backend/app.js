@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const connectDB = require('../config/db');
+const cors = require('cors');
 
 const authRouter = require('./api/auth');
 const volunteerRouter = require('./api/volunteer');
@@ -14,6 +15,7 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 
 // Connessione asincrona al Database
 connectDB()

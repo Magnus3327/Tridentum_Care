@@ -366,6 +366,49 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /volunteers/me/tasks:
+    get:
+      tags:
+        - Volunteers
+      summary: Get volunteer's assigned tasks
+      description: Returns all requests currently assigned to the authenticated volunteer with status "In Corso", sorted by creation date descending.
+      security:
+        - bearerAuth: []
+      x-role-required: volunteer
+      responses:
+        '200':
+          description: List of assigned tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Request'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (wrong role)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Volunteer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
   /requests:
     get:
       tags:
