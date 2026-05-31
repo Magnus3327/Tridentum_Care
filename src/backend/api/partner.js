@@ -40,6 +40,15 @@ router.post("/coupons", authMiddleware, isPartner, async (req, res) => {
       return res.status(400).json({ error: "Titolo, costo in punti e data di scadenza sono obbligatori." });
     }
 
+    const parsedDate = Date.parse(expirationDate);
+    if (isNaN(parsedDate)) {
+      return res.status(400).json({ error: "La data di scadenza inserita non è valida." });
+    }
+    const today = new Date().toISOString().split('T')[0];
+    if (expirationDate < today) {
+      return res.status(400).json({ error: "La data di scadenza non può essere nel passato." });
+    }
+
     const db = req.app.locals.db;
     const newCoupon = {
       partnerId: new ObjectId(req.user.userId),
@@ -77,7 +86,17 @@ router.put("/coupons/:id", authMiddleware, isPartner, async (req, res) => {
     if (title !== undefined) updateFields.title = title;
     if (description !== undefined) updateFields.description = description;
     if (pointsCost !== undefined) updateFields.pointsCost = parseInt(pointsCost);
-    if (expirationDate !== undefined) updateFields.expirationDate = expirationDate;
+    if (expirationDate !== undefined) {
+      const parsedDate = Date.parse(expirationDate);
+      if (isNaN(parsedDate)) {
+        return res.status(400).json({ error: "La data di scadenza inserita non è valida." });
+      }
+      const today = new Date().toISOString().split('T')[0];
+      if (expirationDate < today) {
+        return res.status(400).json({ error: "La data di scadenza non può essere nel passato." });
+      }
+      updateFields.expirationDate = expirationDate;
+    }
 
     await db.collection("coupons").updateOne(
       { _id: couponId },
