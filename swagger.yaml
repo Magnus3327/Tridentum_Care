@@ -956,7 +956,7 @@ paths:
       tags:
         - Requesters
       summary: Rate a completed request
-      description: Allows a requester to rate and review a request once it is completed.
+      description: Allows a requester to rate a request once it is completed.
       security:
         - bearerAuth: []
       x-role-required: requester
@@ -979,8 +979,6 @@ paths:
                   type: integer
                   minimum: 1
                   maximum: 5
-                review:
-                  type: string
       responses:
         '200':
           description: Rating added successfully
@@ -1904,9 +1902,6 @@ components:
           type: integer
           minimum: 1
           maximum: 5
-          nullable: true
-        review:
-          type: string
           nullable: true
         createdAt:
           type: string

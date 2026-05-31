@@ -129,8 +129,7 @@ window.renderRequesterRatingSection = function(req) {
     ratingSection.style.display = 'block';
     if (typeof req.rating === 'number' && req.rating > 0) {
         ratingContent.innerHTML = `
-            <p style="margin: 0 0 0.75rem;">Hai già valutato questa richiesta con <strong>${req.rating} su 5</strong>.</p>
-            <p style="margin: 0;">${req.review ? req.review : 'Nessuna recensione aggiunta.'}</p>
+            <p style="margin: 0;">Hai già valutato questa richiesta con <strong>${req.rating} su 5</strong>.</p>
         `;
         return;
     }
@@ -147,10 +146,6 @@ window.renderRequesterRatingSection = function(req) {
                 <option value="1">1 - Insufficiente</option>
             </select>
         </div>
-        <div class="form-group">
-            <label class="form-label">Commento (opzionale)</label>
-            <textarea id="req-review" class="form-control form-control-lg" rows="3" placeholder="Racconta brevemente com'è andata."></textarea>
-        </div>
         <button class="btn btn-secondary btn-large btn-block" onclick="submitRequesterRating(window.currentRequesterRequestId)">Invia Valutazione</button>
     `;
 };
@@ -159,7 +154,6 @@ window.submitRequesterRating = async function(requestId) {
     if (!requestId) return;
 
     const ratingValue = parseInt(document.getElementById('req-rating')?.value, 10);
-    const review = document.getElementById('req-review')?.value || '';
 
     if (!ratingValue || ratingValue < 1 || ratingValue > 5) {
         showToast('Seleziona una valutazione valida da 1 a 5.', 'danger');
@@ -169,7 +163,7 @@ window.submitRequesterRating = async function(requestId) {
     try {
         const response = await authorizedFetch(`/api/v1/requesters/requests/${encodeURIComponent(requestId)}/ratings`, {
             method: 'PUT',
-            body: JSON.stringify({ rating: ratingValue, review })
+            body: JSON.stringify({ rating: ratingValue })
         });
 
         const data = await response.json();
