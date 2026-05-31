@@ -250,6 +250,15 @@ async function deleteLowerPrivilegeUser(req, res) {
       await db.collection('requests').deleteMany({ userId: targetObjectId });
     }
 
+    if (targetUser.role === ROLES.PARTNER) {
+      const partnerCoupons = await db.collection('coupons').find({ partnerId: targetObjectId }).toArray();
+      const couponIds = partnerCoupons.map(c => c._id);
+      if (couponIds.length > 0) {
+        await db.collection('coupon_redemptions').deleteMany({ couponId: { $in: couponIds } });
+      }
+      await db.collection('coupons').deleteMany({ partnerId: targetObjectId });
+    }
+
     const deletionResult = await db.collection('users').deleteOne({ _id: targetObjectId });
     if (deletionResult.deletedCount === 0) {
       return res.status(404).json({ error: 'Utente non trovato' });
