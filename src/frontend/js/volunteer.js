@@ -125,13 +125,22 @@ async function loadVolunteerDashboard() {
             // Aggiorna il filtro categorie basato sulle competenze
             const filterSelect = document.getElementById("request-category-filter");
             if (filterSelect) {
-                let optionsHtml = '<option value="Tutti i servizi">Tutti i servizi</option>';
+                let optionsHtml = '';
+                
+                if (appState.skills.length !== 1) {
+                    optionsHtml += '<option value="Tutti i servizi">Tutti i servizi</option>';
+                }
+                
                 appState.skills.forEach(skill => {
                     optionsHtml += `<option value="${skill}">${skill}</option>`;
                 });
+                
                 const currentVal = filterSelect.value;
                 filterSelect.innerHTML = optionsHtml;
-                if (appState.skills.includes(currentVal) || currentVal === "Tutti i servizi") {
+                
+                if (appState.skills.length === 1) {
+                    filterSelect.value = appState.skills[0];
+                } else if (appState.skills.includes(currentVal) || currentVal === "Tutti i servizi") {
                     filterSelect.value = currentVal;
                 } else {
                     filterSelect.value = "Tutti i servizi";

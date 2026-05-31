@@ -70,7 +70,6 @@ router.post('/requests', async (req, res) => {
       volunteerId: null,
       completedAt: null,
       rating: null,
-      review: null,
       requesterName
     };
 
@@ -238,7 +237,7 @@ router.put('/requests/:requestId/ratings', async (req, res) => {
     const db = await getDatabase(req);
     const { requestId } = req.params;
     const userId = req.user.userId;
-    const { rating, review } = req.body;
+    const { rating } = req.body;
 
     if (typeof rating !== 'number' || rating < 1 || rating > 5) {
       return res.status(400).json({ error: 'Valutazione non valida. Deve essere un numero da 1 a 5.' });
@@ -257,13 +256,25 @@ router.put('/requests/:requestId/ratings', async (req, res) => {
       return res.status(400).json({ error: 'È possibile valutare solo richieste completate.' });
     }
 
+    if (request.rating) {
+      return res.status(400).json({ error: 'La richiesta è già stata valutata.' });
+    }
+
     const result = await db.collection('requests').updateOne(
       { _id: new ObjectId(requestId) },
-      { $set: { rating, review: review || '' } }
+      { $set: { rating } }
     );
 
     if (result.matchedCount === 0) {
       return res.status(404).json({ error: 'Richiesta non trovata' });
+    }
+
+    // Aumenta il punteggio del volontario in base alla recensione
+    if (request.volunteerId) {
+      await db.collection('users').updateOne(
+        { _id: new ObjectId(request.volunteerId) },
+        { $inc: { points: rating } }
+      );
     }
 
     res.json({ message: 'Valutazione salvata con successo' });
