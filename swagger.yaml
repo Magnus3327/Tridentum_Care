@@ -1397,11 +1397,8 @@ paths:
               type: object
               required:
                 - email
-                - password
               properties:
                 email:
-                  type: string
-                password:
                   type: string
       responses:
         '201':
@@ -1415,6 +1412,8 @@ paths:
                     type: string
                   user:
                     $ref: '#/components/schemas/User'
+                  newPassword:
+                    type: string
         '400':
           description: "Esiste un errore di convalida o un'e-mail"
           content:

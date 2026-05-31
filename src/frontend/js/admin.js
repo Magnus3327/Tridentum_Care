@@ -394,8 +394,7 @@ async function loadAdminDashboard() {
             }
 
             const payload = {
-                email: document.getElementById('admin-partner-email')?.value.trim(),
-                password: document.getElementById('admin-partner-password')?.value
+                email: document.getElementById('admin-partner-email')?.value.trim()
             };
 
             try {
@@ -412,6 +411,13 @@ async function loadAdminDashboard() {
 
                 showToast('Partner creato con successo.', 'success');
                 partnerForm.reset();
+                
+                if (data.newPassword) {
+                    document.getElementById('partner-cred-email').innerText = payload.email;
+                    document.getElementById('partner-cred-password').value = data.newPassword;
+                    window.openModal('partner-credentials-modal');
+                }
+                
                 await loadAdminUsers();
             } catch (error) {
                 console.error('Errore creazione partner admin:', error);
