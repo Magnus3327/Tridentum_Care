@@ -209,7 +209,8 @@ window.buyCoupon = async function(couponId, couponName, costoPunti) {
         return;
     }
 
-    if (!confirm(`Sei sicuro di voler utilizzare ${costoPunti} punti per "${couponName}"?`)) return;
+    const confirmed = await window.customConfirm(`Sei sicuro di voler utilizzare ${costoPunti} punti per "${couponName}"?`);
+    if (!confirmed) return;
 
     try {
         const response = await authorizedFetch(`/api/v1/volunteers/coupons/redemptions`, {

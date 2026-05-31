@@ -199,7 +199,8 @@ window.submitPartnerCoupon = async function(event) {
 };
 
 window.deletePartnerCoupon = async function(id) {
-    if (!confirm('Sei sicuro di voler eliminare questo coupon?')) return;
+    const confirmed = await window.customConfirm('Sei sicuro di voler eliminare questo coupon?');
+    if (!confirmed) return;
     
     try {
         const response = await authorizedFetch('/api/v1/partners/coupons/' + id, {
