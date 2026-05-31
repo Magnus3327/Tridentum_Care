@@ -4,7 +4,7 @@ info:
   description: "Documentazione API per Tridentum Care, piattaforma di coordinamento dei volontari della città di Trento."
   version: 1.0.0
 servers:
-  - url: http://localhost:3000/api/v1
+  - url: https://tridentum-care.onrender.com/api/v1
     description: "Sviluppo locale"
 tags:
   - name: Authentication
