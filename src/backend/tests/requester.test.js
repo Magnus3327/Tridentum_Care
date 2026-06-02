@@ -26,6 +26,7 @@ describe('--- Test Suite: Router Requester (Cittadino) ---', () => {
       collection: jest.fn().mockReturnThis(),
       findOne: jest.fn(),
       insertOne: jest.fn(),
+      updateOne: jest.fn(),
       find: jest.fn().mockReturnThis(),
       toArray: jest.fn()
     };
@@ -142,4 +143,43 @@ describe('--- Test Suite: Router Requester (Cittadino) ---', () => {
     expect(res.body[0]).toHaveProperty('volunteerName', 'Marco');
   });
   });
+
+  // US14 - Richiesta Segnata come Completata
+  
+  describe('PATCH /api/v1/requesters/requests/:requestId [US14]', () => {
+    
+      // --- DA SOSTITUIRE INTERAMENTE DENTRO IL TC-14.1 IN requester.test.js ---
+    test('TC-14.1: Il richiedente segna con successo la richiesta come completata', async () => {
+      const userId = new ObjectId().toString();
+      const requestId = new ObjectId();
+      const volunteerId = new ObjectId().toString();
+    
+      authMiddleware.mockImplementationOnce((req, res, next) => {
+        req.user = { userId, role: 'requester' };
+        next();
+      });
+
+      // 1. Il database restituisce la richiesta in corso creata da questo utente e assegnata a un volontario
+      mockDb.findOne.mockResolvedValueOnce({
+        _id: requestId,
+        userId: new ObjectId(userId),
+        volunteerId: volunteerId,
+        status: 'In Corso'
+      });
+
+      // 2. Mock per il primo updateOne (accredito punti al volontario nel codice reale)
+      mockDb.updateOne.mockResolvedValueOnce({ matchedCount: 1, modifiedCount: 1 });
+      // 3. Mock per il secondo updateOne (aggiornamento stato richiesta a "Completata")
+      mockDb.updateOne.mockResolvedValueOnce({ matchedCount: 1, modifiedCount: 1 });
+
+      // L'endpoint reale nel router è PATCH /api/v1/requesters/requests/:requestId con body { status }
+      const res = await request(app)
+        .patch(`/api/v1/requesters/requests/${requestId.toString()}`)
+        .send({ status: 'Completata' });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('message', 'Stato aggiornato con successo');
+    });
+  });
+
 });
