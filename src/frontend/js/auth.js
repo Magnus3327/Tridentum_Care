@@ -149,6 +149,7 @@ function bindAuthEvents() {
             }
 
             const payload = { name, surname, email, password, role };
+            payload.gdprConsent = true;
 
             if (role === 'volunteer') {
                 const ageVal = document.getElementById('reg-age').value;

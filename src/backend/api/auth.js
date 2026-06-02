@@ -11,10 +11,14 @@ const JWT_SECRET = process.env.JWT_SECRET || "tridentum_care_secret_key_123";
 // 1. REGISTRAZIONE
 router.post("/registrations", async (req, res) => {
   try {
-    const { name, surname, email, password, role, age, gender, license } = req.body;
+    const { name, surname, email, password, role, age, gender, license, gdprConsent } = req.body;
 
     if (!email || !password || !role) {
       return res.status(400).json({ error: "Tutti i campi obbligatori devono essere compilati" });
+    }
+
+    if (gdprConsent !== true) {
+      return res.status(400).json({ error: "Devi accettare di aver letto la Privacy Policy e i Termini di Servizio." });
     }
     
     if (role !== ROLES.PARTNER && (!name || !surname)) {
@@ -171,6 +175,16 @@ router.post("/sessions", async (req, res) => {
   } catch (error) {
     console.error("Errore login:", error);
     res.status(500).json({ error: "Errore interno del server durante l'accesso" });
+  }
+});
+
+// 2b. LOGOUT DELLA SESSIONE CORRENTE
+router.post("/logout", authMiddleware, async (req, res) => {
+  try {
+    res.json({ message: "Logout effettuato con successo" });
+  } catch (error) {
+    console.error("Errore logout:", error);
+    res.status(500).json({ error: "Errore durante il logout" });
   }
 });
 
