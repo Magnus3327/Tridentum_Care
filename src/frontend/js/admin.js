@@ -207,7 +207,12 @@ async function loadAdminUsers() {
             const adminCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.ADMIN).length;
             const moderatorCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.MODERATOR).length;
             const volunteerCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.UNAUTHORIZED).length;
-            summaryBadge.innerText = `${window.adminUsersCache.length} utenti, ${adminCount} admin, ${moderatorCount} moderatori, ${volunteerCount} volontari`;
+            
+            if (appState.userAuthLvl === AUTH_LEVELS.ADMIN) {
+                summaryBadge.innerText = `${window.adminUsersCache.length} utenti, ${adminCount} admin, ${moderatorCount} moderatori, ${volunteerCount} volontari`;
+            } else {
+                summaryBadge.innerText = `${window.adminUsersCache.length} utenti, ${moderatorCount} moderatori, ${volunteerCount} volontari`;
+            }
         }
 
         if (window.adminUsersCache.length === 0) {
