@@ -30,16 +30,16 @@ async function seed() {
     await redemptionsCol.deleteMany({});
     console.log("Collezioni 'users', 'requests', 'coupons' e 'coupon_redemptions' ripulite.");
 
-    // Hash della password fissa per entrambi gli utenti di test
-    const hashedPassword = await bcrypt.hash("password123", 10);
+    // Hash della password unificata per tutti gli utenti
+    const hashedPassword = await bcrypt.hash("TridentumCare23!", 10);
 
     // Dati fittizi Utenti
     const users = [
       {
-        email: "mario.rossi@email.it",
+        email: "valerio.volpi@email.it",
         password: hashedPassword,
-        name: "Mario",
-        surname: "Rossi",
+        name: "Valerio",
+        surname: "Volpi",
         role: "volunteer",
         address: "Via Roma 1, Trento",
         authLvl: AUTH_LVL ? AUTH_LVL.UNAUTHORIZED : 0,
@@ -52,20 +52,10 @@ async function seed() {
         createdAt: new Date()
       },
       {
-        email: "angela.bianchi@email.it",
+        email: "massimo.modena@email.it",
         password: hashedPassword,
-        name: "Angela",
-        surname: "Bianchi",
-        role: "requester",
-        address: "Via Belenzani 12, Trento",
-        phone: "345 678 9012",
-        createdAt: new Date()
-      },
-      {
-        name: "Luca",
-        surname: "Verdi",
-        email: "luca.verdi@email.it",
-        password: hashedPassword,
+        name: "Massimo",
+        surname: "Modena",
         role: "volunteer",
         authLvl: AUTH_LVL ? AUTH_LVL.MODERATOR : 1,
         points: 0,
@@ -77,100 +67,91 @@ async function seed() {
         createdAt: new Date()
       },
       {
+        email: "admin@email.com",
+        password: hashedPassword,
         name: "Admin",
-        surname: "Tridentum",
-        email: "admin@admin.com",
-        skills: ["Trasporto", "Accompagnamento", "Compagnia"],
-        password: await bcrypt.hash("admin", 10),
+        surname: "",
         role: "volunteer",
         authLvl: AUTH_LVL ? AUTH_LVL.ADMIN : 2,
         points: 0,
         createdAt: new Date()
       },
       {
-        email: "partner@demo.it",
+        email: "riccardo.rossi@email.it",
+        password: hashedPassword,
+        name: "Riccardo",
+        surname: "Rossi",
+        role: "requester",
+        address: "Via Belenzani 12, Trento",
+        phone: "345 678 9012",
+        createdAt: new Date()
+      },
+      {
+        email: "farmacia.centrale@email.it",
         password: hashedPassword,
         role: "partner",
-        companyName: "Farmacia Demo",
+        companyName: "Farmacia Centrale",
         createdAt: new Date()
       }
     ];
 
     await usersCol.insertMany(users);
-    console.log("Inseriti 2 utenti di test (Mario Rossi e Angela Bianchi) con password 'password123'.");
+    console.log("Inseriti 5 utenti di test con password 'TridentumCare23!'.");
 
-    // Recupera l'id generato di Angela Bianchi per associarle le richieste
-    const angela = await usersCol.findOne({ email: "angela.bianchi@email.it" });
-    const angelaId = angela._id;
+    // Recupera gli ID generati per le associazioni
+    const richiedente = await usersCol.findOne({ email: "riccardo.rossi@email.it" });
+    const richiedenteId = richiedente._id;
+    
+    const volontario = await usersCol.findOne({ email: "valerio.volpi@email.it" });
+    const volontarioId = volontario._id;
 
-    // Dati fittizi Richieste di test (con campi mappati sia per richiedente che per volontario)
+    const partner = await usersCol.findOne({ email: "farmacia.centrale@email.it" });
+    const partnerId = partner._id;
+
+    // Dati fittizi Richieste di test
     const requests = [
       {
-        userId: angelaId,
+        userId: richiedenteId,
         title: "Trasporto per visita medica",
         category: "Trasporto",
         serviceType: "Trasporto",
-        description: "Avrei bisogno di un passaggio per recarmi all'ospedale Santa Chiara per una visita di controllo. Non posso guidare.",
-        notes: "Avrei bisogno di un passaggio per recarmi all'ospedale Santa Chiara per una visita di controllo. Non posso guidare.",
+        description: "Avrei bisogno di un passaggio per recarmi all'ospedale Santa Chiara per una visita di controllo.",
+        notes: "Avrei bisogno di un passaggio per recarmi all'ospedale Santa Chiara per una visita di controllo.",
         address: "Via Belenzani 12, Trento",
         location: "Via Belenzani 12, Trento",
         dateTime: "Oggi, 17:00",
-        date: new Date().toISOString().split("T")[0], // Data di oggi
+        date: new Date().toISOString().split("T")[0],
         time: "17:00",
-        requesterName: "Angela Bianchi",
+        requesterName: "Riccardo Rossi",
         points: 150,
-        status: "In Attesa di Volontario", // Stato uniforme
+        status: "In Attesa di Volontario",
         volunteerId: null,
         createdAt: new Date()
       },
       {
-        userId: angelaId,
+        userId: richiedenteId,
         title: "Accompagnamento al parco",
         category: "Accompagnamento",
         serviceType: "Accompagnamento",
-        description: "Cerco qualcuno che possa accompagnarmi a fare una passeggiata al parco vicino casa. Ho bisogno di un braccio a cui appoggiarmi.",
-        notes: "Cerco qualcuno che possa accompagnarmi a fare una passeggiata al parco vicino casa. Ho bisogno di un braccio a cui appoggiarmi.",
+        description: "Cerco qualcuno che possa accompagnarmi a fare una passeggiata al parco vicino casa.",
+        notes: "Cerco qualcuno che possa accompagnarmi a fare una passeggiata al parco vicino casa.",
         address: "Piazza Duomo 3, Trento",
         location: "Piazza Duomo 3, Trento",
         dateTime: "Domani, 10:00",
-        date: new Date(Date.now() + 86400000).toISOString().split("T")[0], // Data di domani
+        date: new Date(Date.now() + 86400000).toISOString().split("T")[0],
         time: "10:00",
-        requesterName: "Angela Bianchi",
+        requesterName: "Riccardo Rossi",
         points: 100,
-        status: "In Attesa di Volontario", // Stato uniforme
-        volunteerId: null,
-        createdAt: new Date()
-      },
-      {
-        userId: angelaId,
-        title: "Compagnia e lettura quotidiano",
-        category: "Compagnia",
-        serviceType: "Compagnia",
-        description: "Cerco una persona gentile per fare quattro chiacchiere in giardino nel pomeriggio e leggere insieme le principali notizie del quotidiano locale L'Adige.",
-        notes: "Cerco una persona gentile per fare quattro chiacchiere in giardino nel pomeriggio e leggere insieme le principali notizie del quotidiano locale L'Adige.",
-        address: "Via Grazioli 45, Trento",
-        location: "Via Grazioli 45, Trento",
-        dateTime: "Lunedì, 15:30",
-        date: "2026-05-18",
-        time: "15:30",
-        requesterName: "Rosa M.",
-        points: 50,
-        status: "In Attesa di Volontario", // Stato uniforme
+        status: "In Attesa di Volontario",
         volunteerId: null,
         createdAt: new Date()
       }
     ];
 
     const requestsResult = await requestsCol.insertMany(requests);
-    console.log(`Inserite ${requestsResult.insertedCount} richieste mock associate ad Angela Bianchi.`);
+    console.log(`Inserite ${requestsResult.insertedCount} richieste mock associate al richiedente.`);
 
     // Seeding Coupons (Partner)
-    const partner = await usersCol.findOne({ email: "partner@demo.it" });
-    const partnerId = partner._id;
-
-    const mario = await usersCol.findOne({ email: "mario.rossi@email.it" });
-    const marioId = mario._id;
-
     const coupons = [
       {
         partnerId: partnerId,
@@ -198,18 +179,10 @@ async function seed() {
     const redemptions = [
       {
         couponId: firstCoupon._id,
-        volunteerId: marioId,
-        volunteerName: "Mario Rossi",
+        volunteerId: volontarioId,
+        volunteerName: "Valerio Volpi",
         redeemedCode: "TRIDENTUM-CAFFE-X1Y2",
-        date: new Date(Date.now() - 86400000).toISOString(), // Ieri
-        createdAt: new Date()
-      },
-      {
-        couponId: firstCoupon._id,
-        volunteerId: marioId,
-        volunteerName: "Mario Rossi",
-        redeemedCode: "TRIDENTUM-CAFFE-A9B8",
-        date: new Date(Date.now() - 172800000).toISOString(), // L'altro ieri
+        date: new Date(Date.now() - 86400000).toISOString(),
         createdAt: new Date()
       }
     ];

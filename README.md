@@ -64,29 +64,24 @@ A questo punto, apri il tuo browser preferito e vai all'indirizzo:
 
 ## 🔑 Credenziali Utenti di Test
 
-I vecchi pulsanti demo di bypass sono stati rimossi. Per provare le varie aree dell'applicazione, effettua l'accesso dalla pagina **Accedi** con i seguenti account:
+I vecchi pulsanti demo di bypass sono stati rimossi. Per provare le varie aree dell'applicazione, effettua l'accesso dalla pagina **Accedi** con i seguenti account. Tutte le password sono impostate su **`TridentumCare23!`**:
 
 ### 👑 Profilo Amministratore (Admin)
-* **Email:** `admin@admin.com`
-* **Password:** `admin`
+* **Email:** `admin@email.com`
 * **Funzionalità:** Accesso completo al Pannello di Controllo. Può sospendere/riattivare utenti con ban progressivi (12h, 1gg, 1sett, 1mese), eliminare utenti (con pulizia dati a cascata), promuovere/retrocedere volontari a Moderatori, creare nuovi account Partner generando password sicure, ed eliminare richieste inappropriate.
 
-### 🛡️ Profilo Moderatore
-* **Email:** `luca.verdi@email.it`
-* **Password:** `password123`
+### 🛡️ Profilo Moderatore (Massimo Modena)
+* **Email:** `massimo.modena@email.it`
 * **Funzionalità:** Accesso al Pannello di Controllo con permessi limitati. Può gestire gli utenti (sospensioni, eliminazioni) e le richieste, ma NON può promuovere/retrocedere altri utenti né creare nuovi Partner.
 
-### 👨‍✈️ Profilo Volontario
-* **Email:** `mario.rossi@email.it`
-* **Password:** `password123`
+### 👨‍✈️ Profilo Volontario (Valerio Volpi)
+* **Email:** `valerio.volpi@email.it`
 * **Funzionalità:** Visualizza bacheca attiva basata sulle proprie competenze, accetta/annulla prese in carico, accumula punti e riscatta coupon nello store con generazione di QR code dinamici.
 
-### 👵 Profilo Cittadino (Richiedente)
-* **Email:** `angela.bianchi@email.it`
-* **Password:** `password123`
+### 👵 Profilo Cittadino/Richiedente (Riccardo Rossi)
+* **Email:** `riccardo.rossi@email.it`
 * **Funzionalità:** Dashboard personale dinamica per controllare le proprie richieste caricate dal DB, form per la creazione di nuove richieste e modifica o eliminazione (annullamento) in tempo reale prima della presa in carico.
 
-### 🏬 Profilo Partner Commerciale
-* **Email:** `partner@demo.it`
-* **Password:** `password123`
-* **Funzionalità:** Dashboard dedicata per validare e scansionare i Coupon generati dai volontari, decodificando i QR code tramite un'interfaccia sicura.
+### 🏬 Profilo Partner Commerciale (Farmacia Centrale)
+* **Email:** `farmacia.centrale@email.it`
+* **Funzionalità:** Dashboard dedicata per gestire l'inserimento di nuovi Coupon e per visualizzare la lista storica dei coupon e chi li ha riscattati.
