@@ -74,7 +74,7 @@ I vecchi pulsanti demo di bypass sono stati rimossi. Per provare le varie aree d
 
 ### 🛡️ Profilo Moderatore (Massimo Modena)
 * **Email:** `massimo.modena@email.it`
-* **Funzionalità:** Accesso al Pannello di Controllo con permessi limitati. Può gestire gli utenti (sospensioni, eliminazioni) e le richieste, ma NON può promuovere/retrocedere altri utenti né creare nuovi Partner.
+* **Funzionalità:** Accesso al Pannello di Controllo con permessi limitati. Può gestire gli utenti (solo sospensioni) e le richieste, ma NON può eliminare utenti, promuovere/retrocedere altri utenti né creare nuovi Partner.
 
 ### 👨‍✈️ Profilo Volontario (Valerio Volpi)
 * **Email:** `valerio.volpi@email.it`
