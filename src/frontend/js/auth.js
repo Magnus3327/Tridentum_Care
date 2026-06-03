@@ -5,6 +5,13 @@ window.logout = function() {
     appState.userEmail = null;
     appState.userId = null;
     appState.points = 0;
+    
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) loginForm.reset();
+    
+    const registerForm = document.getElementById('register-form');
+    if (registerForm) registerForm.reset();
+
     navigateTo('home');
     showToast('Hai disconnesso il profilo correttamente.', 'success');
 }
