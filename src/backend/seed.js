@@ -68,7 +68,7 @@ async function seed() {
         createdAt: new Date()
       },
       {
-        email: "admin@email.com",
+        email: "admin@email.it",
         password: hashedPassword,
         name: "Admin",
         surname: "",

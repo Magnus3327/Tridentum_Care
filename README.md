@@ -67,7 +67,7 @@ A questo punto, apri il tuo browser preferito e vai all'indirizzo:
 I vecchi pulsanti demo di bypass sono stati rimossi. Per provare le varie aree dell'applicazione, effettua l'accesso dalla pagina **Accedi** con i seguenti account. Tutte le password sono impostate su **`TridentumCare23!`**:
 
 ### 👑 Profilo Amministratore (Admin)
-* **Email:** `admin@email.com`
+* **Email:** `admin@email.it`
 * **Funzionalità:** Accesso completo al Pannello di Controllo. Può sospendere/riattivare utenti con ban progressivi (12h, 1gg, 1sett, 1mese), eliminare utenti (con pulizia dati a cascata), promuovere/retrocedere volontari a Moderatori, creare nuovi account Partner generando password sicure, ed eliminare richieste inappropriate.
 
 ### 🛡️ Profilo Moderatore (Massimo Modena)
