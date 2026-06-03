@@ -14,7 +14,11 @@
             </h3>
             <p class="text-muted" style="margin-bottom: 1.5rem;">Crea un account per un nuovo partner affiliato (negozi, farmacie, ecc).</p>
             <form id="admin-partner-form" class="grid-2" style="gap: 1.5rem; align-items: end;">
-                <div class="form-group" style="margin-bottom: 0; grid-column: 1 / -1;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Nome Azienda</label>
+                    <input id="admin-partner-name" type="text" class="form-control" placeholder="es. Farmacia Rossi" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
                     <label class="form-label">Email Aziendale</label>
                     <input id="admin-partner-email" type="email" class="form-control" placeholder="es. info@farmacia.it" required>
                 </div>
@@ -48,7 +52,6 @@
             <div class="flex justify-between items-center" style="margin-bottom: 1.5rem; padding: 1rem; background: var(--background-light); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
                 <div>
                     <span id="admin-users-count" class="badge badge-primary" style="font-size: 1rem; margin-right: 0.5rem;">0</span>
-                    <span class="text-bold" style="font-weight: 600;">Utenti Trovati</span>
                 </div>
                 <small id="admin-summary-badge" class="text-muted" style="font-weight: 500;"> </small>
             </div>

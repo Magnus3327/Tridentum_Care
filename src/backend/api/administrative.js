@@ -128,7 +128,7 @@ async function createPartnerUser(req, res) {
       return res.status(403).json({ error: 'Accesso negato: permessi insufficienti per creare un partner' });
     }
 
-    const { email } = req.body;
+    const { email, companyName } = req.body;
 
     if (!email) {
       return res.status(400).json({ error: 'Email obbligatoria' });
@@ -149,6 +149,7 @@ async function createPartnerUser(req, res) {
     const newPartner = {
       role: ROLES.PARTNER,
       email: normalizedEmail,
+      companyName: companyName,
       password: hashedPassword,
       mustChangePassword: true,
       createdAt: new Date(),
@@ -250,6 +251,15 @@ async function deleteLowerPrivilegeUser(req, res) {
       await db.collection('requests').deleteMany({ userId: targetObjectId });
     }
 
+    if (targetUser.role === ROLES.PARTNER) {
+      const partnerCoupons = await db.collection('coupons').find({ partnerId: targetObjectId }).toArray();
+      const couponIds = partnerCoupons.map(c => c._id);
+      if (couponIds.length > 0) {
+        await db.collection('coupon_redemptions').deleteMany({ couponId: { $in: couponIds } });
+      }
+      await db.collection('coupons').deleteMany({ partnerId: targetObjectId });
+    }
+
     const deletionResult = await db.collection('users').deleteOne({ _id: targetObjectId });
     if (deletionResult.deletedCount === 0) {
       return res.status(404).json({ error: 'Utente non trovato' });
@@ -279,9 +289,8 @@ async function listUsersForAdmin(req, res) {
     }
 
     const actorAuthLevel = getEffectiveAuthLevel(req.adminUser);
-    if (actorAuthLevel < AUTH_LVL.ADMIN) {
-      filter.authLvl = { $ne: AUTH_LVL.ADMIN };
-    }
+    // Nascondiamo l'utente admin dalla lista in ogni caso (sia per admin che per mod)
+    filter.authLvl = { $ne: AUTH_LVL.ADMIN };
 
     if (trimmedQuery) {
       const escapedQuery = trimmedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

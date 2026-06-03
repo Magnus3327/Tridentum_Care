@@ -5,6 +5,13 @@ window.logout = function() {
     appState.userEmail = null;
     appState.userId = null;
     appState.points = 0;
+    
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) loginForm.reset();
+    
+    const registerForm = document.getElementById('register-form');
+    if (registerForm) registerForm.reset();
+
     navigateTo('home');
     showToast('Hai disconnesso il profilo correttamente.', 'success');
 }
@@ -102,14 +109,18 @@ function bindAuthEvents() {
                 appState.userAuthLvl = typeof data.user.authLvl === 'number' ? data.user.authLvl : AUTH_LEVELS.UNAUTHORIZED;
                 appState.userEmail = data.user.email;
                 appState.userId = data.user.id;
-                appState.userName = data.user.name;
+                appState.userName = data.user.name || data.user.companyName;
                 appState.points = data.user.points || 0;
 
                 showToast(data.message, 'success');
 
                 // Reindirizzamento basato sul ruolo e livello di autorizzazione
                 if (data.user.role === 'volunteer') {
-                    navigateTo('vol-board');
+                    if (appState.userAuthLvl >= AUTH_LEVELS.ADMIN) {
+                        navigateTo('admin-dash');
+                    } else {
+                        navigateTo('vol-board');
+                    }
                 } else if (data.user.role === 'requester') {
                     navigateTo('req-dashboard');
                 } else if (data.user.role === 'partner') {
@@ -149,6 +160,7 @@ function bindAuthEvents() {
             }
 
             const payload = { name, surname, email, password, role };
+            payload.gdprConsent = true;
 
             if (role === 'volunteer') {
                 const ageVal = document.getElementById('reg-age').value;
@@ -190,7 +202,11 @@ function bindAuthEvents() {
                 showToast(data.message, 'success');
 
                 if (data.user.role === 'volunteer') {
-                    navigateTo('vol-board');
+                    if (appState.userAuthLvl >= AUTH_LEVELS.ADMIN) {
+                        navigateTo('admin-dash');
+                    } else {
+                        navigateTo('vol-board');
+                    }
                 } else if (data.user.role === 'requester') {
                     navigateTo('req-dashboard');
                 } else if (data.user.role === 'partner') {

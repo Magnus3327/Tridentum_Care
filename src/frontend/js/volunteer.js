@@ -426,6 +426,7 @@ async function loadStoreCoupons() {
                         <i class="fa-solid fa-gift" style="font-size: 3rem; color: var(--text-muted);"></i>
                     </div>
                     <h4>${c.title}</h4>
+                    <p class="text-muted" style="font-size: 0.8rem; font-weight: bold; margin-bottom: 0.5rem;"><i class="fa-solid fa-store"></i> ${c.companyName || 'Partner'}</p>
                     <p class="text-muted" style="font-size: 0.875rem;">${c.description}</p>
                 </div>
                 <div>

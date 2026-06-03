@@ -61,7 +61,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 showToast(`Ciao, ${data.name}!`, 'success');
                 if (data.role === 'volunteer') {
-                    navigateTo('vol-board');
+                    if (appState.userAuthLvl >= AUTH_LEVELS.ADMIN) {
+                        navigateTo('admin-dash');
+                    } else {
+                        navigateTo('vol-board');
+                    }
                 } else if (data.role === 'requester') {
                     navigateTo('req-dashboard');
                 } else if (data.role === 'partner') {

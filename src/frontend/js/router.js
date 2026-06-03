@@ -60,14 +60,21 @@ function updateNavbar(routeId) {
     
     // Mostra i link corretti nel menu in alto a destra in base al ruolo dell'utente
     if (appState.userRole === 'volunteer') {
-        linksHTML = `
-            <a href="#" class="nav-link" onclick="navigateTo('vol-board')">Bacheca</a>
-            <a href="#" class="nav-link" onclick="navigateTo('vol-map')">Mappa</a>
-            <a href="#" class="nav-link" onclick="navigateTo('vol-store')">Store Premi</a>
-            <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
-            ${appState.userAuthLvl >= AUTH_LEVELS.MODERATOR ? `<a href="#" class="nav-link" onclick="navigateTo('admin-dash')">Pannello di Controllo</a>` : ''}
-            <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
-        `;
+        if (appState.userAuthLvl >= AUTH_LEVELS.ADMIN) {
+            linksHTML = `
+                <a href="#" class="nav-link" onclick="navigateTo('admin-dash')">Pannello di Controllo</a>
+                <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
+            `;
+        } else {
+            linksHTML = `
+                <a href="#" class="nav-link" onclick="navigateTo('vol-board')">Bacheca</a>
+                <a href="#" class="nav-link" onclick="navigateTo('vol-map')">Mappa</a>
+                <a href="#" class="nav-link" onclick="navigateTo('vol-store')">Store Premi</a>
+                <a href="#" class="nav-link" onclick="navigateTo('profile')">Profilo</a>
+                ${appState.userAuthLvl >= AUTH_LEVELS.MODERATOR ? `<a href="#" class="nav-link" onclick="navigateTo('admin-dash')">Pannello di Controllo</a>` : ''}
+                <a href="#" class="nav-link text-danger" onclick="logout()">Esci</a>
+            `;
+        }
     } else if (appState.userRole === 'requester') {
         linksHTML = `
             <a href="#" class="nav-link" onclick="navigateTo('req-dashboard')">Le mie richieste</a>

@@ -15,9 +15,9 @@ window.loadPartnerDashboard = async function() {
             const meRes = await authorizedFetch('/api/v1/auth/me');
             if (meRes.ok) {
                 const me = await meRes.json();
-                if (me.name) {
-                    appState.userName = me.name;
-                    welcomeName.innerText = me.name;
+                if (me.name || me.companyName) {
+                    appState.userName = me.name || me.companyName;
+                    welcomeName.innerText = appState.userName;
                 }
             }
         } catch (e) {
@@ -141,6 +141,11 @@ window.openPartnerCouponForm = function(coupon = null) {
     const idEl = document.getElementById('partner-coupon-id');
     const formTitle = document.getElementById('partner-coupon-form-title');
 
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (expEl) {
+        expEl.min = todayStr;
+    }
+
     if (coupon) {
         formTitle.innerText = "Modifica Premio (Coupon)";
         idEl.value = coupon._id;
@@ -167,6 +172,17 @@ window.submitPartnerCoupon = async function(event) {
     const description = document.getElementById('partner-coupon-description').value;
     const pointsCost = document.getElementById('partner-coupon-points').value;
     const expirationDate = document.getElementById('partner-coupon-expiration').value;
+
+    if (!expirationDate) {
+        showToast('La data di scadenza è obbligatoria.', 'danger');
+        return;
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (expirationDate < todayStr) {
+        showToast('La data di scadenza non può essere nel passato.', 'danger');
+        return;
+    }
 
     const payload = { title, description, pointsCost, expirationDate };
 

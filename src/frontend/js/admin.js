@@ -12,12 +12,10 @@ function buildAdminSearchParams() {
 
 function renderAdminUserCard(user) {
     const roleLabel = getRoleLabel(user);
-    const authLabel = user.role === 'volunteer' && typeof user.authLvl === 'number' && user.authLvl > AUTH_LEVELS.UNAUTHORIZED
-        ? user.authLvl === AUTH_LEVELS.ADMIN ? 'Admin' : 'Moderatore'
-        : null;
+    // Rimossa etichetta ridondante in quanto getRoleLabel() gestisce già la distinzione tra Admin/Moderatore e Volontario base.
     let fullName = [user.name, user.surname].filter(Boolean).join(' ').trim();
     if (!fullName) {
-        fullName = user.role === 'partner' ? 'Account Partner' : 'Utente senza nome';
+        fullName = user.role === 'partner' ? (user.companyName || 'Account Partner') : 'Utente senza nome';
     }
     const sameUser = appState.userId && user.id === appState.userId;
     const targetAuthLevel = getUserAuthLevel(user);
@@ -33,7 +31,7 @@ function renderAdminUserCard(user) {
     if (canPromote) {
         promoteHtml = `
             <div class="dropdown-wrapper" style="position: relative; display: inline-block;">
-                <button type="button" class="btn btn-outline" style="padding: 0.5rem 0.75rem; border-color: var(--primary-color); color: var(--primary-color);" onclick="window.togglePromoteDropdown(event, '${user.id || user._id}')" title="Gestisci Permessi">
+                <button type="button" class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; border-color: var(--primary-color); color: var(--primary-color);" onclick="window.togglePromoteDropdown(event, '${user.id || user._id}')" title="Gestisci Permessi">
                     Permessi <i class="fa-solid fa-chevron-down" style="font-size: 0.8em; margin-left: 0.2rem;"></i>
                 </button>
                 <div id="promote-dropdown-${user.id || user._id}" class="promote-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-md); z-index: 10; min-width: 230px; overflow: hidden; flex-direction: column;">
@@ -53,6 +51,7 @@ function renderAdminUserCard(user) {
     }
 
     let suspensionBadge = '';
+    let overlayHtml = '';
     if (user.isSuspended) {
         let totalDuration = '';
         if (user.suspensionCount === 1) totalDuration = '12 ore';
@@ -60,41 +59,56 @@ function renderAdminUserCard(user) {
         else if (user.suspensionCount === 3) totalDuration = '1 settimana';
         else if (user.suspensionCount >= 4) totalDuration = '1 mese';
 
+        let remainingText = '';
         if (user.suspendedUntil) {
             const diffMs = new Date(user.suspendedUntil) - new Date();
             const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
             
-            let remainingText = '';
             if (diffDays > 0) remainingText = `${diffDays}g rimanenti`;
             else remainingText = `${Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60)))}h rimanenti`;
-            
-            suspensionBadge = `<span class="badge badge-danger" style="background-color: var(--danger-color); color: white;">Sospeso ${totalDuration ? 'per ' + totalDuration : ''} (${remainingText})</span>`;
-        } else {
-            suspensionBadge = `<span class="badge badge-danger" style="background-color: var(--danger-color); color: white;">Sospeso ${totalDuration ? 'per ' + totalDuration : ''}</span>`;
         }
+
+        overlayHtml = `
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.85); z-index: 5; display: flex; padding: 1rem; backdrop-filter: blur(2px); border-radius: inherit;">
+                <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: flex-start;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                        <span class="badge badge-primary">${roleLabel}</span>
+                        <h4 style="margin: 0; font-weight: bold; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;" title="${fullName}">${fullName}</h4>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--danger-color); font-weight: bold; margin-bottom: 0.25rem;">
+                        <i class="fa-solid fa-ban"></i> <span>ACCOUNT SOSPESO</span>
+                    </div>
+                    <p style="margin: 0; color: #555; font-size: 0.9rem;">
+                        ${totalDuration ? 'Durata: ' + totalDuration : ''} ${remainingText ? '<span style="color: var(--danger-color);">(' + remainingText + ')</span>' : ''}
+                    </p>
+                </div>
+                <div style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.5rem; align-items: flex-end; z-index: 10;">
+                    ${canRestore ? `<button type="button" class="btn btn-success" style="padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: bold; white-space: nowrap; box-shadow: var(--shadow-sm);" onclick="restoreAdminUser('${user.id || user._id}')"><i class="fa-solid fa-unlock"></i> Riattiva</button>` : ''}
+                    ${canDelete ? `<button type="button" class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; white-space: nowrap; color: var(--danger-color); border-color: var(--danger-color);" onclick="deleteAdminUser('${user.id || user._id}')"><i class="fa-solid fa-trash"></i> Elimina</button>` : ''}
+                </div>
+            </div>
+        `;
     }
 
     return `
-        <div class="card" style="padding: 1rem 1.1rem; border-left: 5px solid ${targetAuthLevel === AUTH_LEVELS.ADMIN ? 'var(--accent-color)' : 'var(--primary-color)'}; overflow: visible; opacity: ${user.isSuspended ? '0.75' : '1'};">
-            <div class="flex justify-between items-start" style="gap: 1rem; align-items: flex-start;">
-                <div style="min-width: 0;">
-                    <div class="flex gap-1" style="flex-wrap: wrap; margin-bottom: 0.45rem;">
-                        <span class="badge badge-primary">${roleLabel}</span>
-                        ${authLabel ? `<span class="badge badge-secondary">${authLabel}</span>` : ''}
-                        ${sameUser ? `<span class="badge badge-success">Sei tu</span>` : ''}
-                        ${suspensionBadge}
-                    </div>
-                    <h4 style="margin-bottom: 0.25rem; word-break: break-word;">${fullName}</h4>
-
+        <div class="card" style="padding: 1rem 1.1rem; border-left: 5px solid ${targetAuthLevel === AUTH_LEVELS.ADMIN ? 'var(--accent-color)' : 'var(--primary-color)'}; overflow: visible; opacity: 1; position: relative;">
+            ${overlayHtml}
+            
+            <div class="flex justify-between items-center" style="gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: nowrap; overflow: visible; padding-bottom: 0.25rem;">
+                <div class="flex gap-1" style="flex-wrap: nowrap; align-items: center; flex-shrink: 0;">
+                    <span class="badge badge-primary">${roleLabel}</span>
+                    ${sameUser ? `<span class="badge badge-success">Sei tu</span>` : ''}
                 </div>
-                <div class="flex gap-1" style="flex-wrap: wrap; justify-content: flex-end; position: relative;">
+                <div class="flex gap-1" style="flex-wrap: nowrap; justify-content: flex-end; align-items: center;">
                     ${promoteHtml}
-                    <button type="button" class="btn btn-info" style="padding: 0.5rem 0.75rem; color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb;" onclick="window.showUserDetailsModal('${user.id || user._id}')">Dettagli</button>
-                    ${canSuspend ? `<button type="button" class="btn btn-warning" style="padding: 0.5rem 0.75rem; color: #856404; background-color: #FFF3CD; border: 1px solid #ffeeba;" onclick="suspendAdminUser('${user.id || user._id}', ${suspensionCount})">Sospendi</button>` : ''}
-                    ${canRestore ? `<button type="button" class="btn btn-success" style="padding: 0.5rem 0.75rem;" onclick="restoreAdminUser('${user.id || user._id}')">Riattiva</button>` : ''}
-                    ${canDelete ? `<button type="button" class="btn btn-danger" style="padding: 0.5rem 0.75rem;" onclick="deleteAdminUser('${user.id || user._id}')">Elimina</button>` : ''}
+                    <button type="button" class="btn btn-info" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb; white-space: nowrap;" onclick="window.showUserDetailsModal('${user.id || user._id}')">Dettagli</button>
+                    ${!user.isSuspended && canSuspend ? `<button type="button" class="btn btn-warning" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; color: #856404; background-color: #FFF3CD; border: 1px solid #ffeeba; white-space: nowrap;" onclick="suspendAdminUser('${user.id || user._id}', ${suspensionCount})">Sospendi</button>` : ''}
+                    ${!user.isSuspended && canDelete ? `<button type="button" class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; white-space: nowrap;" onclick="deleteAdminUser('${user.id || user._id}')">Elimina</button>` : ''}
                 </div>
             </div>
+
+            <h4 style="margin-top: 0; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${fullName}">${fullName}</h4>
+
             <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color);">
                 <p class="text-muted" style="margin-bottom: 0; font-size: 0.9rem; word-break: break-word;"><i class="fa-regular fa-envelope"></i> ${user.email || 'Email non disponibile'}</p>
             </div>
@@ -114,16 +128,19 @@ window.showUserDetailsModal = function(userId) {
     const content = document.getElementById('user-details-content');
     const partnerSection = document.getElementById('partner-password-section');
     
+    let nameLabel = user.role === 'partner' ? 'Azienda:' : 'Nome:';
+    let nameValue = user.role === 'partner' ? (user.companyName || 'N/A') : [user.name, user.surname].filter(Boolean).join(' ') || 'N/A';
+    
     let html = `
-        <div><strong>Nome / Azienda:</strong> ${user.name || ''} ${user.surname || ''} ${user.companyName || ''}</div>
+        <div><strong>${nameLabel}</strong> ${nameValue}</div>
         <div><strong>Email:</strong> ${user.email || 'N/A'}</div>
         <div><strong>Ruolo:</strong> ${getRoleLabel(user)}</div>
         <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><strong>ID:</strong> <span style="font-family: monospace;">${user.id || user._id}</span></div>
     `;
     if (user.phone) html += `<div><strong>Telefono:</strong> ${user.phone}</div>`;
-    if (user.address || user.location) html += `<div><strong>Indirizzo/Sede:</strong> ${user.address || user.location}</div>`;
+    if (user.role !== 'partner' && (user.address || user.location)) html += `<div><strong>Indirizzo:</strong> ${user.address || user.location}</div>`;
     if (user.legalForm) html += `<div><strong>Forma Giuridica:</strong> ${user.legalForm}</div>`;
-    if (user.skills && user.skills.length > 0) html += `<div><strong>Competenze:</strong> ${user.skills.join(', ')}</div>`;
+    if (user.skills && user.skills.length > 0 && !(user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.ADMIN)) html += `<div><strong>Competenze:</strong> ${user.skills.join(', ')}</div>`;
     if (user.availability) html += `<div><strong>Disponibilità:</strong> ${user.availability}</div>`;
     if (user.isSuspended) html += `<div><strong>Stato Account:</strong> Sospeso (Sospensioni totali: ${user.suspensionCount})</div>`;
     
@@ -204,10 +221,12 @@ async function loadAdminUsers() {
             countBadge.innerText = `${window.adminUsersCache.length} utenti`;
         }
         if (summaryBadge) {
-            const adminCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.ADMIN).length;
             const moderatorCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.MODERATOR).length;
             const volunteerCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.UNAUTHORIZED).length;
-            summaryBadge.innerText = `${window.adminUsersCache.length} utenti, ${adminCount} admin, ${moderatorCount} moderatori, ${volunteerCount} volontari`;
+            const requesterCount = window.adminUsersCache.filter(user => user.role === 'requester').length;
+            const partnerCount = window.adminUsersCache.filter(user => user.role === 'partner').length;
+            
+            summaryBadge.innerText = `${moderatorCount} moderatori, ${volunteerCount} volontari, ${requesterCount} richiedenti, ${partnerCount} partner`;
         }
 
         if (window.adminUsersCache.length === 0) {
@@ -394,7 +413,8 @@ async function loadAdminDashboard() {
             }
 
             const payload = {
-                email: document.getElementById('admin-partner-email')?.value.trim()
+                email: document.getElementById('admin-partner-email')?.value.trim(),
+                companyName: document.getElementById('admin-partner-name')?.value.trim()
             };
 
             try {
