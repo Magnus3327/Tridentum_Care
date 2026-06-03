@@ -12,9 +12,7 @@ function buildAdminSearchParams() {
 
 function renderAdminUserCard(user) {
     const roleLabel = getRoleLabel(user);
-    const authLabel = user.role === 'volunteer' && typeof user.authLvl === 'number' && user.authLvl > AUTH_LEVELS.UNAUTHORIZED
-        ? user.authLvl === AUTH_LEVELS.ADMIN ? 'Admin' : 'Moderatore'
-        : null;
+    // Rimossa etichetta ridondante in quanto getRoleLabel() gestisce già la distinzione tra Admin/Moderatore e Volontario base.
     let fullName = [user.name, user.surname].filter(Boolean).join(' ').trim();
     if (!fullName) {
         fullName = user.role === 'partner' ? (user.companyName || 'Account Partner') : 'Utente senza nome';
@@ -80,7 +78,7 @@ function renderAdminUserCard(user) {
                 <div style="min-width: 0;">
                     <div class="flex gap-1" style="flex-wrap: wrap; margin-bottom: 0.45rem;">
                         <span class="badge badge-primary">${roleLabel}</span>
-                        ${authLabel ? `<span class="badge badge-secondary">${authLabel}</span>` : ''}
+
                         ${sameUser ? `<span class="badge badge-success">Sei tu</span>` : ''}
                         ${suspensionBadge}
                     </div>
