@@ -2011,6 +2011,9 @@ components:
           type: string
         role:
           type: string
+        companyName:
+          type: string
+          description: "Nome dell'azienda (presente solo se il ruolo è partner)"
         points:
           type: integer
         authLvl:

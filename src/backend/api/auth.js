@@ -169,6 +169,7 @@ router.post("/sessions", async (req, res) => {
         email: user.email,
         role: user.role,
         points: user.points,
+        companyName: user.companyName,
         authLvl: typeof user.authLvl === 'number' ? user.authLvl : undefined
       }
     });
@@ -205,6 +206,7 @@ router.get("/me", authMiddleware, async (req, res) => {
       surname: user.surname,
       email: user.email,
       role: user.role,
+      companyName: user.companyName,
       points: user.points || 0,
       authLvl: typeof user.authLvl === 'number' ? user.authLvl : undefined
     });

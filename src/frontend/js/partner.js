@@ -15,9 +15,9 @@ window.loadPartnerDashboard = async function() {
             const meRes = await authorizedFetch('/api/v1/auth/me');
             if (meRes.ok) {
                 const me = await meRes.json();
-                if (me.name) {
-                    appState.userName = me.name;
-                    welcomeName.innerText = me.name;
+                if (me.name || me.companyName) {
+                    appState.userName = me.name || me.companyName;
+                    welcomeName.innerText = appState.userName;
                 }
             }
         } catch (e) {

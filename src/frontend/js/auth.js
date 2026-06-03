@@ -102,7 +102,7 @@ function bindAuthEvents() {
                 appState.userAuthLvl = typeof data.user.authLvl === 'number' ? data.user.authLvl : AUTH_LEVELS.UNAUTHORIZED;
                 appState.userEmail = data.user.email;
                 appState.userId = data.user.id;
-                appState.userName = data.user.name;
+                appState.userName = data.user.name || data.user.companyName;
                 appState.points = data.user.points || 0;
 
                 showToast(data.message, 'success');
