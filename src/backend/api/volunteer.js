@@ -127,8 +127,19 @@ router.get("/coupons", async (req, res) => {
     const today = new Date().toISOString().split('T')[0];
     const coupons = await db.collection("coupons").find({ expirationDate: { $gte: today } }).toArray();
     
-    // Potremmo voler recuperare il nome del partner, ma per ora ritorniamo i coupon così come sono.
-    res.json(coupons);
+    // Recupera il nome del partner per ogni coupon
+    const couponsWithPartnerName = await Promise.all(coupons.map(async (coupon) => {
+      let companyName = "Partner Sconosciuto";
+      if (coupon.partnerId) {
+        const partner = await db.collection("users").findOne({ _id: new ObjectId(coupon.partnerId) });
+        if (partner && partner.companyName) {
+          companyName = partner.companyName;
+        }
+      }
+      return { ...coupon, companyName };
+    }));
+    
+    res.json(couponsWithPartnerName);
   } catch (error) {
     console.error("Errore GET /coupons:", error);
     res.status(500).json({ error: "Errore interno del server" });

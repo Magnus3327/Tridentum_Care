@@ -1971,6 +1971,9 @@ components:
           type: string
         partnerId:
           type: string
+        companyName:
+          type: string
+          description: "Nome dell'azienda partner che offre il coupon"
 
     OwnedCoupon:
       type: object
