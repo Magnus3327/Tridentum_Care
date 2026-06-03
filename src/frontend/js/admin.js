@@ -207,11 +207,13 @@ async function loadAdminUsers() {
             const adminCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.ADMIN).length;
             const moderatorCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.MODERATOR).length;
             const volunteerCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.UNAUTHORIZED).length;
+            const requesterCount = window.adminUsersCache.filter(user => user.role === 'requester').length;
+            const partnerCount = window.adminUsersCache.filter(user => user.role === 'partner').length;
             
             if (appState.userAuthLvl === AUTH_LEVELS.ADMIN) {
-                summaryBadge.innerText = `${window.adminUsersCache.length} utenti, ${adminCount} admin, ${moderatorCount} moderatori, ${volunteerCount} volontari`;
+                summaryBadge.innerText = `${adminCount} admin, ${moderatorCount} moderatori, ${volunteerCount} volontari, ${requesterCount} richiedenti, ${partnerCount} partner`;
             } else {
-                summaryBadge.innerText = `${window.adminUsersCache.length} utenti, ${moderatorCount} moderatori, ${volunteerCount} volontari`;
+                summaryBadge.innerText = `${moderatorCount} moderatori, ${volunteerCount} volontari, ${requesterCount} richiedenti, ${partnerCount} partner`;
             }
         }
 
