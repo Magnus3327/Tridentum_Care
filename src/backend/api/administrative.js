@@ -288,9 +288,8 @@ async function listUsersForAdmin(req, res) {
     }
 
     const actorAuthLevel = getEffectiveAuthLevel(req.adminUser);
-    if (actorAuthLevel < AUTH_LVL.ADMIN) {
-      filter.authLvl = { $ne: AUTH_LVL.ADMIN };
-    }
+    // Nascondiamo l'utente admin dalla lista in ogni caso (sia per admin che per mod)
+    filter.authLvl = { $ne: AUTH_LVL.ADMIN };
 
     if (trimmedQuery) {
       const escapedQuery = trimmedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

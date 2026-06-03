@@ -114,16 +114,20 @@ window.showUserDetailsModal = function(userId) {
     const content = document.getElementById('user-details-content');
     const partnerSection = document.getElementById('partner-password-section');
     
+    let nameLabel = user.role === 'partner' ? 'Azienda:' : 'Nome:';
+    let nameValue = user.role === 'partner' ? (user.companyName || 'N/A') : [user.name, user.surname].filter(Boolean).join(' ') || 'N/A';
+    let addressLabel = user.role === 'partner' ? 'Sede:' : 'Indirizzo:';
+    
     let html = `
-        <div><strong>Nome / Azienda:</strong> ${user.name || ''} ${user.surname || ''} ${user.companyName || ''}</div>
+        <div><strong>${nameLabel}</strong> ${nameValue}</div>
         <div><strong>Email:</strong> ${user.email || 'N/A'}</div>
         <div><strong>Ruolo:</strong> ${getRoleLabel(user)}</div>
         <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><strong>ID:</strong> <span style="font-family: monospace;">${user.id || user._id}</span></div>
     `;
     if (user.phone) html += `<div><strong>Telefono:</strong> ${user.phone}</div>`;
-    if (user.address || user.location) html += `<div><strong>Indirizzo/Sede:</strong> ${user.address || user.location}</div>`;
+    if (user.address || user.location) html += `<div><strong>${addressLabel}</strong> ${user.address || user.location}</div>`;
     if (user.legalForm) html += `<div><strong>Forma Giuridica:</strong> ${user.legalForm}</div>`;
-    if (user.skills && user.skills.length > 0) html += `<div><strong>Competenze:</strong> ${user.skills.join(', ')}</div>`;
+    if (user.skills && user.skills.length > 0 && !(user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.ADMIN)) html += `<div><strong>Competenze:</strong> ${user.skills.join(', ')}</div>`;
     if (user.availability) html += `<div><strong>Disponibilità:</strong> ${user.availability}</div>`;
     if (user.isSuspended) html += `<div><strong>Stato Account:</strong> Sospeso (Sospensioni totali: ${user.suspensionCount})</div>`;
     
@@ -204,17 +208,12 @@ async function loadAdminUsers() {
             countBadge.innerText = `${window.adminUsersCache.length} utenti`;
         }
         if (summaryBadge) {
-            const adminCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.ADMIN).length;
             const moderatorCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.MODERATOR).length;
             const volunteerCount = window.adminUsersCache.filter(user => user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.UNAUTHORIZED).length;
             const requesterCount = window.adminUsersCache.filter(user => user.role === 'requester').length;
             const partnerCount = window.adminUsersCache.filter(user => user.role === 'partner').length;
             
-            if (appState.userAuthLvl === AUTH_LEVELS.ADMIN) {
-                summaryBadge.innerText = `${adminCount} admin, ${moderatorCount} moderatori, ${volunteerCount} volontari, ${requesterCount} richiedenti, ${partnerCount} partner`;
-            } else {
-                summaryBadge.innerText = `${moderatorCount} moderatori, ${volunteerCount} volontari, ${requesterCount} richiedenti, ${partnerCount} partner`;
-            }
+            summaryBadge.innerText = `${moderatorCount} moderatori, ${volunteerCount} volontari, ${requesterCount} richiedenti, ${partnerCount} partner`;
         }
 
         if (window.adminUsersCache.length === 0) {
