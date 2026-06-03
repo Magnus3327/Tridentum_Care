@@ -31,7 +31,7 @@ function renderAdminUserCard(user) {
     if (canPromote) {
         promoteHtml = `
             <div class="dropdown-wrapper" style="position: relative; display: inline-block;">
-                <button type="button" class="btn btn-outline" style="padding: 0.5rem 0.75rem; border-color: var(--primary-color); color: var(--primary-color);" onclick="window.togglePromoteDropdown(event, '${user.id || user._id}')" title="Gestisci Permessi">
+                <button type="button" class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; border-color: var(--primary-color); color: var(--primary-color);" onclick="window.togglePromoteDropdown(event, '${user.id || user._id}')" title="Gestisci Permessi">
                     Permessi <i class="fa-solid fa-chevron-down" style="font-size: 0.8em; margin-left: 0.2rem;"></i>
                 </button>
                 <div id="promote-dropdown-${user.id || user._id}" class="promote-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-md); z-index: 10; min-width: 230px; overflow: hidden; flex-direction: column;">
@@ -74,25 +74,24 @@ function renderAdminUserCard(user) {
 
     return `
         <div class="card" style="padding: 1rem 1.1rem; border-left: 5px solid ${targetAuthLevel === AUTH_LEVELS.ADMIN ? 'var(--accent-color)' : 'var(--primary-color)'}; overflow: visible; opacity: ${user.isSuspended ? '0.75' : '1'};">
-            <div class="flex justify-between items-start" style="gap: 1rem; align-items: flex-start;">
-                <div style="min-width: 0;">
-                    <div class="flex gap-1" style="flex-wrap: wrap; margin-bottom: 0.45rem;">
-                        <span class="badge badge-primary">${roleLabel}</span>
-
-                        ${sameUser ? `<span class="badge badge-success">Sei tu</span>` : ''}
-                        ${suspensionBadge}
-                    </div>
-                    <h4 style="margin-bottom: 0.25rem; word-break: break-word;">${fullName}</h4>
-
+            
+            <div class="flex justify-between items-center" style="gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 0.25rem;">
+                <div class="flex gap-1" style="flex-wrap: nowrap; align-items: center; flex-shrink: 0;">
+                    <span class="badge badge-primary">${roleLabel}</span>
+                    ${sameUser ? `<span class="badge badge-success">Sei tu</span>` : ''}
+                    ${suspensionBadge}
                 </div>
-                <div class="flex gap-1" style="flex-wrap: wrap; justify-content: flex-end; position: relative;">
+                <div class="flex gap-1" style="flex-wrap: nowrap; justify-content: flex-end; align-items: center;">
                     ${promoteHtml}
-                    <button type="button" class="btn btn-info" style="padding: 0.5rem 0.75rem; color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb;" onclick="window.showUserDetailsModal('${user.id || user._id}')">Dettagli</button>
-                    ${canSuspend ? `<button type="button" class="btn btn-warning" style="padding: 0.5rem 0.75rem; color: #856404; background-color: #FFF3CD; border: 1px solid #ffeeba;" onclick="suspendAdminUser('${user.id || user._id}', ${suspensionCount})">Sospendi</button>` : ''}
-                    ${canRestore ? `<button type="button" class="btn btn-success" style="padding: 0.5rem 0.75rem;" onclick="restoreAdminUser('${user.id || user._id}')">Riattiva</button>` : ''}
-                    ${canDelete ? `<button type="button" class="btn btn-danger" style="padding: 0.5rem 0.75rem;" onclick="deleteAdminUser('${user.id || user._id}')">Elimina</button>` : ''}
+                    <button type="button" class="btn btn-info" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb; white-space: nowrap;" onclick="window.showUserDetailsModal('${user.id || user._id}')">Dettagli</button>
+                    ${canSuspend ? `<button type="button" class="btn btn-warning" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; color: #856404; background-color: #FFF3CD; border: 1px solid #ffeeba; white-space: nowrap;" onclick="suspendAdminUser('${user.id || user._id}', ${suspensionCount})">Sospendi</button>` : ''}
+                    ${canRestore ? `<button type="button" class="btn btn-success" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; white-space: nowrap;" onclick="restoreAdminUser('${user.id || user._id}')">Riattiva</button>` : ''}
+                    ${canDelete ? `<button type="button" class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; white-space: nowrap;" onclick="deleteAdminUser('${user.id || user._id}')">Elimina</button>` : ''}
                 </div>
             </div>
+
+            <h4 style="margin-top: 0; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${fullName}">${fullName}</h4>
+
             <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color);">
                 <p class="text-muted" style="margin-bottom: 0; font-size: 0.9rem; word-break: break-word;"><i class="fa-regular fa-envelope"></i> ${user.email || 'Email non disponibile'}</p>
             </div>
