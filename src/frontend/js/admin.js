@@ -400,7 +400,8 @@ async function loadAdminDashboard() {
             }
 
             const payload = {
-                email: document.getElementById('admin-partner-email')?.value.trim()
+                email: document.getElementById('admin-partner-email')?.value.trim(),
+                companyName: document.getElementById('admin-partner-name')?.value.trim()
             };
 
             try {

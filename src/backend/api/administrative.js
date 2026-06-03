@@ -128,7 +128,7 @@ async function createPartnerUser(req, res) {
       return res.status(403).json({ error: 'Accesso negato: permessi insufficienti per creare un partner' });
     }
 
-    const { email } = req.body;
+    const { email, companyName } = req.body;
 
     if (!email) {
       return res.status(400).json({ error: 'Email obbligatoria' });
@@ -149,6 +149,7 @@ async function createPartnerUser(req, res) {
     const newPartner = {
       role: ROLES.PARTNER,
       email: normalizedEmail,
+      companyName: companyName,
       password: hashedPassword,
       mustChangePassword: true,
       createdAt: new Date(),
