@@ -41,7 +41,7 @@ JWT_SECRET=una_chiave_segreta_molto_sicura_e_lunga_123!
 
 ### 4. Popola il Database (Seeding)
 Per avere subito i dati pronti per il testing (utenti di test reali e richieste caricate in bacheca), esegui lo script di popolamento iniziale.
-*Attenzione: questo comando piallerà e riscriverà i dati delle collezioni `users` e `requests`.*
+*Attenzione: questo comando piallerà e riscriverà i dati delle collezioni `users`, `requests`, `coupons` e `coupon_redemptions`.*
 ```bash
 node src/backend/seed.js
 ```
@@ -85,3 +85,11 @@ I vecchi pulsanti demo di bypass sono stati rimossi. Per provare le varie aree d
 ### 🏬 Profilo Partner Commerciale (Farmacia Centrale)
 * **Email:** `farmacia.centrale@email.it`
 * **Funzionalità:** Dashboard dedicata per gestire l'inserimento di nuovi Coupon e per visualizzare la lista storica dei coupon e chi li ha riscattati.
+
+---
+
+## 👥 Autori
+
+* **Matteo Miglio** (243947) - [Profilo GitHub](https://github.com/Magnus3327)
+* **Alessio Cristoforetti** (243629) - [Profilo GitHub](https://github.com/acristoforetti-1-pixel)
+* **Riccardo De Riz** (243317) - [Profilo GitHub](https://github.com/27ricky020)
