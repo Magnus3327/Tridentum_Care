@@ -60,6 +60,7 @@ async function seed() {
         authLvl: AUTH_LVL ? AUTH_LVL.MODERATOR : 1,
         points: 0,
         phone: "333 999 0000",
+        address: "Piazza Dante 1, Trento",
         skills: ["Trasporto", "Accompagnamento", "Compagnia"],
         age: 30,
         license: "Sì (Patente B)",
@@ -84,6 +85,8 @@ async function seed() {
         role: "requester",
         address: "Via Belenzani 12, Trento",
         phone: "345 678 9012",
+        age: 75,
+        gender: "M",
         createdAt: new Date()
       },
       {
@@ -91,6 +94,8 @@ async function seed() {
         password: hashedPassword,
         role: "partner",
         companyName: "Farmacia Centrale",
+        address: "Corso Alpini 5, Trento",
+        phone: "0461 123456",
         createdAt: new Date()
       }
     ];
