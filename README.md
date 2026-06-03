@@ -2,6 +2,8 @@
 
 **Progetto per l'esame di Ingegneria del Software - 2026**
 
+🌐 **Demo Live:** [https://tridentum-care.onrender.com/](https://tridentum-care.onrender.com/)
+
 TridentumCare è una piattaforma web innovativa nata per connettere persone anziane o fragili con volontari disponibili, specificamente pensata per il territorio di Trento. L'obiettivo del sistema è facilitare il supporto reciproco fornendo un pannello di controllo chiaro per gestire servizi essenziali come *Trasporto*, *Accompagnamento* e *Compagnia*.
 
 Il progetto si distingue per la sua interfaccia **Single Page Application (SPA)** dinamica dotata di un sofisticato sistema di gamification: i volontari accumulano "Punti" portando a termine gli incarichi e possono in seguito spenderli nello Store Premi per generare dei Coupon esclusivi, dotati di QR code.
