@@ -17,7 +17,7 @@ function renderAdminUserCard(user) {
         : null;
     let fullName = [user.name, user.surname].filter(Boolean).join(' ').trim();
     if (!fullName) {
-        fullName = user.role === 'partner' ? 'Account Partner' : 'Utente senza nome';
+        fullName = user.role === 'partner' ? (user.companyName || 'Account Partner') : 'Utente senza nome';
     }
     const sameUser = appState.userId && user.id === appState.userId;
     const targetAuthLevel = getUserAuthLevel(user);
@@ -116,7 +116,6 @@ window.showUserDetailsModal = function(userId) {
     
     let nameLabel = user.role === 'partner' ? 'Azienda:' : 'Nome:';
     let nameValue = user.role === 'partner' ? (user.companyName || 'N/A') : [user.name, user.surname].filter(Boolean).join(' ') || 'N/A';
-    let addressLabel = user.role === 'partner' ? 'Sede:' : 'Indirizzo:';
     
     let html = `
         <div><strong>${nameLabel}</strong> ${nameValue}</div>
@@ -125,7 +124,7 @@ window.showUserDetailsModal = function(userId) {
         <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><strong>ID:</strong> <span style="font-family: monospace;">${user.id || user._id}</span></div>
     `;
     if (user.phone) html += `<div><strong>Telefono:</strong> ${user.phone}</div>`;
-    if (user.address || user.location) html += `<div><strong>${addressLabel}</strong> ${user.address || user.location}</div>`;
+    if (user.role !== 'partner' && (user.address || user.location)) html += `<div><strong>Indirizzo:</strong> ${user.address || user.location}</div>`;
     if (user.legalForm) html += `<div><strong>Forma Giuridica:</strong> ${user.legalForm}</div>`;
     if (user.skills && user.skills.length > 0 && !(user.role === 'volunteer' && user.authLvl === AUTH_LEVELS.ADMIN)) html += `<div><strong>Competenze:</strong> ${user.skills.join(', ')}</div>`;
     if (user.availability) html += `<div><strong>Disponibilità:</strong> ${user.availability}</div>`;

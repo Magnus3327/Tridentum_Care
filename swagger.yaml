@@ -1397,8 +1397,11 @@ paths:
               type: object
               required:
                 - email
+                - companyName
               properties:
                 email:
+                  type: string
+                companyName:
                   type: string
       responses:
         '201':

@@ -91,6 +91,7 @@ async function seed() {
         email: "partner@demo.it",
         password: hashedPassword,
         role: "partner",
+        companyName: "Farmacia Demo",
         createdAt: new Date()
       }
     ];
