@@ -51,6 +51,7 @@ function renderAdminUserCard(user) {
     }
 
     let suspensionBadge = '';
+    let overlayHtml = '';
     if (user.isSuspended) {
         let totalDuration = '';
         if (user.suspensionCount === 1) totalDuration = '12 ore';
@@ -58,35 +59,51 @@ function renderAdminUserCard(user) {
         else if (user.suspensionCount === 3) totalDuration = '1 settimana';
         else if (user.suspensionCount >= 4) totalDuration = '1 mese';
 
+        let remainingText = '';
         if (user.suspendedUntil) {
             const diffMs = new Date(user.suspendedUntil) - new Date();
             const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
             
-            let remainingText = '';
             if (diffDays > 0) remainingText = `${diffDays}g rimanenti`;
             else remainingText = `${Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60)))}h rimanenti`;
-            
-            suspensionBadge = `<span class="badge badge-danger" style="background-color: var(--danger-color); color: white;">Sospeso ${totalDuration ? 'per ' + totalDuration : ''} (${remainingText})</span>`;
-        } else {
-            suspensionBadge = `<span class="badge badge-danger" style="background-color: var(--danger-color); color: white;">Sospeso ${totalDuration ? 'per ' + totalDuration : ''}</span>`;
         }
+
+        overlayHtml = `
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.85); z-index: 5; display: flex; padding: 1rem; backdrop-filter: blur(2px); border-radius: inherit;">
+                <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: flex-start;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                        <span class="badge badge-primary">${roleLabel}</span>
+                        <h4 style="margin: 0; font-weight: bold; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;" title="${fullName}">${fullName}</h4>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--danger-color); font-weight: bold; margin-bottom: 0.25rem;">
+                        <i class="fa-solid fa-ban"></i> <span>ACCOUNT SOSPESO</span>
+                    </div>
+                    <p style="margin: 0; color: #555; font-size: 0.9rem;">
+                        ${totalDuration ? 'Durata: ' + totalDuration : ''} ${remainingText ? '<span style="color: var(--danger-color);">(' + remainingText + ')</span>' : ''}
+                    </p>
+                </div>
+                <div style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.5rem; align-items: flex-end; z-index: 10;">
+                    ${canRestore ? `<button type="button" class="btn btn-success" style="padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: bold; white-space: nowrap; box-shadow: var(--shadow-sm);" onclick="restoreAdminUser('${user.id || user._id}')"><i class="fa-solid fa-unlock"></i> Riattiva</button>` : ''}
+                    ${canDelete ? `<button type="button" class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; white-space: nowrap; color: var(--danger-color); border-color: var(--danger-color);" onclick="deleteAdminUser('${user.id || user._id}')"><i class="fa-solid fa-trash"></i> Elimina</button>` : ''}
+                </div>
+            </div>
+        `;
     }
 
     return `
-        <div class="card" style="padding: 1rem 1.1rem; border-left: 5px solid ${targetAuthLevel === AUTH_LEVELS.ADMIN ? 'var(--accent-color)' : 'var(--primary-color)'}; overflow: visible; opacity: ${user.isSuspended ? '0.75' : '1'};">
+        <div class="card" style="padding: 1rem 1.1rem; border-left: 5px solid ${targetAuthLevel === AUTH_LEVELS.ADMIN ? 'var(--accent-color)' : 'var(--primary-color)'}; overflow: visible; opacity: 1; position: relative;">
+            ${overlayHtml}
             
-            <div class="flex justify-between items-center" style="gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 0.25rem;">
+            <div class="flex justify-between items-center" style="gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: nowrap; overflow: visible; padding-bottom: 0.25rem;">
                 <div class="flex gap-1" style="flex-wrap: nowrap; align-items: center; flex-shrink: 0;">
                     <span class="badge badge-primary">${roleLabel}</span>
                     ${sameUser ? `<span class="badge badge-success">Sei tu</span>` : ''}
-                    ${suspensionBadge}
                 </div>
                 <div class="flex gap-1" style="flex-wrap: nowrap; justify-content: flex-end; align-items: center;">
                     ${promoteHtml}
                     <button type="button" class="btn btn-info" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; color: #0c5460; background-color: #d1ecf1; border: 1px solid #bee5eb; white-space: nowrap;" onclick="window.showUserDetailsModal('${user.id || user._id}')">Dettagli</button>
-                    ${canSuspend ? `<button type="button" class="btn btn-warning" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; color: #856404; background-color: #FFF3CD; border: 1px solid #ffeeba; white-space: nowrap;" onclick="suspendAdminUser('${user.id || user._id}', ${suspensionCount})">Sospendi</button>` : ''}
-                    ${canRestore ? `<button type="button" class="btn btn-success" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; white-space: nowrap;" onclick="restoreAdminUser('${user.id || user._id}')">Riattiva</button>` : ''}
-                    ${canDelete ? `<button type="button" class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; white-space: nowrap;" onclick="deleteAdminUser('${user.id || user._id}')">Elimina</button>` : ''}
+                    ${!user.isSuspended && canSuspend ? `<button type="button" class="btn btn-warning" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; color: #856404; background-color: #FFF3CD; border: 1px solid #ffeeba; white-space: nowrap;" onclick="suspendAdminUser('${user.id || user._id}', ${suspensionCount})">Sospendi</button>` : ''}
+                    ${!user.isSuspended && canDelete ? `<button type="button" class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; white-space: nowrap;" onclick="deleteAdminUser('${user.id || user._id}')">Elimina</button>` : ''}
                 </div>
             </div>
 
