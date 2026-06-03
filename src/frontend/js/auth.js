@@ -109,7 +109,11 @@ function bindAuthEvents() {
 
                 // Reindirizzamento basato sul ruolo e livello di autorizzazione
                 if (data.user.role === 'volunteer') {
-                    navigateTo('vol-board');
+                    if (appState.userAuthLvl >= AUTH_LEVELS.ADMIN) {
+                        navigateTo('admin-dash');
+                    } else {
+                        navigateTo('vol-board');
+                    }
                 } else if (data.user.role === 'requester') {
                     navigateTo('req-dashboard');
                 } else if (data.user.role === 'partner') {
@@ -191,7 +195,11 @@ function bindAuthEvents() {
                 showToast(data.message, 'success');
 
                 if (data.user.role === 'volunteer') {
-                    navigateTo('vol-board');
+                    if (appState.userAuthLvl >= AUTH_LEVELS.ADMIN) {
+                        navigateTo('admin-dash');
+                    } else {
+                        navigateTo('vol-board');
+                    }
                 } else if (data.user.role === 'requester') {
                     navigateTo('req-dashboard');
                 } else if (data.user.role === 'partner') {
