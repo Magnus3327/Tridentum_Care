@@ -16,7 +16,7 @@ Abbiamo implementato un sistema di autenticazione e gestione delle sessioni **re
 
 3. **Integrazione del Database e Seeding dei Test Users**:
    - Aggiornato lo script di seeding seed.js per inserire nel DB 5 utenti di test completi (Admin, Moderator, Volunteer, Requester, Partner)
-   - Collegato correttamente le richieste fittizie nel DB all'ID reale dell'utente di test Angela Bianchi, allineando tutti gli stati delle richieste tra le varie bacheche.
+   - Collegato correttamente le richieste fittizie nel DB all'ID reale dell'utente di test Riccardo Rossi, allineando tutti gli stati delle richieste tra le varie bacheche.
 
 4. **Sicurezza degli Endpoint API**:
    - **Richiedente** (requester.js): Ora estrae l'ID utente (`userId`) direttamente dal token JWT decodificato e verifica i permessi di ruolo (`requester`), impedendo ad utenti esterni di leggere, modificare o eliminare richieste altrui.
@@ -29,7 +29,7 @@ Abbiamo implementato un sistema di autenticazione e gestione delle sessioni **re
 
 6. **Sistema Avanzato di Moderazione e Gestione Utenti**:
    - **Sospensioni Progressive (Ban System)**: Il sistema conta automaticamente i ban (12h, 1gg, 1sett, 1mese) ed espelle forzatamente l'utente bloccandogli il login finché la data `suspendedUntil` non scade. L'Admin/Moderatore vede lo stato in tempo reale.
-   - **Cancellazione Dati a Cascata (Cascade Deletion)**: Eliminando un utente, il database esegue pulizie intelligenti per non lasciare dati orfani (se si elimina un richiedente, spariscono le sue richieste; se si elimina un volontario, le sue richieste vengono liberate e rimesse 'In Attesa di Volontario').
+   - **Cancellazione Dati a Cascata (Cascade Deletion)**: Eliminando un utente (solo gli Admin possono farlo), il database esegue pulizie intelligenti per non lasciare dati orfani (se si elimina un richiedente, spariscono le sue richieste; se si elimina un volontario, le sue richieste vengono liberate e rimesse 'In Attesa di Volontario').
    - **Generazione e Reset Credenziali Partner**: Gli account Partner vengono creati senza password iniziale dall'utente, è il sistema (Admin) a generare password crittografate randomiche e copiarle nella clipboard dell'amministratore.
 
 ---
@@ -38,11 +38,11 @@ Abbiamo implementato un sistema di autenticazione e gestione delle sessioni **re
 
 | Ruolo | Email | Password | Stato nel Database |
 | :--- | :--- | :--- | :--- |
-| **Amministratore (Admin)** | `admin@admin.com` | `admin` | Accesso totale. Può gestire ruoli, utenti, richieste e generare password partner |
-| **Moderatore** | `luca.verdi@email.it` | `password123` | Può bannare/eliminare utenti e moderare richieste. Niente privilegi amministrativi sui permessi |
-| **Volontario Base** | `mario.rossi@email.it` | `password123` | Registrato con 1250 Punti e 3 competenze (Trasporto, Accompagnamento, Compagnia) |
-| **Richiedente** | `angela.bianchi@email.it` | `password123` | Registrata con 3 Richieste in bacheca precaricate |
-| **Partner** | `partner@demo.it` | `password123` | Account commerciale per la scansione QR e validazione Coupon |
+| **Amministratore (Admin)** | `admin@email.it` | `TridentumCare23!` | Accesso totale. Può gestire ruoli, utenti, richieste e generare password partner |
+| **Moderatore (Massimo Modena)** | `massimo.modena@email.it` | `TridentumCare23!` | Può bannare utenti e moderare richieste. Niente privilegi amministrativi su permessi o eliminazioni |
+| **Volontario (Valerio Volpi)** | `valerio.volpi@email.it` | `TridentumCare23!` | Registrato con 1250 Punti e 3 competenze (Trasporto, Accompagnamento, Compagnia) |
+| **Richiedente (Riccardo Rossi)** | `riccardo.rossi@email.it` | `TridentumCare23!` | Registrato con 2 Richieste in bacheca precaricate |
+| **Partner (Farmacia Centrale)** | `farmacia.centrale@email.it` | `TridentumCare23!` | Account commerciale per creare premi e visualizzare i coupon riscattati |
 
 ---
 
