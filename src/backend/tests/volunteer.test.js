@@ -25,6 +25,8 @@ describe('--- Test Suite: Router Volunteer (Volontario) ---', () => {
       findOne: jest.fn(),
       updateOne: jest.fn(),
       insertOne: jest.fn(),
+      updateMany: jest.fn(),
+      deleteOne: jest.fn(),
       find: jest.fn().mockReturnThis(),
       toArray: jest.fn()
     };
@@ -38,11 +40,42 @@ describe('--- Test Suite: Router Volunteer (Volontario) ---', () => {
     jest.clearAllMocks();
   });
 
+  // US6 - Visualizzazione Profilo Personale
+
+  describe('GET /api/v1/volunteers/me [US6]', () => {
+    test('TC-19: Il volontario visualizza correttamente i propri dati e il saldo punti', async () => {
+      const volunteerId = new ObjectId();
+
+      authMiddleware.mockImplementationOnce((req, res, next) => {
+        req.user = { userId: volunteerId.toString(), role: 'volunteer' };
+        next();
+      });
+
+      mockDb.findOne.mockResolvedValueOnce({
+        _id: volunteerId,
+        username: 'Volontario_Trento',
+        email: 'volontario@example.com',
+        role: 'volunteer',
+        points: 120,
+        skills: ['Consegna Farmaci', 'Spesa']
+      });
+
+      const res = await request(app)
+        .get('/api/v1/volunteers/me')
+        .send();
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('username', 'Volontario_Trento');
+      expect(res.body).toHaveProperty('points', 120);
+      expect(Array.isArray(res.body.skills)).toBe(true);
+    });
+  });
+
   // US7 - Modifica dati Profilo con controllo Età
 
   describe('PUT /api/v1/volunteers/me [US7]', () => {
     
-    test('TC-7.1: Dovrebbe aggiornare il profilo se il volontario è maggiorenne (Età >= 18)', async () => {
+    test('TC-7.1 / TC-21: Dovrebbe aggiornare il profilo se il volontario è maggiorenne (Età >= 18)', async () => {
       const userId = new ObjectId();  
       authMiddleware.mockImplementationOnce((req, res, next) => {
         req.user = { userId: new ObjectId().toString(), role: 'volunteer' };
@@ -86,50 +119,29 @@ describe('--- Test Suite: Router Volunteer (Volontario) ---', () => {
     });
   });
 
-  // US21 - Acquisto/Riscatto Coupon Catalogo Premi
+  // US8 - Eliminazione Account Volontario & GDPR
 
-  describe('POST /api/v1/volunteers/coupons/redemptions [US21]', () => {
-    
-    test('TC-21.1: Fallisce se il saldo punti del volontario è insufficiente', async () => {
-      const volunteerId = new ObjectId();
-      const couponId = new ObjectId();
+  describe('DELETE /api/v1/volunteers/me [US8]', () => {
+    test('TC-Volunteer-GDPR: Rimuove l\'account e reimposta in bacheca le sue richieste "In Corso"', async () => {
+      const volunteerId = new ObjectId().toString();
 
       authMiddleware.mockImplementationOnce((req, res, next) => {
-        req.user = { userId: volunteerId.toString(), role: 'volunteer' };
+        req.user = { userId: volunteerId, role: 'volunteer' };
         next();
       });
 
-      mockDb.findOne.mockResolvedValueOnce({ _id: volunteerId, points: 30 });
-      mockDb.findOne.mockResolvedValueOnce({ _id: couponId, title: 'Buono Spesa 10€', pointsCost: 50 });
-
-      const res = await request(app)
-        .post('/api/v1/volunteers/coupons/redemptions')
-        .send({ couponId: couponId.toString() });
-
-      expect(res.status).toBe(400);
-    });
-
-    test('TC-21.2: Ritiro completato con successo se i punti sono sufficienti', async () => {
-      const volunteerId = new ObjectId();
-      const couponId = new ObjectId();
-
-      authMiddleware.mockImplementationOnce((req, res, next) => {
-        req.user = { userId: volunteerId.toString(), role: 'volunteer' };
-        next();
-      });
-
-      mockDb.findOne.mockResolvedValueOnce({ _id: volunteerId, points: 100 });
-      mockDb.findOne.mockResolvedValueOnce({ _id: couponId, title: 'Buono Conad 10€', pointsCost: 50 });
+      mockDb.collection().updateMany = jest.fn()
+        .mockResolvedValueOnce({ modifiedCount: 1 })  // Ripristina richieste "In Corso"
+        .mockResolvedValueOnce({ modifiedCount: 2 }); // Anonimizza richieste "Completate"
       
-      mockDb.updateOne.mockResolvedValueOnce({ matchedCount: 1 });
-      mockDb.insertOne.mockResolvedValueOnce({ insertedId: new ObjectId() });
+      mockDb.collection().deleteOne = jest.fn().mockResolvedValueOnce({ deletedCount: 1 });
 
       const res = await request(app)
-        .post('/api/v1/volunteers/coupons/redemptions')
-        .send({ couponId: couponId.toString() });
+        .delete('/api/v1/volunteers/me')
+        .send();
 
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('newPoints', 50);
+      expect(res.body).toHaveProperty('message', 'Profilo eliminato definitivamente e contributi sbloccati/anonimizzati con successo');
     });
   });
 
@@ -218,5 +230,79 @@ describe('--- Test Suite: Router Volunteer (Volontario) ---', () => {
       expect(res.body).toHaveProperty('error', 'Richiesta non disponibile o già assegnata');
     });
 
+  });
+
+  // US20 - Visualizzazione Catalogo Coupon Disponibili
+
+  describe('GET /api/v1/volunteers/coupons [US20]', () => {
+    test('TC-33: Il volontario visualizza la lista dei coupon attivi nel catalogo', async () => {
+      authMiddleware.mockImplementationOnce((req, res, next) => {
+        req.user = { userId: new ObjectId().toString(), role: 'volunteer' };
+        next();
+      });
+
+      const mockCoupons = [
+        { _id: new ObjectId(), title: 'Sconto Conad 10€', pointsCost: 50, expirationDate: '2026-12-31' }
+      ];
+
+      mockDb.find = jest.fn().mockReturnValue({
+        toArray: jest.fn().mockResolvedValueOnce(mockCoupons)
+      });
+
+      const res = await request(app)
+        .get('/api/v1/volunteers/coupons')
+        .send();
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body[0]).toHaveProperty('title', 'Sconto Conad 10€');
+    });
+  });
+
+  // US21 - Acquisto/Riscatto Coupon Catalogo Premi
+
+  describe('POST /api/v1/volunteers/coupons/redemptions [US21]', () => {
+    
+    test('TC-21.1: Fallisce se il saldo punti del volontario è insufficiente', async () => {
+      const volunteerId = new ObjectId();
+      const couponId = new ObjectId();
+
+      authMiddleware.mockImplementationOnce((req, res, next) => {
+        req.user = { userId: volunteerId.toString(), role: 'volunteer' };
+        next();
+      });
+
+      mockDb.findOne.mockResolvedValueOnce({ _id: volunteerId, points: 30 });
+      mockDb.findOne.mockResolvedValueOnce({ _id: couponId, title: 'Buono Spesa 10€', pointsCost: 50 });
+
+      const res = await request(app)
+        .post('/api/v1/volunteers/coupons/redemptions')
+        .send({ couponId: couponId.toString() });
+
+      expect(res.status).toBe(400);
+    });
+
+    test('TC-21.2: Ritiro completato con successo se i punti sono sufficienti', async () => {
+      const volunteerId = new ObjectId();
+      const couponId = new ObjectId();
+
+      authMiddleware.mockImplementationOnce((req, res, next) => {
+        req.user = { userId: volunteerId.toString(), role: 'volunteer' };
+        next();
+      });
+
+      mockDb.findOne.mockResolvedValueOnce({ _id: volunteerId, points: 100 });
+      mockDb.findOne.mockResolvedValueOnce({ _id: couponId, title: 'Buono Conad 10€', pointsCost: 50 });
+      
+      mockDb.updateOne.mockResolvedValueOnce({ matchedCount: 1 });
+      mockDb.insertOne.mockResolvedValueOnce({ insertedId: new ObjectId() });
+
+      const res = await request(app)
+        .post('/api/v1/volunteers/coupons/redemptions')
+        .send({ couponId: couponId.toString() });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('newPoints', 50);
+    });
   });
 });
