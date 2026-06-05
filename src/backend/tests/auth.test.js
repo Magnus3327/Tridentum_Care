@@ -80,6 +80,27 @@ describe('--- Test Suite: Autenticazione e Registrazione (Auth) ---', () => {
       expect(res.body).toHaveProperty('message', 'Registrazione completata con successo!');
     });
 
+    test('TC-3: Registrazione con dati validi come Richiedente', async () => {
+      mockDb.findOne.mockResolvedValueOnce(null);
+      mockDb.insertOne.mockResolvedValueOnce({ insertedId: new ObjectId() });
+
+      const res = await request(app)
+        .post('/api/v1/auth/registrations')
+        .send({
+          name: 'Mario',
+          surname: 'Rossi',
+          email: 'mario@gmail.com',
+          password: 'Password1!',
+          role: 'richiedente',
+          age: 25,
+          gender: 'M',
+          gdprConsent: true
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty('message', 'Registrazione completata con successo!');
+    });
+
     test('TC-5: Rifiuta registrazione se l\'email è già registrata', async () => {
       mockDb.findOne.mockResolvedValueOnce({ email: 'mario@gmail.com' });
 
@@ -168,6 +189,28 @@ describe('--- Test Suite: Autenticazione e Registrazione (Auth) ---', () => {
     });
   });
 
+  test('TC-3: Registrazione con età < 18', async () => {
+      mockDb.findOne.mockResolvedValueOnce(null);
+      mockDb.insertOne.mockResolvedValueOnce({ insertedId: new ObjectId() });
+
+      const res = await request(app)
+        .post('/api/v1/auth/registrations')
+        .send({
+          name: 'Mario',
+          surname: 'Rossi',
+          email: 'mario@gmail.com',
+          password: 'Password1!',
+          role: 'volunteer',
+          age: 17,
+          gender: 'M',
+          license: 'No',
+          gdprConsent: true
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error', 'Un volontario deve essere maggiorenne (Età >= 18)!');
+    });
+
   // US3 - LOGIN 
   
   describe('POST /api/v1/auth/sessions [US3]', () => {
@@ -196,7 +239,31 @@ describe('--- Test Suite: Autenticazione e Registrazione (Auth) ---', () => {
       expect(res.body).toHaveProperty('token'); 
     });
 
-    test('TC-3.2 (o TC-13): Login fallito per password errata', async () => {
+    test('TC-12: Login con credenziali corrette (Richiedente)', async () => {
+      const userId = new ObjectId();
+      bcrypt.compare.mockResolvedValueOnce(true);
+      mockDb.findOne.mockResolvedValueOnce({
+        _id: userId,
+        email: 'mario@gmail.com',
+        password: 'hashed_password_mock',
+        role: 'requester',
+        username: 'Mario Rossi'
+      });
+
+      const res = await request(app)
+        .post('/api/v1/auth/sessions')
+        .send({
+          email: 'mario@gmail.com',
+          password: 'Password1!'
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('message', 'Accesso effettuato con successo!');
+      expect(res.body.user).toHaveProperty('role', 'requester');
+      expect(res.body).toHaveProperty('token'); 
+    });
+
+    test('TC-13: Login fallito per password errata', async () => {
       mockDb.findOne.mockResolvedValueOnce({
         email: 'mario@gmail.com',
         password: 'hashed_password_mock',
@@ -214,7 +281,21 @@ describe('--- Test Suite: Autenticazione e Registrazione (Auth) ---', () => {
       expect(res.body).toHaveProperty('error', 'Credenziali non valide');
     });
 
-    test('TC-3.3 (o TC-15): Login fallito se i campi sono vuoti', async () => {
+    test('TC-14: Login fallito per email non registrata', async () => {
+      mockDb.findOne.mockResolvedValueOnce(null);
+
+      const res = await request(app)
+        .post('/api/v1/auth/sessions')
+        .send({
+          email: 'nonregistrata@gmail.com',
+          password: 'Password1!'
+        });
+
+      expect(res.status).toBe(401);
+        expect(res.body).toHaveProperty('error', 'Email non trovata nel database');
+    });
+
+    test('TC-15: Login fallito se i campi sono vuoti', async () => {
       const res = await request(app)
         .post('/api/v1/auth/sessions')
         .send({
@@ -231,7 +312,7 @@ describe('--- Test Suite: Autenticazione e Registrazione (Auth) ---', () => {
 
   describe('GET /api/v1/auth/me [US4]', () => {
 
-    test('TC-4.1: Recupera i dati della sessione corrente', async () => {
+    test('TC-19: Recupera i dati della sessione corrente', async () => {
       const userId = new ObjectId();
 
       mockDb.findOne.mockResolvedValueOnce({
