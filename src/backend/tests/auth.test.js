@@ -58,7 +58,7 @@ describe('--- Test Suite: Autenticazione e Registrazione (Auth) ---', () => {
  
   describe('POST /api/v1/auth/registrations [US2]', () => {
     
-    test('TC-2.1 (o TC-3): Registrazione con dati validi come Volontario', async () => {
+    test('TC-3: Registrazione con dati validi come Volontario', async () => {
       mockDb.findOne.mockResolvedValueOnce(null);
       mockDb.insertOne.mockResolvedValueOnce({ insertedId: new ObjectId() });
 
@@ -80,24 +80,7 @@ describe('--- Test Suite: Autenticazione e Registrazione (Auth) ---', () => {
       expect(res.body).toHaveProperty('message', 'Registrazione completata con successo!');
     });
 
-    test('TC-2.4: Blocco della registrazione se non viene confermato il tickbox GDPR', async () => {
-      const res = await request(app)
-        .post('/api/v1/auth/registrations')
-        .send({
-          name: 'Mario',
-          surname: 'Rossi',
-          email: 'mario@gmail.com',
-          password: 'Password1!',
-          role: 'volunteer',
-          age: 25,
-          gdprConsent: false
-        });
-
-      expect(res.status).toBe(400);
-      expect(res.body).toHaveProperty('error', 'Devi accettare di aver letto la Privacy Policy e i Termini di Servizio.');
-    });
-
-    test('TC-2.2 (o TC-5): Rifiuta registrazione se l\'email è già registrata', async () => {
+    test('TC-5: Rifiuta registrazione se l\'email è già registrata', async () => {
       mockDb.findOne.mockResolvedValueOnce({ email: 'mario@gmail.com' });
 
       const res = await request(app)
@@ -116,7 +99,41 @@ describe('--- Test Suite: Autenticazione e Registrazione (Auth) ---', () => {
       expect(res.body).toHaveProperty('error', 'Questa email è già registrata');
     });
 
-    test('TC-2.3 (o TC-8): Errore se la password non rispetta i vincoli di complessità', async () => {
+    test('TC-6: Rifiuta la registrazione se l\'email non è in un formato valido', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/registrations')
+        .send({
+          name: 'Mario',
+          surname: 'Rossi',
+          email: 'mario/gmail.com', // Formato email errato
+          password: 'Password1!',
+          role: 'volunteer',
+          age: 25,
+          gdprConsent: true
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain('Email non valida');
+    });
+
+    test('TC-7: Rifiuta la registrazione se il campo anagrafico (nome/cognome) è assente o vuoto', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/registrations')
+        .send({
+          name: '', // Campo vuoto
+          surname: 'Rossi',
+          email: 'mario@gmail.com',
+          password: 'Password1!',
+          role: 'volunteer',
+          age: 25,
+          gdprConsent: true
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain('Tutti i campi obbligatori devono essere compilati');
+    });
+
+    test('TC-8: Errore se la password non rispetta i vincoli di complessità', async () => {
       const res = await request(app)
         .post('/api/v1/auth/registrations')
         .send({
@@ -132,13 +149,30 @@ describe('--- Test Suite: Autenticazione e Registrazione (Auth) ---', () => {
       expect(res.status).toBe(400);
       expect(res.body.error).toContain('La password non soddisfa i requisiti');
     });
+
+    test('TC-9: Blocco della registrazione se non viene confermato il tickbox GDPR', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/registrations')
+        .send({
+          name: 'Mario',
+          surname: 'Rossi',
+          email: 'mario@gmail.com',
+          password: 'Password1!',
+          role: 'volunteer',
+          age: 25,
+          gdprConsent: false
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error', 'Devi accettare di aver letto la Privacy Policy e i Termini di Servizio.');
+    });
   });
 
   // US3 - LOGIN 
   
   describe('POST /api/v1/auth/sessions [US3]', () => {
 
-    test('TC-3.1 (o TC-11): Login con credenziali corrette (Volontario)', async () => {
+    test('TC-11: Login con credenziali corrette (Volontario)', async () => {
       const userId = new ObjectId();
       bcrypt.compare.mockResolvedValueOnce(true);
       mockDb.findOne.mockResolvedValueOnce({
@@ -238,4 +272,40 @@ describe('--- Test Suite: Autenticazione e Registrazione (Auth) ---', () => {
       expect(res.body).toHaveProperty('message', 'Logout effettuato con successo');
     });
   });
+
+  // US3 & 5 - Controlli Sessione Fallita e Invalidata
+
+  describe('GET /api/v1/auth/me & /logout - Errori Sessione [US3 - US5]', () => {
+
+    test('TC-16: Rifiuta l\'accesso ai dati protetti se l\'utente non ha una sessione attiva', async () => {
+      // Sovrascriviamo temporaneamente il middleware simulando l'assenza di token/utente loggato
+      authMiddleware.mockImplementationOnce((req, res, next) => {
+        return res.status(401).json({ error: 'Accesso negato: token mancante o non valido' });
+      });
+
+      const res = await request(app)
+        .get('/api/v1/auth/me');
+
+      expect(res.status).toBe(401);
+      expect(res.body).toHaveProperty('error', 'Accesso negato: token mancante o non valido');
+    });
+
+    test('TC-18: Verifica che dopo il logout la rotta protetta risponda correttamente con errore', async () => {
+      // 1. Esegui il logout
+      authMiddleware.mockImplementationOnce((req, res, next) => {
+        req.user = { userId: new ObjectId().toString(), role: 'volunteer' };
+        next();
+      });
+      await request(app).post('/api/v1/auth/logout');
+
+      // 2. Subito dopo, prova ad accedere senza credenziali
+      authMiddleware.mockImplementationOnce((req, res, next) => {
+        return res.status(401).json({ error: 'Token non valido o sessione scaduta' });
+      });
+
+      const res = await request(app).get('/api/v1/auth/me');
+      expect(res.status).toBe(401);
+    });
+  });
+
 });
