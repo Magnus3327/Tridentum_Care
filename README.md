@@ -12,11 +12,42 @@ Il progetto si distingue per la sua interfaccia **Single Page Application (SPA)*
 
 ## 🛠️ Tecnologie Utilizzate
 
-- **Frontend:** HTML5, CSS3, Vanilla JavaScript, Font Awesome.
-- **Backend:** Node.js con Express.js.
-- **Sicurezza:** `bcryptjs` per la cifratura delle password e `jsonwebtoken` (JWT) per la gestione sicura delle sessioni di autenticazione.
-- **Database:** MongoDB Atlas (NoSQL Cloud) con driver ufficiale `mongodb`.
-- **Ambiente:** `dotenv` per la configurazione sicura delle chiavi e delle porte.
+Il progetto è stato sviluppato adottando lo stack MEN (MongoDB, Express, Node.js), optando per un frontend "Vanilla" (senza framework pesanti) per massimizzare il controllo diretto sul DOM e sulle performance.
+
+### Frontend (Client-Side)
+- **Linguaggi base:** HTML5, CSS3 (con variabili custom e design responsive) e Vanilla JavaScript.
+- **Architettura:** Single Page Application (SPA) con rendering dinamico dei moduli tramite DOM manipulation.
+- **Librerie e API esterne:**
+  - **Leaflet.js e OpenStreetMap:** per la renderizzazione della mappa interattiva.
+  - **Font Awesome:** per l'iconografia dell'interfaccia.
+  - **Inter (Google Fonts):** tipografia principale del sito.
+
+### Backend (Server-Side) e Moduli npm
+- **Ambiente di esecuzione:** Node.js.
+- **Web Framework:** `express` (v5.x) - Per la creazione delle RESTful API e il serving dei file statici.
+- **Database & ORM:** `mongodb` e `mongoose` - Per la connessione e la modellazione dei dati su DB NoSQL.
+
+### Sicurezza & Autenticazione
+- **bcryptjs:** Per l'hashing sicuro delle password (salt & hash).
+- **jsonwebtoken:** Per la generazione e validazione dei token JWT necessari per la gestione delle sessioni stateless e dell'RBAC (Role-Based Access Control).
+- **cors:** Per la gestione del Cross-Origin Resource Sharing.
+- **Utility:** 
+  - `dotenv` - Per il caricamento sicuro delle variabili d'ambiente (URI database, secret JWT).
+  - `swagger-ui-express` e `yamljs` - Per la renderizzazione e il serving dinamico della documentazione interattiva OpenAPI/Swagger a partire dal file YAML.
+
+### Testing e Sviluppo
+- **Test:** `jest` (Test runner e assertion library) e `supertest` (per il testing degli endpoint HTTP).
+- **Ambiente:** `cross-env` - Per settare variabili d'ambiente in modo cross-platform durante i test.
+- **Versionamento & Hosting:** Git, GitHub (Version Control), Render (Platform as a Service per il deploy live).
+
+---
+
+## 🏗️ Architettura API (Role-Based)
+
+### Motivazioni scelta User/Role-based API:
+1. **Principio di Isolamento e Sicurezza Out-of-the-Box:** Raggruppare le rotte sotto prefissi basati sui ruoli in Express permette di applicare middleware di autenticazione e autorizzazione centralizzati (es. su `/api/v1/administrators`). Questo approccio di *Security by Design* riduce drasticamente il rischio di errori umani, come dimenticare di proteggere singoli endpoint sensibili.
+2. **Prevenzione delle Collisioni e Differenziazione dei Contesti:** Consente di distinguere chiaramente l'accesso alla stessa entità in base all'attore. Mentre un utente accede al proprio profilo in logica self-service (`/api/v1/volunteers/me`), un amministratore utilizza una vista globale (`/api/v1/administrators/users`) che espone campi e operazioni differenti, evitando condizionali complessi all'interno dei controller.
+3. **Semantica delle Operazioni B2B/Partner:** Esplicita il dominio funzionale delle operazioni commerciali. L'isolamento sotto `/api/v1/partners/` garantisce che la logica di business e i dati siano circoscritti esclusivamente all'operatività degli stakeholder commerciali.
 
 ---
 
