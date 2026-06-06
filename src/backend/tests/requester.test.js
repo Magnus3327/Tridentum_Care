@@ -8,7 +8,6 @@ const requesterRouter = require('../api/requester');
 // Indichiamo a Jest di intercettare le chiamate al modulo di autenticazione
 jest.mock('../middleware/auth', () => {
   return jest.fn((req, res, next) => {
-    // Questo comportamento verrà sovrascritto dinamicamente nei test
     next();
   });
 });
@@ -40,6 +39,94 @@ describe('--- Test Suite: Router Requester (Cittadino) ---', () => {
     jest.clearAllMocks();
   });
 
+  // US6 - Visualizzazione Profilo Personale Richiedente
+
+  describe('GET /api/v1/requesters/me [US6]', () => {
+    test('TC-6.2: Il richiedente visualizza correttamente i propri dati di profilo', async () => {
+      const userId = new ObjectId().toString();
+
+      authMiddleware.mockImplementationOnce((req, res, next) => {
+        req.user = { userId, role: 'requester' };
+        next();
+      });
+
+      // Simula il caricamento del profilo utente dal DB finto
+      mockDb.findOne.mockResolvedValueOnce({
+        _id: new ObjectId(userId),
+        username: 'Riccardo',
+        email: 'riccardo@example.com',
+        role: 'requester',
+        name: 'Riccardo',
+        surname: 'Rossi'
+      });
+
+      const res = await request(app)
+        .get('/api/v1/requesters/me')
+        .send();
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('username', 'Riccardo');
+      expect(res.body).toHaveProperty('email', 'riccardo@example.com');
+      expect(res.body).toHaveProperty('role', 'requester');
+      expect(res.body).not.toHaveProperty('points'); // I richiedenti non accumulano punti
+    });
+  });
+
+  // US7 - Modifica Dati Profilo
+
+  describe('PUT /api/v1/requesters/me [US7]', () => {
+    test('TC-7.2: Rifiuta la modifica se un campo obbligatorio (nome/cognome) è vuoto', async () => {
+      const userId = new ObjectId().toString();
+
+      authMiddleware.mockImplementationOnce((req, res, next) => {
+        req.user = { userId, role: 'requester' };
+        next();
+      });
+
+      const res = await request(app)
+        .put('/api/v1/requesters/me')
+        .send({
+          name: '', // campo obbligatorio vuoto
+          surname: 'Rossi',
+          phone: '3331234567',
+          address: 'Via Roma 1, Trento'
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error', 'Nome e cognome sono obbligatori');
+    });
+  });
+
+  // US8 - Eliminazione Account & Pulizia a Cascata (GDPR)
+
+  describe('DELETE /api/v1/requesters/me [US8]', () => {
+    test('TC-8.1: Elimina con successo l\'account e cancella a cascata le richieste associate', async () => {
+      const userId = new ObjectId().toString();
+
+      authMiddleware.mockImplementationOnce((req, res, next) => {
+        req.user = { userId, role: 'requester' };
+        next();
+      });
+
+      // 1. Mock deleteMany su 'requests'
+      mockDb.collection().deleteMany = jest.fn().mockResolvedValueOnce({ deletedCount: 3 });
+      
+      // 2. Mock deleteOne su 'users'
+      mockDb.collection().deleteOne = jest.fn().mockResolvedValueOnce({ deletedCount: 1 });
+
+      const res = await request(app)
+        .delete('/api/v1/requesters/me')
+        .send();
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('message', 'Profilo e tutte le richieste collegate eliminati definitivamente con successo');
+
+      // Verifica che la pulizia a cascata sul DB sia avvenuta con l'ID corretto
+      expect(mockDb.collection).toHaveBeenCalledWith('requests');
+      expect(mockDb.collection).toHaveBeenCalledWith('users');
+    });
+  });
+
   // US10 - Creazione Richiesta d'Aiuto
 
   describe('POST /api/v1/requesters/requests [US10]', () => {
@@ -47,7 +134,6 @@ describe('--- Test Suite: Router Requester (Cittadino) ---', () => {
     test('TC-10.1: Dovrebbe creare una richiesta valida con stato "Aperta"', async () => {
       const userId = new ObjectId();
       
-      // Sovrascriviamo l'autenticazione per iniettare l'utente corretto
       authMiddleware.mockImplementationOnce((req, res, next) => {
         req.user = { userId: userId.toString(), role: 'requester' };
         next();
@@ -148,7 +234,6 @@ describe('--- Test Suite: Router Requester (Cittadino) ---', () => {
   
   describe('PATCH /api/v1/requesters/requests/:requestId [US14]', () => {
     
-      // --- DA SOSTITUIRE INTERAMENTE DENTRO IL TC-14.1 IN requester.test.js ---
     test('TC-14.1: Il richiedente segna con successo la richiesta come completata', async () => {
       const userId = new ObjectId().toString();
       const requestId = new ObjectId();
@@ -159,7 +244,6 @@ describe('--- Test Suite: Router Requester (Cittadino) ---', () => {
         next();
       });
 
-      // 1. Il database restituisce la richiesta in corso creata da questo utente e assegnata a un volontario
       mockDb.findOne.mockResolvedValueOnce({
         _id: requestId,
         userId: new ObjectId(userId),
@@ -167,12 +251,11 @@ describe('--- Test Suite: Router Requester (Cittadino) ---', () => {
         status: 'In Corso'
       });
 
-      // 2. Mock per il primo updateOne (accredito punti al volontario nel codice reale)
+      // (mock accredito punti al volontario nel codice reale)
       mockDb.updateOne.mockResolvedValueOnce({ matchedCount: 1, modifiedCount: 1 });
-      // 3. Mock per il secondo updateOne (aggiornamento stato richiesta a "Completata")
+      // (mock aggiornamento stato richiesta a "Completata")
       mockDb.updateOne.mockResolvedValueOnce({ matchedCount: 1, modifiedCount: 1 });
 
-      // L'endpoint reale nel router è PATCH /api/v1/requesters/requests/:requestId con body { status }
       const res = await request(app)
         .patch(`/api/v1/requesters/requests/${requestId.toString()}`)
         .send({ status: 'Completata' });

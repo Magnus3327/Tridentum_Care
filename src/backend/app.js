@@ -2,6 +2,8 @@ const express = require('express');
 const path = require('path');
 const connectDB = require('../config/db');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs');
 
 const authRouter = require('./api/auth');
 const volunteerRouter = require('./api/volunteer');
@@ -11,6 +13,9 @@ const partnerRouter = require('./api/partner');
 const requestsRouter = require('./api/requests');
 
 const app = express();
+
+// Carica il documento Swagger
+const swaggerDocument = YAML.load(path.join(__dirname, '../../swagger.yaml'));
 
 // Middleware
 app.use(express.json());
@@ -30,6 +35,8 @@ connectDB()
 // Servi i file statici del frontend
 app.use(express.static(path.join(__dirname, '../frontend')));
 
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Registrazione dei router API
 app.use('/api/v1/auth', authRouter);

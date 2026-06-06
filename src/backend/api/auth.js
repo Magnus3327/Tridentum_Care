@@ -25,6 +25,11 @@ router.post("/registrations", async (req, res) => {
       return res.status(400).json({ error: "Tutti i campi obbligatori devono essere compilati" });
     }
 
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Email non valida' });
+    }
+
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
     if (!passwordRegex.test(password)) {
       return res.status(400).json({ error: "La password non soddisfa i requisiti: minimo 8 caratteri, una maiuscola, un numero e un simbolo." });
