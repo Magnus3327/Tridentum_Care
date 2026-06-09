@@ -40,6 +40,11 @@ router.put("/me", async (req, res) => {
     const userId = req.user.userId;
     const { name, surname, address, phone, skills, age, license, gender } = req.body;
 
+    // Validazione: nome e cognome obbligatori
+    if (!name || !surname) {
+      return res.status(400).json({ error: 'Nome e cognome sono obbligatori' });
+    }
+
     // Validazione: Età >= 18
     if (age !== undefined && age !== null && age !== "") {
       const parsedAge = parseInt(age);

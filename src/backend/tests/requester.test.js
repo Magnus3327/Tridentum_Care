@@ -42,7 +42,7 @@ describe('--- Test Suite: Router Requester (Cittadino) ---', () => {
   // US6 - Visualizzazione Profilo Personale Richiedente
 
   describe('GET /api/v1/requesters/me [US6]', () => {
-    test('TC-6.2: Il richiedente visualizza correttamente i propri dati di profilo', async () => {
+    test('TC-20: Il richiedente visualizza correttamente i propri dati di profilo', async () => {
       const userId = new ObjectId().toString();
 
       authMiddleware.mockImplementationOnce((req, res, next) => {
@@ -75,7 +75,7 @@ describe('--- Test Suite: Router Requester (Cittadino) ---', () => {
   // US7 - Modifica Dati Profilo
 
   describe('PUT /api/v1/requesters/me [US7]', () => {
-    test('TC-7.2: Rifiuta la modifica se un campo obbligatorio (nome/cognome) è vuoto', async () => {
+    test('TC-22: Rifiuta la modifica se un campo obbligatorio (nome/cognome) è vuoto', async () => {
       const userId = new ObjectId().toString();
 
       authMiddleware.mockImplementationOnce((req, res, next) => {
@@ -100,7 +100,7 @@ describe('--- Test Suite: Router Requester (Cittadino) ---', () => {
   // US8 - Eliminazione Account & Pulizia a Cascata (GDPR)
 
   describe('DELETE /api/v1/requesters/me [US8]', () => {
-    test('TC-8.1: Elimina con successo l\'account e cancella a cascata le richieste associate', async () => {
+    test('TC-23: Elimina con successo l\'account e cancella a cascata le richieste associate', async () => {
       const userId = new ObjectId().toString();
 
       authMiddleware.mockImplementationOnce((req, res, next) => {
@@ -131,7 +131,7 @@ describe('--- Test Suite: Router Requester (Cittadino) ---', () => {
 
   describe('POST /api/v1/requesters/requests [US10]', () => {
     
-    test('TC-10.1: Dovrebbe creare una richiesta valida con stato "Aperta"', async () => {
+    test('TC-25: Dovrebbe creare una richiesta valida con stato "Aperta"', async () => {
       const userId = new ObjectId();
       
       authMiddleware.mockImplementationOnce((req, res, next) => {
@@ -156,7 +156,7 @@ describe('--- Test Suite: Router Requester (Cittadino) ---', () => {
       expect(res.body).toHaveProperty('message', 'Richiesta creata con successo');
     });
 
-    test('TC-10.2: Errore 400 se manca un campo obbligatorio (Tipo Servizio)', async () => {
+    test('TC-26: Errore 400 se manca un campo obbligatorio (Tipo Servizio)', async () => {
       authMiddleware.mockImplementationOnce((req, res, next) => {
         req.user = { userId: new ObjectId().toString(), role: 'requester' };
         next();
@@ -173,7 +173,7 @@ describe('--- Test Suite: Router Requester (Cittadino) ---', () => {
       expect(res.status).toBe(400);
     });
 
-    test('TC-10.3: Errore 403 se un Volontario prova a creare una richiesta da Cittadino', async () => {
+    test('TC-26/2: Errore 403 se un Volontario prova a creare una richiesta da Cittadino', async () => {
       authMiddleware.mockImplementationOnce((req, res, next) => {
         req.user = { userId: new ObjectId().toString(), role: 'volunteer' };
         next();
@@ -195,7 +195,7 @@ describe('--- Test Suite: Router Requester (Cittadino) ---', () => {
 
   describe('GET /api/v1/requesters/requests [US13]', () => {
     
-  test('TC-13.1: Dovrebbe restituire la lista delle richieste filtrate per il cittadino loggato', async () => {
+  test('TC-27: Dovrebbe restituire la lista delle richieste filtrate per il cittadino loggato', async () => {
     const userObjectId = new ObjectId();
     const volunteerId = new ObjectId();
 
@@ -234,7 +234,7 @@ describe('--- Test Suite: Router Requester (Cittadino) ---', () => {
   
   describe('PATCH /api/v1/requesters/requests/:requestId [US14]', () => {
     
-    test('TC-14.1: Il richiedente segna con successo la richiesta come completata', async () => {
+    test('TC-28: Il richiedente segna con successo la richiesta come completata', async () => {
       const userId = new ObjectId().toString();
       const requestId = new ObjectId();
       const volunteerId = new ObjectId().toString();

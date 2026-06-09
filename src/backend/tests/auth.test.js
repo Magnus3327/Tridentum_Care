@@ -292,7 +292,7 @@ describe('--- Test Suite: Autenticazione e Registrazione (Auth) ---', () => {
         });
 
       expect(res.status).toBe(401);
-        expect(res.body).toHaveProperty('error', 'Email non trovata nel database');
+        expect(res.body).toHaveProperty('error', 'Credenziali non valide');
     });
 
     test('TC-15: Login fallito se i campi sono vuoti', async () => {
@@ -306,13 +306,60 @@ describe('--- Test Suite: Autenticazione e Registrazione (Auth) ---', () => {
       expect(res.status).toBe(400);
       expect(res.body).toHaveProperty('error', 'Inserisci email e password');
     });
+
+    test('TC-16: Rifiuta l\'accesso ai dati protetti se l\'utente non ha una sessione attiva', async () => {
+      // Sovrascriviamo temporaneamente il middleware simulando l'assenza di token/utente loggato
+      authMiddleware.mockImplementationOnce((req, res, next) => {
+        return res.status(401).json({ error: 'Accesso negato: token mancante o non valido' });
+      });
+
+      const res = await request(app)
+        .get('/api/v1/auth/me');
+
+      expect(res.status).toBe(401);
+      expect(res.body).toHaveProperty('error', 'Accesso negato: token mancante o non valido');
+    });
   });
 
+  // US5 - LOGOUT
+
+  describe('POST /api/v1/auth/logout [US5]', () => {
+
+    test('TC-17: Logout della sessione corrente', async () => {
+      authMiddleware.mockImplementationOnce((req, res, next) => {
+        req.user = { userId: new ObjectId().toString(), role: 'volunteer' };
+        next();
+      });
+
+      const res = await request(app)
+        .post('/api/v1/auth/logout');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty('message', 'Logout effettuato con successo');
+    });
+  
+    test('TC-18: Verifica che dopo il logout la rotta protetta risponda correttamente con errore', async () => {
+      // 1. Esegui il logout
+      authMiddleware.mockImplementationOnce((req, res, next) => {
+        req.user = { userId: new ObjectId().toString(), role: 'volunteer' };
+        next();
+      });
+      await request(app).post('/api/v1/auth/logout');
+
+      // 2. Subito dopo, prova ad accedere senza credenziali
+      authMiddleware.mockImplementationOnce((req, res, next) => {
+        return res.status(401).json({ error: 'Token non valido o sessione scaduta' });
+      });
+
+      const res = await request(app).get('/api/v1/auth/me');
+      expect(res.status).toBe(401);
+    });
+  });
   // US4 - SESSIONE CORRENTE
 
   describe('GET /api/v1/auth/me [US4]', () => {
 
-    test('TC-19: Recupera i dati della sessione corrente', async () => {
+    test('TC-19/20: Recupera i dati della sessione corrente', async () => {
       const userId = new ObjectId();
 
       mockDb.findOne.mockResolvedValueOnce({
@@ -333,59 +380,6 @@ describe('--- Test Suite: Autenticazione e Registrazione (Auth) ---', () => {
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('role', 'volunteer');
       expect(res.body).toHaveProperty('email', 'mario@gmail.com');
-    });
-  });
-
-  // US5 - LOGOUT
-
-  describe('POST /api/v1/auth/logout [US5]', () => {
-
-    test('TC-5.1: Logout della sessione corrente', async () => {
-      authMiddleware.mockImplementationOnce((req, res, next) => {
-        req.user = { userId: new ObjectId().toString(), role: 'volunteer' };
-        next();
-      });
-
-      const res = await request(app)
-        .post('/api/v1/auth/logout');
-
-      expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('message', 'Logout effettuato con successo');
-    });
-  });
-
-  // US3 & 5 - Controlli Sessione Fallita e Invalidata
-
-  describe('GET /api/v1/auth/me & /logout - Errori Sessione [US3 - US5]', () => {
-
-    test('TC-16: Rifiuta l\'accesso ai dati protetti se l\'utente non ha una sessione attiva', async () => {
-      // Sovrascriviamo temporaneamente il middleware simulando l'assenza di token/utente loggato
-      authMiddleware.mockImplementationOnce((req, res, next) => {
-        return res.status(401).json({ error: 'Accesso negato: token mancante o non valido' });
-      });
-
-      const res = await request(app)
-        .get('/api/v1/auth/me');
-
-      expect(res.status).toBe(401);
-      expect(res.body).toHaveProperty('error', 'Accesso negato: token mancante o non valido');
-    });
-
-    test('TC-18: Verifica che dopo il logout la rotta protetta risponda correttamente con errore', async () => {
-      // 1. Esegui il logout
-      authMiddleware.mockImplementationOnce((req, res, next) => {
-        req.user = { userId: new ObjectId().toString(), role: 'volunteer' };
-        next();
-      });
-      await request(app).post('/api/v1/auth/logout');
-
-      // 2. Subito dopo, prova ad accedere senza credenziali
-      authMiddleware.mockImplementationOnce((req, res, next) => {
-        return res.status(401).json({ error: 'Token non valido o sessione scaduta' });
-      });
-
-      const res = await request(app).get('/api/v1/auth/me');
-      expect(res.status).toBe(401);
     });
   });
 

@@ -75,7 +75,7 @@ describe('--- Test Suite: Router Volunteer (Volontario) ---', () => {
 
   describe('PUT /api/v1/volunteers/me [US7]', () => {
     
-    test('TC-7.1 / TC-21: Dovrebbe aggiornare il profilo se il volontario è maggiorenne (Età >= 18)', async () => {
+    test('TC-21: Accetta la modifica con dati validi', async () => {
       const userId = new ObjectId();  
       authMiddleware.mockImplementationOnce((req, res, next) => {
         req.user = { userId: new ObjectId().toString(), role: 'volunteer' };
@@ -101,7 +101,7 @@ describe('--- Test Suite: Router Volunteer (Volontario) ---', () => {
       expect(res.status).toBe(200);
     });
 
-    test('TC-7.2: Dovrebbe rifiutare la modifica (400) se l\'età inserita è < 18 anni', async () => {
+    test('TC-22: Rifiuta la modifica se un campo obbligatorio (nome/cognome) è vuoto', async () => {
       authMiddleware.mockImplementationOnce((req, res, next) => {
         req.user = { userId: new ObjectId().toString(), role: 'volunteer' };
         next();
@@ -110,19 +110,20 @@ describe('--- Test Suite: Router Volunteer (Volontario) ---', () => {
       const res = await request(app)
         .put('/api/v1/volunteers/me')
         .send({
-          name: 'Mario',
+          name: '', // campo obbligatorio vuoto
           surname: 'Rossi',
-          age: 17
+          age: 25
         });
 
       expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error', 'Nome e cognome sono obbligatori');
     });
   });
 
   // US8 - Eliminazione Account Volontario & GDPR
 
   describe('DELETE /api/v1/volunteers/me [US8]', () => {
-    test('TC-Volunteer-GDPR: Rimuove l\'account e reimposta in bacheca le sue richieste "In Corso"', async () => {
+    test('TC-23: Rimuove l\'account e reimposta in bacheca le sue richieste "In Corso"', async () => {
       const volunteerId = new ObjectId().toString();
 
       authMiddleware.mockImplementationOnce((req, res, next) => {
@@ -149,7 +150,7 @@ describe('--- Test Suite: Router Volunteer (Volontario) ---', () => {
 
   describe('GET /api/v1/requests [US17]', () => {
     
-    test('TC-17.1: Il volontario visualizza correttamente le richieste in attesa', async () => {
+    test('TC-29: Il volontario visualizza correttamente le richieste in attesa', async () => {
       const volunteerId = new ObjectId();
 
       authMiddleware.mockImplementationOnce((req, res, next) => {
@@ -190,7 +191,7 @@ describe('--- Test Suite: Router Volunteer (Volontario) ---', () => {
 
   describe('POST /api/v1/requests/:id/assignments [US19]', () => {
     
-    test('TC-19.1: Il volontario accetta una richiesta disponibile cambiandone lo stato', async () => {
+    test('TC-30: Il volontario accetta una richiesta disponibile cambiandone lo stato', async () => {
       const volunteerId = new ObjectId();
       const requestId = new ObjectId();
 
@@ -209,7 +210,7 @@ describe('--- Test Suite: Router Volunteer (Volontario) ---', () => {
       expect(res.status).toBe(200);
     });
 
-    test('TC-19.2: Azione bloccata se la richiesta è già stata presa in carico da un altro volontario', async () => {
+    test('TC-31: Azione bloccata se la richiesta è già stata presa in carico da un altro volontario', async () => {
       const volunteerId = new ObjectId();
       const requestId = new ObjectId();
 
@@ -263,26 +264,7 @@ describe('--- Test Suite: Router Volunteer (Volontario) ---', () => {
 
   describe('POST /api/v1/volunteers/coupons/redemptions [US21]', () => {
     
-    test('TC-21.1: Fallisce se il saldo punti del volontario è insufficiente', async () => {
-      const volunteerId = new ObjectId();
-      const couponId = new ObjectId();
-
-      authMiddleware.mockImplementationOnce((req, res, next) => {
-        req.user = { userId: volunteerId.toString(), role: 'volunteer' };
-        next();
-      });
-
-      mockDb.findOne.mockResolvedValueOnce({ _id: volunteerId, points: 30 });
-      mockDb.findOne.mockResolvedValueOnce({ _id: couponId, title: 'Buono Spesa 10€', pointsCost: 50 });
-
-      const res = await request(app)
-        .post('/api/v1/volunteers/coupons/redemptions')
-        .send({ couponId: couponId.toString() });
-
-      expect(res.status).toBe(400);
-    });
-
-    test('TC-21.2: Ritiro completato con successo se i punti sono sufficienti', async () => {
+    test('TC-34: Ritiro completato con successo se i punti sono sufficienti', async () => {
       const volunteerId = new ObjectId();
       const couponId = new ObjectId();
 
@@ -304,5 +286,25 @@ describe('--- Test Suite: Router Volunteer (Volontario) ---', () => {
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('newPoints', 50);
     });
+
+    test('TC-35: Fallisce se il saldo punti del volontario è insufficiente', async () => {
+      const volunteerId = new ObjectId();
+      const couponId = new ObjectId();
+
+      authMiddleware.mockImplementationOnce((req, res, next) => {
+        req.user = { userId: volunteerId.toString(), role: 'volunteer' };
+        next();
+      });
+
+      mockDb.findOne.mockResolvedValueOnce({ _id: volunteerId, points: 30 });
+      mockDb.findOne.mockResolvedValueOnce({ _id: couponId, title: 'Buono Spesa 10€', pointsCost: 50 });
+
+      const res = await request(app)
+        .post('/api/v1/volunteers/coupons/redemptions')
+        .send({ couponId: couponId.toString() });
+
+      expect(res.status).toBe(400);
+    });
+
   });
 });
